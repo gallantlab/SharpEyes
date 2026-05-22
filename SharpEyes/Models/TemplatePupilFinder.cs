@@ -5,7 +5,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 using OpenCvSharp;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Text.Json;
+using System.Formats.Nrbf;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using MessageBox.Avalonia;
@@ -495,24 +496,22 @@ namespace Eyetracking
 				using (FileStream fileStream = new FileStream(fileName, FileMode.Create))
 				using (ZipArchive dataFile = new ZipArchive(fileStream, ZipArchiveMode.Create, true))
 				{
-					BinaryFormatter formatter = new BinaryFormatter();
-
 					// because opencvsharp objects are not directly serializable, we break the template objects apart
 					List<double> pupilSizes = new List<double>();
-					List<Tuple<double, double>> centers = new List<Tuple<double, double>>();
+					List<double[]> centers = new List<double[]>();
 					for (int i = 0; i < templates.Count; i++)
 					{
 						pupilSizes.Add(templates[i].Radius.Value);
-						centers.Add(new Tuple<double, double>(templates[i].X, templates[i].Y));
+						centers.Add(new double[] { templates[i].X, templates[i].Y });
 					}
 
 					ZipArchiveEntry pupilRadiusEntry = dataFile.CreateEntry("pupil radii.list");
 					using (Stream stream = pupilRadiusEntry.Open())
-						formatter.Serialize(stream, pupilSizes);
+						JsonSerializer.Serialize(stream, pupilSizes);
 
 					ZipArchiveEntry pupilCentersEntry = dataFile.CreateEntry("pupil centers.list");
 					using (Stream stream = pupilCentersEntry.Open())
-						formatter.Serialize(stream, centers);
+						JsonSerializer.Serialize(stream, centers);
 
 					List<double> brightnesses = new List<double>();
 
@@ -532,7 +531,7 @@ namespace Eyetracking
 
 					ZipArchiveEntry windowBrightnessesEntry = dataFile.CreateEntry("window brightnesses.list");
 					using (Stream stream = windowBrightnessesEntry.Open())
-						formatter.Serialize(stream, brightnesses);
+						JsonSerializer.Serialize(stream, brightnesses);
 				}
 			}
 		}
@@ -554,19 +553,18 @@ namespace Eyetracking
 						List<Tuple<double, double>> centers = new List<Tuple<double, double>>();
 						List<double> brightnesses;
 
-						BinaryFormatter formatter = new BinaryFormatter();
 						using (Stream stream = radiiEntry.Open())
-							pupilSizes = (List<double>) formatter.Deserialize(stream);
+							pupilSizes = DeserializeDoubleList(stream);
 						NumTemplates = pupilSizes.Count;
 
 						ZipArchiveEntry centersEntry = dataFile.GetEntry("pupil centers.list");
 						using (Stream stream = centersEntry.Open())
-							centers = (List<Tuple<double, double>>) formatter.Deserialize(stream);
+							centers = DeserializeCenterList(stream);
 
 						ZipArchiveEntry brightnessesEntry = dataFile.GetEntry("window brightnesses.list");
 						if (brightnessesEntry != null)
 							using (Stream stream = brightnessesEntry.Open())
-								brightnesses = (List<double>)formatter.Deserialize(stream);
+								brightnesses = DeserializeDoubleList(stream);
 						else
 						{	// no stored window brightnesses
 							brightnesses = new List<double>();
@@ -632,12 +630,11 @@ namespace Eyetracking
 		/// <param name="dataFile">already opened ziparchive</param>
 		private void LoadTemplatesLegacy(ZipArchive dataFile)
 		{
-			BinaryFormatter formatter = new BinaryFormatter();
 			ZipArchiveEntry pupilLocationEntry = dataFile.GetEntry("storeedPupilSizes.list");
 
 			List<double> storedPupilSize;
 			using (Stream stream = pupilLocationEntry.Open())
-				storedPupilSize = (List<double>)formatter.Deserialize(stream);
+				storedPupilSize = DeserializeDoubleList(stream);
 			NumTemplates = storedPupilSize.Count;
 			templates = new List<Template>(NumTemplates);
 			for (int i = 0; i < NumTemplates; i++)
@@ -667,6 +664,52 @@ namespace Eyetracking
 				}
 			}
 			
+		}
+
+		private static List<double> DeserializeDoubleList(Stream stream)
+		{
+			MemoryStream buffer = new MemoryStream();
+			stream.CopyTo(buffer);
+			buffer.Position = 0;
+			int firstByte = buffer.ReadByte();
+			buffer.Position = 0;
+			if (firstByte == 0) // NRBF format written by BinaryFormatter
+			{
+				ClassRecord listRecord = (ClassRecord)NrbfDecoder.Decode(buffer);
+				int size = listRecord.GetInt32("_size");
+				SZArrayRecord<double> itemsRecord = (SZArrayRecord<double>)listRecord.GetSerializationRecord("_items")!;
+				double[] allItems = itemsRecord.GetArray();
+				return new List<double>(allItems[..size]);
+			}
+			return JsonSerializer.Deserialize<List<double>>(buffer)!;
+		}
+
+		private static List<Tuple<double, double>> DeserializeCenterList(Stream stream)
+		{
+			MemoryStream buffer = new MemoryStream();
+			stream.CopyTo(buffer);
+			buffer.Position = 0;
+			int firstByte = buffer.ReadByte();
+			buffer.Position = 0;
+			if (firstByte == 0) // NRBF format written by BinaryFormatter
+			{
+				ClassRecord listRecord = (ClassRecord)NrbfDecoder.Decode(buffer);
+				int size = listRecord.GetInt32("_size");
+				SZArrayRecord<SerializationRecord> itemsRecord = (SZArrayRecord<SerializationRecord>)listRecord.GetSerializationRecord("_items")!;
+				SerializationRecord[] allItems = itemsRecord.GetArray();
+				List<Tuple<double, double>> result = new List<Tuple<double, double>>(size);
+				for (int i = 0; i < size; i++)
+				{
+					ClassRecord tupleRecord = (ClassRecord)allItems[i];
+					result.Add(new Tuple<double, double>(tupleRecord.GetDouble("m_Item1"), tupleRecord.GetDouble("m_Item2")));
+				}
+				return result;
+			}
+			List<double[]> serializedCenters = JsonSerializer.Deserialize<List<double[]>>(buffer)!;
+			List<Tuple<double, double>> centers = new List<Tuple<double, double>>(serializedCenters.Count);
+			for (int i = 0; i < serializedCenters.Count; i++)
+				centers.Add(new Tuple<double, double>(serializedCenters[i][0], serializedCenters[i][1]));
+			return centers;
 		}
 
 		private void UpdateTemplateBrightness()
