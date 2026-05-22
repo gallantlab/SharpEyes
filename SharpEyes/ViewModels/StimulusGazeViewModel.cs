@@ -316,6 +316,7 @@ namespace SharpEyes.ViewModels
 			VideoFrame = videoReader.GetFrameForDisplay();
 			videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)videoReader.fps);
 			TotalVideoFrames = videoReader.frameCount;
+			TotalVideoTime = videoReader.FramesToTimecode(videoReader.frameCount - 1);
 			SaveGazeCommand = null;
 		}
 
@@ -387,6 +388,7 @@ namespace SharpEyes.ViewModels
 		{
 			VideoFrame = videoReader.GetFrameForDisplay();
 			CurrentVideoFrame = videoReader.CurrentFrameNumber;
+			CurrentVideoTime = videoReader.FramesToTimecode(videoReader.CurrentFrameNumber);
 			// TODO: set gaze circle location
 			if (dataStartFrame != null)
 			{
