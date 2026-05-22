@@ -9,7 +9,7 @@
   <Design.DataContext>
     <vm:StimulusGazeViewModel/>
   </Design.DataContext>
-  <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="4" ShowGridLines="True">
+  <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="4" ShowGridLines="False">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="*"/>
       <ColumnDefinition Width="350"/>
@@ -19,7 +19,7 @@
       <RowDefinition Height="36"/>
     </Grid.RowDefinitions>
 
-    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ShowGridLines="True" Grid.Row="0" Grid.Column="0">
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ShowGridLines="False" Grid.Row="0" Grid.Column="0">
       <Grid.RowDefinitions>
         <RowDefinition Height="48"/>
         <RowDefinition Height="*"/>
