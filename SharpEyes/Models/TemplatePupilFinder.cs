@@ -100,8 +100,8 @@ namespace Eyetracking
 			matchResults = new List<Mat>(NumTemplates);
 			for (int i = 0; i < NumTemplates; i++)
 			{
-				Mat template = new Mat(maxRadius * 2 + 1, maxRadius * 2 + 1, MatType.CV_8UC1, 255);
-				Cv2.Circle(template, maxRadius + 1, maxRadius + 1, i + minRadius, 0, -1);   // negative thickness == filled
+				Mat template = new Mat(maxRadius * 2 + 1, maxRadius * 2 + 1, MatType.CV_8UC1, new Scalar(255));
+				Cv2.Circle(template, maxRadius + 1, maxRadius + 1, i + minRadius, new Scalar(0), -1);   // negative thickness == filled
 				templates.Add(new Template(template, minRadius + i));
 				matchResults.Add(new Mat());
 				
