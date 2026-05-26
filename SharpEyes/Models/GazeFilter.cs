@@ -43,7 +43,7 @@ namespace Eyetracking
 						}
 					}
 					if (hasNaN)
-						for (int column = 0; column < columnCount; column++)
+						for (int column = 0; column < Math.Min(3, columnCount); column++)
 							filtered[row, column] = Double.NaN;
 				}
 			}
