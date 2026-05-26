@@ -53,12 +53,41 @@
                 PointerWheelChanged="VideoCanvas_OnPointerWheelChanged" Background="Transparent">
           <Image Name="VideoFrameImage" Source="{Binding VideoFrame}"
                  Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"/>
+          <ItemsControl Items="{Binding TrailPoints}" IsHitTestVisible="False"
+                        Width="{Binding VideoWidth}" Height="{Binding VideoHeight}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding Left}"/>
+                <Setter Property="Canvas.Top" Value="{Binding Top}"/>
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Ellipse Width="{Binding DataContext.GazeDiameter, ElementName=VideoCanvas}"
+                         Height="{Binding DataContext.GazeDiameter, ElementName=VideoCanvas}"
+                         Stroke="{Binding DataContext.GazeStrokeBrush, ElementName=VideoCanvas}"
+                         StrokeThickness="{Binding DataContext.GazeStrokeThickness, ElementName=VideoCanvas}"
+                         Opacity="{Binding Opacity}"
+                         IsVisible="{Binding IsVisible}"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
           <Ellipse Name="GazeEllipse" Width="{Binding GazeDiameter}" Height="{Binding #GazeEllipse.Width}"
                    Stroke="{Binding GazeStrokeBrush}" StrokeThickness="{Binding GazeStrokeThickness}"
                    Opacity="{Binding GazeStrokeOpacity}"
-                   IsVisible="{Binding IsGazeLoaded}"
+                   IsVisible="{Binding IsGazeEllipseVisible}"
                    Canvas.Left="{Binding GazeCircleLeft}"
                    Canvas.Top="{Binding GazeCircleTop}"/>
+          <Panel Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
+                 IsHitTestVisible="False" IsVisible="{Binding IsGazeAtNaN}">
+            <TextBlock Text="No gaze data" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                       Margin="4" Foreground="Red" FontWeight="Bold"/>
+          </Panel>
 
         </Canvas>
       </Viewbox>
@@ -124,8 +153,8 @@
                 <NumericUpDown Name="MarkerDiameterUpDown" Margin="4" Width="120" Value="{Binding GazeDiameter}" Increment="1" Minimum="1"/>
               </StackPanel>
               <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" Width="150">Trail length (frames)</TextBlock>
-                <NumericUpDown Name="TrailLengthUpDown" Margin="4 " Width="120" Value="{Binding TrailLength}" Increment="1" Minimum="1"/>
+                <TextBlock VerticalAlignment="Center" Width="150">Trail length (seconds)</TextBlock>
+                <NumericUpDown Name="TrailLengthUpDown" Margin="4 " Width="120" Value="{Binding TrailLength}" Increment="0.1" Minimum="0.1"/>
               </StackPanel>
             </StackPanel>
           </Expander>

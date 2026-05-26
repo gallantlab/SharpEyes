@@ -146,8 +146,25 @@ namespace SharpEyes.ViewModels
 		public bool IsGazeLoaded
 		{
 			get => _isGazeLoaded;
-			set => this.RaiseAndSetIfChanged(ref _isGazeLoaded, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isGazeLoaded, value);
+				this.RaisePropertyChanged("IsGazeEllipseVisible");
+			}
 		}
+
+		private bool _isGazeAtNaN = false;
+		public bool IsGazeAtNaN
+		{
+			get => _isGazeAtNaN;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isGazeAtNaN, value);
+				this.RaisePropertyChanged("IsGazeEllipseVisible");
+			}
+		}
+
+		public bool IsGazeEllipseVisible => IsGazeLoaded && !IsGazeAtNaN;
 		private int? dataStartFrame = null;
 
 		private int? dataEndFrame
@@ -245,11 +262,18 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _eyetrackingFPS, value);
 		}
 
-		private int _trailLength = 10;
-		public int TrailLength
+		private double _trailLength = 1.0;
+		public double TrailLength
 		{
 			get => _trailLength;
 			set => this.RaiseAndSetIfChanged(ref _trailLength, value);
+		}
+
+		private ObservableCollection<TrailGazePoint> _trailPoints;
+		public ObservableCollection<TrailGazePoint> TrailPoints
+		{
+			get => _trailPoints;
+			private set => this.RaiseAndSetIfChanged(ref _trailPoints, value);
 		}
 
 		private ObservableCollection<VideoKeyFrame> _videoKeyFrames = new ObservableCollection<VideoKeyFrame>(new List<VideoKeyFrame>());
@@ -285,6 +309,8 @@ namespace SharpEyes.ViewModels
 
 			PreviousFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(-1); });
 			NextFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(1); });
+			TrailPoints = new ObservableCollection<TrailGazePoint>(
+				Enumerable.Range(0, 10).Select(_ => new TrailGazePoint()));
 		}
 
 		public async void LoadVideo()
@@ -392,8 +418,60 @@ namespace SharpEyes.ViewModels
 			// TODO: set gaze circle location
 			if (dataStartFrame != null)
 			{
-				GazeX = gazeLocations[dataFrame, 0];
-				GazeY = gazeLocations[dataFrame, 1];
+				double gazeXValue = gazeLocations[dataFrame, 0];
+				double gazeYValue = gazeLocations[dataFrame, 1];
+				if (Double.IsNaN(gazeXValue) || Double.IsNaN(gazeYValue))
+				{
+					IsGazeAtNaN = true;
+				}
+				else
+				{
+					IsGazeAtNaN = false;
+					GazeX = gazeXValue;
+					GazeY = gazeYValue;
+				}
+				UpdateTrailPoints();
+			}
+			else
+			{
+				IsGazeAtNaN = false;
+				foreach (TrailGazePoint point in TrailPoints)
+					point.IsVisible = false;
+			}
+		}
+
+		private void UpdateTrailPoints()
+		{
+			const int trailCircleCount = 10;
+			double stepSeconds = TrailLength / trailCircleCount;
+			int stepVideoFrames = Math.Max(1, (int)(stepSeconds * videoReader.fps));
+			// snap to multiples of the step so circles stay fixed between step intervals
+			int currentFrameBase = (videoReader.CurrentFrameNumber / stepVideoFrames) * stepVideoFrames;
+			for (int i = 0; i < trailCircleCount; i++)
+			{
+				int trailVideoFrame = currentFrameBase - (trailCircleCount - i) * stepVideoFrames;
+				if (trailVideoFrame < 0 || trailVideoFrame < dataStartFrame.Value)
+				{
+					TrailPoints[i].IsVisible = false;
+					continue;
+				}
+				int trailDataIndex = VideoTimeToDataIndex(trailVideoFrame);
+				if (trailDataIndex >= gazeLocations.Shape[0])
+				{
+					TrailPoints[i].IsVisible = false;
+					continue;
+				}
+				double trailX = (double)gazeLocations[trailDataIndex, 0];
+				double trailY = (double)gazeLocations[trailDataIndex, 1];
+				if (Double.IsNaN(trailX) || Double.IsNaN(trailY))
+				{
+					TrailPoints[i].IsVisible = false;
+					continue;
+				}
+				TrailPoints[i].Left = trailX - GazeRadius;
+				TrailPoints[i].Top = trailY - GazeRadius;
+				TrailPoints[i].Opacity = GazeStrokeOpacity * (double)i / (trailCircleCount - 1);
+				TrailPoints[i].IsVisible = true;
 			}
 		}
 
@@ -588,6 +666,37 @@ namespace SharpEyes.ViewModels
 					AddKeyFrame(videoReader.frameCount - 1);
 				else AddKeyFrame(dataEndFrame.Value - 1);
 			}
+		}
+	}
+
+	public class TrailGazePoint : ReactiveObject
+	{
+		private double _left;
+		public double Left
+		{
+			get => _left;
+			set => this.RaiseAndSetIfChanged(ref _left, value);
+		}
+
+		private double _top;
+		public double Top
+		{
+			get => _top;
+			set => this.RaiseAndSetIfChanged(ref _top, value);
+		}
+
+		private double _opacity;
+		public double Opacity
+		{
+			get => _opacity;
+			set => this.RaiseAndSetIfChanged(ref _opacity, value);
+		}
+
+		private bool _isVisible = false;
+		public bool IsVisible
+		{
+			get => _isVisible;
+			set => this.RaiseAndSetIfChanged(ref _isVisible, value);
 		}
 	}
 }
