@@ -105,7 +105,7 @@
               ⮜
             </Button>
             <Button Name="PlayPauseButton" Height="32" VerticalContentAlignment="Center" Margin="2 0 2 0" Content="{Binding PlayPauseButtonText}"
-                    Command="{Binding PlayPauseCommand}" HotKey="Space"/>
+                    Command="{Binding PlayPauseCommand}" HotKey="Space" IsEnabled="{Binding IsPlaybackEnabled}"/>
             <Button Name="NextFrameButton" ToolTip.Tip="Next Frame" Height="32" VerticalContentAlignment="Center"
                     Command="{Binding NextFrameCommand}" HotKey="W">
               ⮞
@@ -134,7 +134,7 @@
           <Expander Margin="4 2" IsExpanded="True" Header="Data start finding" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">
             <StackPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
-              <Button Margin="4 " Width="180" HorizontalContentAlignment="Center"
+                <Button Margin="4 " Width="180" HorizontalContentAlignment="Center"
                       Command="{Binding SetCurrentAsDataStartCommand}">Set current as data start</Button>
               <Button Margin="4 " Width="180" HorizontalContentAlignment="Center">Auto find data start</Button>
               <ToggleSwitch OnContent="Set default keyframes" OffContent="Set default keyframes" HorizontalAlignment="Center"
@@ -168,7 +168,8 @@
                 <TextBlock HorizontalAlignment="Left" Margin="0 4 0 2">Median filter</TextBlock>
                 <StackPanel Orientation="Horizontal">
                   <TextBlock VerticalAlignment="Center" Width="150">Window size (frames)</TextBlock>
-                  <NumericUpDown Margin="4" Width="120" Value="{Binding FilterWindowSize, UpdateSourceTrigger=LostFocus}" Increment="1" Minimum="1"/>
+                  <NumericUpDown Margin="4" Width="120" Value="{Binding FilterWindowSize}" Increment="1" Minimum="1"
+                                 LostFocus="FilterNumericUpDown_LostFocus"/>
                 </StackPanel>
                 <ToggleSwitch OnContent="Filter pupil size" OffContent="Filter pupil size" HorizontalAlignment="Center"
                               IsChecked="{Binding FilterPupilSize}"/>
@@ -179,15 +180,18 @@
                   <TextBlock HorizontalAlignment="Center" Margin="0 2">Outlier percentile thresholds</TextBlock>
                   <StackPanel Orientation="Horizontal">
                     <TextBlock VerticalAlignment="Center" Width="150">X threshold</TextBlock>
-                    <NumericUpDown Margin="4" Width="120" Value="{Binding OutlierThresholdX, UpdateSourceTrigger=LostFocus}" Increment="1" Minimum="0" Maximum="100"/>
+                    <NumericUpDown Margin="4" Width="120" Value="{Binding OutlierThresholdX}" Increment="1" Minimum="0" Maximum="100"
+                                   LostFocus="FilterNumericUpDown_LostFocus"/>
                   </StackPanel>
                   <StackPanel Orientation="Horizontal">
                     <TextBlock VerticalAlignment="Center" Width="150">Y threshold</TextBlock>
-                    <NumericUpDown Margin="4" Width="120" Value="{Binding OutlierThresholdY, UpdateSourceTrigger=LostFocus}" Increment="1" Minimum="0" Maximum="100"/>
+                    <NumericUpDown Margin="4" Width="120" Value="{Binding OutlierThresholdY}" Increment="1" Minimum="0" Maximum="100"
+                                   LostFocus="FilterNumericUpDown_LostFocus"/>
                   </StackPanel>
                   <StackPanel Orientation="Horizontal">
                     <TextBlock VerticalAlignment="Center" Width="150">Radius threshold</TextBlock>
-                    <NumericUpDown Margin="4" Width="120" Value="{Binding OutlierThresholdRadius, UpdateSourceTrigger=LostFocus}" Increment="1" Minimum="0" Maximum="100"/>
+                    <NumericUpDown Margin="4" Width="120" Value="{Binding OutlierThresholdRadius}" Increment="1" Minimum="0" Maximum="100"
+                                   LostFocus="FilterNumericUpDown_LostFocus"/>
                   </StackPanel>
                 </StackPanel>
               </StackPanel>

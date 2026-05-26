@@ -294,6 +294,13 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _setDefaultKeyFrames, value);
 		}
 
+		private bool _isPlaybackEnabled = true;
+		public bool IsPlaybackEnabled
+		{
+			get => _isPlaybackEnabled;
+			set => this.RaiseAndSetIfChanged(ref _isPlaybackEnabled, value);
+		}
+
 		// Gaze filtering
 		private bool _isGazeFilterEnabled = false;
 		public bool IsGazeFilterEnabled
@@ -311,11 +318,7 @@ namespace SharpEyes.ViewModels
 		public int FilterWindowSize
 		{
 			get => _filterWindowSize;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref _filterWindowSize, value);
-				ReapplyFilterIfEnabled();
-			}
+			set => this.RaiseAndSetIfChanged(ref _filterWindowSize, value);
 		}
 
 		private bool _filterPupilSize = true;
@@ -344,33 +347,21 @@ namespace SharpEyes.ViewModels
 		public double OutlierThresholdX
 		{
 			get => _outlierThresholdX;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref _outlierThresholdX, value);
-				ReapplyFilterIfEnabled();
-			}
+			set => this.RaiseAndSetIfChanged(ref _outlierThresholdX, value);
 		}
 
 		private double _outlierThresholdY = 95;
 		public double OutlierThresholdY
 		{
 			get => _outlierThresholdY;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref _outlierThresholdY, value);
-				ReapplyFilterIfEnabled();
-			}
+			set => this.RaiseAndSetIfChanged(ref _outlierThresholdY, value);
 		}
 
 		private double _outlierThresholdRadius = 95;
 		public double OutlierThresholdRadius
 		{
 			get => _outlierThresholdRadius;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref _outlierThresholdRadius, value);
-				ReapplyFilterIfEnabled();
-			}
+			set => this.RaiseAndSetIfChanged(ref _outlierThresholdRadius, value);
 		}
 
 		private string gazeFileName = null;
@@ -754,7 +745,7 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private void ReapplyFilterIfEnabled()
+		public void ReapplyFilterIfEnabled()
 		{
 			if (_isGazeFilterEnabled)
 				ApplyFilter();
@@ -763,6 +754,14 @@ namespace SharpEyes.ViewModels
 		private async void ApplyFilter()
 		{
 			if ((object)gazeLocations == null) return;
+
+			if (IsVideoPlaying)
+				PlayPause();
+			IsPlaybackEnabled = false;
+			StatusText = "Applying filter...";
+			IsProgressBarVisible = true;
+			IsProgressBarIndeterminate = true;
+
 			NDArray rawSnapshot = gazeLocations;
 			NDArray result = await Task.Run(() => GazeFilter.Filter(
 				rawSnapshot,
@@ -773,6 +772,12 @@ namespace SharpEyes.ViewModels
 				OutlierThresholdY,
 				OutlierThresholdRadius));
 			filteredGazeLocations = result;
+
+			IsProgressBarVisible = false;
+			IsProgressBarIndeterminate = false;
+			StatusText = "Idle";
+			IsPlaybackEnabled = true;
+
 			if (videoReader != null)
 				UpdateDisplay();
 		}

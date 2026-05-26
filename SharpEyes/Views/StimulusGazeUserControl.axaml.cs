@@ -93,5 +93,10 @@ namespace SharpEyes.Views
 		{
 			isDraggingVideoSlider = false;
 		}
+
+		private void FilterNumericUpDown_LostFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+		{
+			viewModel.ReapplyFilterIfEnabled();
+		}
 	}
 }
