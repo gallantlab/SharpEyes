@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Text;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -759,17 +760,21 @@ namespace SharpEyes.ViewModels
 				ApplyFilter();
 		}
 
-		private void ApplyFilter()
+		private async void ApplyFilter()
 		{
-			if (gazeLocations == null) return;
-			filteredGazeLocations = GazeFilter.Filter(
-				gazeLocations,
+			if ((object)gazeLocations == null) return;
+			NDArray rawSnapshot = gazeLocations;
+			NDArray result = await Task.Run(() => GazeFilter.Filter(
+				rawSnapshot,
 				FilterWindowSize,
 				FilterPupilSize,
 				EnableOutlierRemoval,
 				OutlierThresholdX,
 				OutlierThresholdY,
-				OutlierThresholdRadius);
+				OutlierThresholdRadius));
+			filteredGazeLocations = result;
+			if (videoReader != null)
+				UpdateDisplay();
 		}
 	}
 
