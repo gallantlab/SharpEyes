@@ -655,6 +655,14 @@ namespace SharpEyes.ViewModels
 			{
 				Title = "Load gaze locations"
 			};
+			FileDialogFilter allFilesFilter = new FileDialogFilter()
+			{
+				Name = "All supported files",
+				Extensions = { "npy", "csv", "txt" }
+			};
+			if (EyelinkParser.IsEDFSupported)
+				allFilesFilter.Extensions.Add("edf");
+			openFileDialog.Filters.Add(allFilesFilter);
 			openFileDialog.Filters.Add(new FileDialogFilter()
 			{
 				Name = "Numpy file",
@@ -665,12 +673,38 @@ namespace SharpEyes.ViewModels
 				Name = "Comma-separated values",
 				Extensions = { "csv" }
 			});
+			openFileDialog.Filters.Add(new FileDialogFilter()
+			{
+				Name = "Eyelink text file",
+				Extensions = { "txt" }
+			});
+			if (EyelinkParser.IsEDFSupported)
+				openFileDialog.Filters.Add(new FileDialogFilter()
+				{
+					Name = "Eyelink EDF file",
+					Extensions = { "edf" }
+				});
 			string[] fileName = await openFileDialog.ShowAsync(MainWindow);
 
 			if (fileName == null || fileName.Length == 0)
 				return;
-			if (System.IO.Path.GetExtension(fileName[0]) == ".npy")
+			string extension = System.IO.Path.GetExtension(fileName[0]);
+			if (extension == ".npy")
 				gazeLocations = Num.load(fileName[0]);
+			else if (extension == ".txt")
+			{
+				int parsedSampleRate;
+				gazeLocations = EyelinkParser.ParseTextFile(fileName[0], out parsedSampleRate);
+				if (parsedSampleRate > 0)
+					EyetrackingFPS = parsedSampleRate;
+			}
+			else if (extension == ".edf")
+			{
+				int parsedSampleRate;
+				gazeLocations = EyelinkParser.ParseEDFFile(fileName[0], out parsedSampleRate);
+				if (parsedSampleRate > 0)
+					EyetrackingFPS = parsedSampleRate;
+			}
 			else // parse a csv file
 			{
 				using StreamReader csvFile = new StreamReader(fileName[0]);
