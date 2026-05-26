@@ -631,6 +631,8 @@ namespace SharpEyes.ViewModels
 			}
 			IsGazeLoaded = true;
 			gazeFileName = fileName[0];
+			if (videoReader != null)
+				SetCurrentAsDataStart();
 		}
 
 		public async void SaveGaze()
