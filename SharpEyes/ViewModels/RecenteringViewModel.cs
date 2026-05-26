@@ -267,7 +267,7 @@ namespace SharpEyes.ViewModels
 
 		private int? FindFirstTTLGazeIndex()
 		{
-			if (gazeLocations == null || gazeLocations.Shape[1] < 4)
+			if ((object)gazeLocations == null || gazeLocations.Shape[1] < 4)
 				return null;
 			for (int i = 0; i < gazeLocations.Shape[0]; i++)
 				if ((double)gazeLocations[i, 3] != 0.0)
