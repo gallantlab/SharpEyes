@@ -141,6 +141,8 @@ namespace SharpEyes.ViewModels
 
 		// Gaze overlay info
 		private NDArray? gazeLocations = null;
+		private NDArray? filteredGazeLocations = null;
+		private NDArray? ActiveGazeLocations => _isGazeFilterEnabled && ((object)filteredGazeLocations != null) ? filteredGazeLocations : gazeLocations;
 
 		private bool _isGazeLoaded = false;
 		public bool IsGazeLoaded
@@ -291,6 +293,85 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _setDefaultKeyFrames, value);
 		}
 
+		// Gaze filtering
+		private bool _isGazeFilterEnabled = false;
+		public bool IsGazeFilterEnabled
+		{
+			get => _isGazeFilterEnabled;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isGazeFilterEnabled, value);
+				if (value)
+					ApplyFilter();
+			}
+		}
+
+		private int _filterWindowSize = 15;
+		public int FilterWindowSize
+		{
+			get => _filterWindowSize;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _filterWindowSize, value);
+				ReapplyFilterIfEnabled();
+			}
+		}
+
+		private bool _filterPupilSize = true;
+		public bool FilterPupilSize
+		{
+			get => _filterPupilSize;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _filterPupilSize, value);
+				ReapplyFilterIfEnabled();
+			}
+		}
+
+		private bool _enableOutlierRemoval = false;
+		public bool EnableOutlierRemoval
+		{
+			get => _enableOutlierRemoval;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _enableOutlierRemoval, value);
+				ReapplyFilterIfEnabled();
+			}
+		}
+
+		private double _outlierThresholdX = 95;
+		public double OutlierThresholdX
+		{
+			get => _outlierThresholdX;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _outlierThresholdX, value);
+				ReapplyFilterIfEnabled();
+			}
+		}
+
+		private double _outlierThresholdY = 95;
+		public double OutlierThresholdY
+		{
+			get => _outlierThresholdY;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _outlierThresholdY, value);
+				ReapplyFilterIfEnabled();
+			}
+		}
+
+		private double _outlierThresholdRadius = 95;
+		public double OutlierThresholdRadius
+		{
+			get => _outlierThresholdRadius;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _outlierThresholdRadius, value);
+				ReapplyFilterIfEnabled();
+			}
+		}
+
 		private string gazeFileName = null;
 
 		private string defaultSaveName => gazeFileName == null
@@ -319,6 +400,7 @@ namespace SharpEyes.ViewModels
 			dataStartFrame = null;
 			IsGazeLoaded = false;
 			gazeLocations = null;
+			filteredGazeLocations = null;
 			VideoKeyFrames.Clear();
 			GazeX = 0;
 			GazeY = 0;
@@ -418,8 +500,8 @@ namespace SharpEyes.ViewModels
 			// TODO: set gaze circle location
 			if (dataStartFrame != null)
 			{
-				double gazeXValue = gazeLocations[dataFrame, 0];
-				double gazeYValue = gazeLocations[dataFrame, 1];
+				double gazeXValue = ActiveGazeLocations[dataFrame, 0];
+				double gazeYValue = ActiveGazeLocations[dataFrame, 1];
 				if (Double.IsNaN(gazeXValue) || Double.IsNaN(gazeYValue))
 				{
 					IsGazeAtNaN = true;
@@ -456,13 +538,13 @@ namespace SharpEyes.ViewModels
 					continue;
 				}
 				int trailDataIndex = VideoTimeToDataIndex(trailVideoFrame);
-				if (trailDataIndex >= gazeLocations.Shape[0])
+				if (trailDataIndex >= ActiveGazeLocations.Shape[0])
 				{
 					TrailPoints[i].IsVisible = false;
 					continue;
 				}
-				double trailX = (double)gazeLocations[trailDataIndex, 0];
-				double trailY = (double)gazeLocations[trailDataIndex, 1];
+				double trailX = (double)ActiveGazeLocations[trailDataIndex, 0];
+				double trailY = (double)ActiveGazeLocations[trailDataIndex, 1];
 				if (Double.IsNaN(trailX) || Double.IsNaN(trailY))
 				{
 					TrailPoints[i].IsVisible = false;
@@ -631,6 +713,7 @@ namespace SharpEyes.ViewModels
 			}
 			IsGazeLoaded = true;
 			gazeFileName = fileName[0];
+			ReapplyFilterIfEnabled();
 			if (videoReader != null)
 				SetCurrentAsDataStart();
 		}
@@ -668,6 +751,25 @@ namespace SharpEyes.ViewModels
 					AddKeyFrame(videoReader.frameCount - 1);
 				else AddKeyFrame(dataEndFrame.Value - 1);
 			}
+		}
+
+		private void ReapplyFilterIfEnabled()
+		{
+			if (_isGazeFilterEnabled)
+				ApplyFilter();
+		}
+
+		private void ApplyFilter()
+		{
+			if (gazeLocations == null) return;
+			filteredGazeLocations = GazeFilter.Filter(
+				gazeLocations,
+				FilterWindowSize,
+				FilterPupilSize,
+				EnableOutlierRemoval,
+				OutlierThresholdX,
+				OutlierThresholdY,
+				OutlierThresholdRadius);
 		}
 	}
 
