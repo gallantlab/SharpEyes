@@ -284,7 +284,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		// set some default keyframes when the data start is set?
-		private bool _setDefaultKeyFrames = true;
+		private bool _setDefaultKeyFrames = false;
 		public bool SetDefaultKeyFrames
 		{
 			get => _setDefaultKeyFrames;
