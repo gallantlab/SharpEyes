@@ -734,7 +734,7 @@ namespace SharpEyes.ViewModels
 
 			if (fileName != null)
 			{
-				Num.save(fileName, gazeLocations);
+				Num.save(fileName, ActiveGazeLocations);
 			}
 		}
 
