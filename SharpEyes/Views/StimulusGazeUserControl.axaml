@@ -43,6 +43,9 @@
                 IsEnabled="{Binding IsGazeLoaded}">
           Save Gaze
         </Button>
+        <TextBlock VerticalAlignment="Center" Margin="4">|</TextBlock>
+        <Button Name="SendToRecenteringButton" Margin="4" Command="{Binding SendToRecenteringCommand}"
+                IsEnabled="{Binding IsGazeLoaded}">Send to Recentering</Button>
       </StackPanel>
 
       <!--Video video box-->

@@ -31,6 +31,11 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit>? SaveGazeCommand { get; set; } = null;
 		public ReactiveCommand<Unit, Unit> SetCurrentAsDataStartCommand { get; set; }
 		public ReactiveCommand<Unit, Unit>? FindDataStartCommand { get; set; } = null;
+		public ReactiveCommand<Unit, Unit> SendToRecenteringCommand { get; set; }
+
+		// Set by MainWindowViewModel after construction
+		public RecenteringViewModel? RecenteringViewModel { get; set; }
+		public Action? SwitchToRecenteringTab { get; set; }
 
 		// == window reference for showing dialogs
 		public Window? MainWindow =>
@@ -141,9 +146,9 @@ namespace SharpEyes.ViewModels
 		}
 
 		// Gaze overlay info
-		private NDArray? gazeLocations = null;
-		private NDArray? filteredGazeLocations = null;
-		private NDArray? ActiveGazeLocations => _isGazeFilterEnabled && ((object)filteredGazeLocations != null) ? filteredGazeLocations : gazeLocations;
+		internal NDArray? RawGazeLocations = null;
+		internal NDArray? FilteredGazeLocations = null;
+		internal NDArray? DisplayedGazeLocations => _isGazeFilterEnabled && ((object)FilteredGazeLocations != null) ? FilteredGazeLocations : RawGazeLocations;
 
 		private bool _isGazeLoaded = false;
 		public bool IsGazeLoaded
@@ -168,15 +173,15 @@ namespace SharpEyes.ViewModels
 		}
 
 		public bool IsGazeEllipseVisible => IsGazeLoaded && !IsGazeAtNaN;
-		private int? dataStartFrame = null;
+		internal int? dataStartFrame = null;
 
 		private int? dataEndFrame
 		{
 			get
 			{
-				if ((object)gazeLocations == null || dataStartFrame == null)
+				if ((object)RawGazeLocations == null || dataStartFrame == null)
 					return null;
-				return DataIndexToVideoTime(gazeLocations.Shape[0]);
+				return DataIndexToVideoTime(RawGazeLocations.Shape[0]);
 			}
 		}
 
@@ -364,6 +369,7 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _outlierThresholdRadius, value);
 		}
 
+		private string? videoFilePath = null;
 		private string gazeFileName = null;
 
 		private string defaultSaveName => gazeFileName == null
@@ -382,6 +388,7 @@ namespace SharpEyes.ViewModels
 
 			PreviousFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(-1); });
 			NextFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(1); });
+			SendToRecenteringCommand = ReactiveCommand.Create(SendToRecentering);
 			TrailPoints = new ObservableCollection<TrailGazePoint>(
 				Enumerable.Range(0, 10).Select(_ => new TrailGazePoint()));
 		}
@@ -391,8 +398,8 @@ namespace SharpEyes.ViewModels
 			// reset gaze stuff
 			dataStartFrame = null;
 			IsGazeLoaded = false;
-			gazeLocations = null;
-			filteredGazeLocations = null;
+			RawGazeLocations = null;
+			FilteredGazeLocations = null;
 			VideoKeyFrames.Clear();
 			GazeX = 0;
 			GazeY = 0;
@@ -411,6 +418,7 @@ namespace SharpEyes.ViewModels
 			if (fileName == null || fileName.Length == 0)
 				return;
 
+			videoFilePath = fileName[0];
 			videoReader = new VideoReader(fileName[0]);
 			videoReader.ReadFrame();
 			VideoFrame = videoReader.GetFrameForDisplay();
@@ -492,8 +500,8 @@ namespace SharpEyes.ViewModels
 			// TODO: set gaze circle location
 			if (dataStartFrame != null)
 			{
-				double gazeXValue = ActiveGazeLocations[dataFrame, 0];
-				double gazeYValue = ActiveGazeLocations[dataFrame, 1];
+				double gazeXValue = DisplayedGazeLocations[dataFrame, 0];
+				double gazeYValue = DisplayedGazeLocations[dataFrame, 1];
 				if (Double.IsNaN(gazeXValue) || Double.IsNaN(gazeYValue))
 				{
 					IsGazeAtNaN = true;
@@ -530,13 +538,13 @@ namespace SharpEyes.ViewModels
 					continue;
 				}
 				int trailDataIndex = VideoTimeToDataIndex(trailVideoFrame);
-				if (trailDataIndex >= ActiveGazeLocations.Shape[0])
+				if (trailDataIndex >= DisplayedGazeLocations.Shape[0])
 				{
 					TrailPoints[i].IsVisible = false;
 					continue;
 				}
-				double trailX = (double)ActiveGazeLocations[trailDataIndex, 0];
-				double trailY = (double)ActiveGazeLocations[trailDataIndex, 1];
+				double trailX = (double)DisplayedGazeLocations[trailDataIndex, 0];
+				double trailY = (double)DisplayedGazeLocations[trailDataIndex, 1];
 				if (Double.IsNaN(trailX) || Double.IsNaN(trailY))
 				{
 					TrailPoints[i].IsVisible = false;
@@ -552,8 +560,8 @@ namespace SharpEyes.ViewModels
 		// after gaze is manually edited, updates it.
 		public void UpdateGaze()
 		{
-			double deltaX = GazeX - gazeLocations[dataFrame, 0];
-			double deltaY = GazeY - gazeLocations[dataFrame, 1];
+			double deltaX = GazeX - RawGazeLocations[dataFrame, 0];
+			double deltaY = GazeY - RawGazeLocations[dataFrame, 1];
 
 			AddKeyFrame();
 
@@ -566,13 +574,13 @@ namespace SharpEyes.ViewModels
 				for (int i = PreviousDataKeyFrame.Value; i < dataFrame; i++)
 				{
 					multiplier = (double)(i - PreviousDataKeyFrame.Value) / numFrames;
-					gazeLocations[i, 0] += multiplier * deltaX;
-					gazeLocations[i, 1] += multiplier * deltaY;
+					RawGazeLocations[i, 0] += multiplier * deltaX;
+					RawGazeLocations[i, 1] += multiplier * deltaY;
 				}
 			}
 			// update all following data frames with this delta
-			gazeLocations[new Slice(dataFrame.Value, null), 0] += deltaX;
-			gazeLocations[new Slice(dataFrame.Value, null), 1] += deltaY;
+			RawGazeLocations[new Slice(dataFrame.Value, null), 0] += deltaX;
+			RawGazeLocations[new Slice(dataFrame.Value, null), 1] += deltaY;
 		}
 
 		public void AddKeyFrame()
@@ -597,7 +605,7 @@ namespace SharpEyes.ViewModels
 				}
 
 				VideoKeyFrames.Add(new VideoKeyFrame(frame, index, videoReader.FramesToTimecode(frame),
-															gazeLocations[index, 0], gazeLocations[index, 1]));
+															RawGazeLocations[index, 0], RawGazeLocations[index, 1]));
 				VideoKeyFrames = new ObservableCollection<VideoKeyFrame>(VideoKeyFrames.OrderBy((keyframe) => keyframe.VideoFrame));
 			}
 		}
@@ -690,18 +698,18 @@ namespace SharpEyes.ViewModels
 				return;
 			string extension = System.IO.Path.GetExtension(fileName[0]);
 			if (extension == ".npy")
-				gazeLocations = Num.load(fileName[0]);
+				RawGazeLocations = Num.load(fileName[0]);
 			else if (extension == ".txt")
 			{
 				int parsedSampleRate;
-				gazeLocations = EyelinkParser.ParseTextFile(fileName[0], out parsedSampleRate);
+				RawGazeLocations = EyelinkParser.ParseTextFile(fileName[0], out parsedSampleRate);
 				if (parsedSampleRate > 0)
 					EyetrackingFPS = parsedSampleRate;
 			}
 			else if (extension == ".edf")
 			{
 				int parsedSampleRate;
-				gazeLocations = EyelinkParser.ParseEDFFile(fileName[0], out parsedSampleRate);
+				RawGazeLocations = EyelinkParser.ParseEDFFile(fileName[0], out parsedSampleRate);
 				if (parsedSampleRate > 0)
 					EyetrackingFPS = parsedSampleRate;
 			}
@@ -730,11 +738,11 @@ namespace SharpEyes.ViewModels
 					}
 				}
 
-				gazeLocations = new NDArray(NPTypeCode.Double, Shape.Matrix(values.Count, 2));
+				RawGazeLocations = new NDArray(NPTypeCode.Double, Shape.Matrix(values.Count, 2));
 				for (int i = 0; i < values.Count; i++)
 				{
-					gazeLocations[i, 0] = values[i][0];
-					gazeLocations[i, 1] = values[i][1];
+					RawGazeLocations[i, 0] = values[i][0];
+					RawGazeLocations[i, 1] = values[i][1];
 				}
 			}
 			IsGazeLoaded = true;
@@ -760,7 +768,7 @@ namespace SharpEyes.ViewModels
 
 			if (fileName != null)
 			{
-				Num.save(fileName, ActiveGazeLocations);
+				Num.save(fileName, DisplayedGazeLocations);
 			}
 		}
 
@@ -779,6 +787,14 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
+		public void SendToRecentering()
+		{
+			if (RecenteringViewModel == null || videoFilePath == null || !IsGazeLoaded || dataStartFrame == null)
+				return;
+			RecenteringViewModel.LoadFromStimulusGaze(videoFilePath, DisplayedGazeLocations, dataStartFrame.Value, EyetrackingFPS);
+			SwitchToRecenteringTab?.Invoke();
+		}
+
 		public void ReapplyFilterIfEnabled()
 		{
 			if (_isGazeFilterEnabled)
@@ -787,7 +803,7 @@ namespace SharpEyes.ViewModels
 
 		private async void ApplyFilter()
 		{
-			if ((object)gazeLocations == null) return;
+			if ((object)RawGazeLocations == null) return;
 
 			if (IsVideoPlaying)
 				PlayPause();
@@ -796,7 +812,7 @@ namespace SharpEyes.ViewModels
 			IsProgressBarVisible = true;
 			IsProgressBarIndeterminate = true;
 
-			NDArray rawSnapshot = gazeLocations;
+			NDArray rawSnapshot = RawGazeLocations;
 			NDArray result = await Task.Run(() => GazeFilter.Filter(
 				rawSnapshot,
 				FilterWindowSize,
@@ -805,7 +821,7 @@ namespace SharpEyes.ViewModels
 				OutlierThresholdX,
 				OutlierThresholdY,
 				OutlierThresholdRadius));
-			filteredGazeLocations = result;
+			FilteredGazeLocations = result;
 
 			IsProgressBarVisible = false;
 			IsProgressBarIndeterminate = false;

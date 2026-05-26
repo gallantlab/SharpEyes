@@ -33,47 +33,53 @@
         <Button Name="LoadGazeButton" Margin="4" Command="{Binding LoadGazeCommand}">Load Gaze</Button>
       </StackPanel>
 
-      <!--Video box-->
+      <!--Video box: outer canvas is doubled size; inner canvas slides so gaze lands at center-->
       <Viewbox Grid.Row="1" Stretch="Uniform">
-        <Canvas Name="VideoCanvas" Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
-                PointerWheelChanged="VideoCanvas_OnPointerWheelChanged" Background="Transparent">
-          <Image Name="VideoFrameImage" Source="{Binding VideoFrame}"
-                 Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"/>
-          <ItemsControl Items="{Binding TrailPoints}" IsHitTestVisible="False"
-                        Width="{Binding VideoWidth}" Height="{Binding VideoHeight}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <Canvas/>
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.Styles>
-              <Style Selector="ContentPresenter">
-                <Setter Property="Canvas.Left" Value="{Binding Left}"/>
-                <Setter Property="Canvas.Top" Value="{Binding Top}"/>
-              </Style>
-            </ItemsControl.Styles>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Ellipse Width="{Binding DataContext.GazeDiameter, ElementName=VideoCanvas}"
-                         Height="{Binding DataContext.GazeDiameter, ElementName=VideoCanvas}"
-                         Stroke="{Binding DataContext.GazeStrokeBrush, ElementName=VideoCanvas}"
-                         StrokeThickness="{Binding DataContext.GazeStrokeThickness, ElementName=VideoCanvas}"
-                         Opacity="{Binding Opacity}"
-                         IsVisible="{Binding IsVisible}"/>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <Ellipse Name="GazeEllipse" Width="{Binding GazeDiameter}" Height="{Binding #GazeEllipse.Width}"
-                   Stroke="{Binding GazeStrokeBrush}" StrokeThickness="{Binding GazeStrokeThickness}"
-                   Opacity="{Binding GazeStrokeOpacity}"
-                   IsVisible="{Binding IsGazeEllipseVisible}"
-                   Canvas.Left="{Binding GazeCircleLeft}"
-                   Canvas.Top="{Binding GazeCircleTop}"/>
-          <Panel Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
-                 IsHitTestVisible="False" IsVisible="{Binding IsGazeAtNaN}">
-            <TextBlock Text="No gaze data" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                       Margin="4" Foreground="Red" FontWeight="Bold"/>
-          </Panel>
+        <Canvas Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}"
+                Background="{Binding PadValueBrush}">
+          <Canvas Name="VideoCanvas" Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
+                  Canvas.Left="{Binding RecenteringImageLeft}"
+                  Canvas.Top="{Binding RecenteringImageTop}"
+                  PointerWheelChanged="VideoCanvas_OnPointerWheelChanged"
+                  Background="Transparent">
+            <Image Name="VideoFrameImage" Source="{Binding VideoFrame}"
+                   Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"/>
+            <ItemsControl Items="{Binding TrailPoints}" IsHitTestVisible="False"
+                          Width="{Binding VideoWidth}" Height="{Binding VideoHeight}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <Canvas/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.Styles>
+                <Style Selector="ContentPresenter">
+                  <Setter Property="Canvas.Left" Value="{Binding Left}"/>
+                  <Setter Property="Canvas.Top" Value="{Binding Top}"/>
+                </Style>
+              </ItemsControl.Styles>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Ellipse Width="{Binding DataContext.GazeDiameter, ElementName=VideoCanvas}"
+                           Height="{Binding DataContext.GazeDiameter, ElementName=VideoCanvas}"
+                           Stroke="{Binding DataContext.GazeStrokeBrush, ElementName=VideoCanvas}"
+                           StrokeThickness="{Binding DataContext.GazeStrokeThickness, ElementName=VideoCanvas}"
+                           Opacity="{Binding Opacity}"
+                           IsVisible="{Binding IsVisible}"/>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Ellipse Name="GazeEllipse" Width="{Binding GazeDiameter}" Height="{Binding #GazeEllipse.Width}"
+                     Stroke="{Binding GazeStrokeBrush}" StrokeThickness="{Binding GazeStrokeThickness}"
+                     Opacity="{Binding GazeStrokeOpacity}"
+                     IsVisible="{Binding IsGazeEllipseVisible}"
+                     Canvas.Left="{Binding GazeCircleLeft}"
+                     Canvas.Top="{Binding GazeCircleTop}"/>
+            <Panel Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
+                   IsHitTestVisible="False" IsVisible="{Binding IsGazeAtNaN}">
+              <TextBlock Text="No gaze data" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                         Margin="4" Foreground="Red" FontWeight="Bold"/>
+            </Panel>
+          </Canvas>
         </Canvas>
       </Viewbox>
 
@@ -112,6 +118,7 @@
     <DockPanel Margin="0" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
       <ScrollViewer DockPanel.Dock="Top" Margin="2">
         <StackPanel>
+
           <Expander Margin="4 2" IsExpanded="True" Header="Gaze info" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">
             <StackPanel>
@@ -119,8 +126,55 @@
                 <TextBlock VerticalAlignment="Center" Width="150">Eyetracking FPS</TextBlock>
                 <NumericUpDown Name="EyetrackingFPSUpDown" Margin="4" Width="120" Value="{Binding EyetrackingFPS}" Increment="1" Minimum="1"/>
               </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Gaze space width</TextBlock>
+                <NumericUpDown Margin="4" Width="120" Value="{Binding GazeSpaceWidth}" Increment="1" Minimum="1"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Gaze space height</TextBlock>
+                <NumericUpDown Margin="4" Width="120" Value="{Binding GazeSpaceHeight}" Increment="1" Minimum="1"/>
+              </StackPanel>
             </StackPanel>
           </Expander>
+
+          <Expander Margin="4 2" IsExpanded="True" Header="Export" HorizontalContentAlignment="Center"
+                    VerticalAlignment="Top">
+            <StackPanel>
+              <Button Margin="4 4 4 2" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"
+                      Command="{Binding JumpToFirstTTLCommand}" IsEnabled="{Binding HasTTLData}">Jump to first TTL</Button>
+              <ToggleSwitch OnContent="Start from first TTL" OffContent="Start from first TTL" HorizontalAlignment="Center"
+                            IsChecked="{Binding StartFromFirstTTL}" IsEnabled="{Binding HasTTLData}"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Frame scale</TextBlock>
+                <NumericUpDown Margin="4" Width="150" Value="{Binding FrameScale}" Increment="0.025" Minimum="0.01" Maximum="1.0"
+                               FormatString="0.000"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Pad value</TextBlock>
+                <NumericUpDown Margin="4" Width="150" Value="{Binding PadValue}" Increment="0.05" Minimum="0.0" Maximum="1.0"
+                               FormatString="0.00"/>
+              </StackPanel>
+              <ToggleSwitch OnContent="Flip BGR" OffContent="Flip BGR" HorizontalAlignment="Center"
+                            IsChecked="{Binding FlipColors}"/>
+              <StackPanel Orientation="Horizontal" Margin="0 4 0 0">
+                <TextBlock VerticalAlignment="Center" Width="150">Format</TextBlock>
+                <ComboBox Margin="4" Width="160" SelectedIndex="{Binding SelectedExportFormatIndex}">
+                  <ComboBoxItem>PNG frames</ComboBoxItem>
+                  <ComboBoxItem>Numpy array</ComboBoxItem>
+                </ComboBox>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Content</TextBlock>
+                <ComboBox Margin="4" Width="160" SelectedIndex="{Binding SelectedExportContentIndex}">
+                  <ComboBoxItem>Recentered only</ComboBoxItem>
+                  <ComboBoxItem>Recentered + raw</ComboBoxItem>
+                </ComboBox>
+              </StackPanel>
+              <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"
+                      Command="{Binding ExportCommand}" IsEnabled="{Binding ExportEnabled}">Export</Button>
+            </StackPanel>
+          </Expander>
+
         </StackPanel>
       </ScrollViewer>
     </DockPanel>

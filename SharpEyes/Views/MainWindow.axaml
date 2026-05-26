@@ -29,7 +29,7 @@
 
   <Grid Name="mainGrid">
     <!--<uc:PupilFindingMenuStrip HorizontalAlignment="Left" VerticalAlignment="Top"/>-->
-    <TabControl ZIndex="-1" SelectedIndex="2">
+    <TabControl ZIndex="-1" SelectedIndex="{Binding SelectedTabIndex}">
       <TabItem Header="Pupil Finding" VerticalContentAlignment="Center">
         <uc:PupilFindingUserControl HorizontalAlignment="Stretch" VerticalContentAlignment="Stretch"
                                     Name="PupilFindingUserControl"
