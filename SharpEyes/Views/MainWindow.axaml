@@ -45,6 +45,11 @@
                                     Name="StimulusGazeUserControl"
                                     DataContext="{Binding stimulusGazeViewModel}"/>
       </TabItem>
+      <TabItem Header="Recentering" VerticalContentAlignment="Center">
+        <uc:RecenteringUserControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                   Name="RecenteringUserControl"
+                                   DataContext="{Binding recenteringViewModel}"/>
+      </TabItem>
     </TabControl>
   </Grid>
 

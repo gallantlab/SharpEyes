@@ -1,0 +1,129 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             xmlns:vm="clr-namespace:SharpEyes.ViewModels"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             x:Class="SharpEyes.Views.RecenteringUserControl">
+  <Design.DataContext>
+    <vm:RecenteringViewModel/>
+  </Design.DataContext>
+  <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="4" ShowGridLines="False">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="350"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="36"/>
+    </Grid.RowDefinitions>
+
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ShowGridLines="False" Grid.Row="0" Grid.Column="0">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="48"/>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="96"/>
+      </Grid.RowDefinitions>
+
+      <!--Top button row-->
+      <StackPanel Orientation="Horizontal" Grid.Row="0">
+        <Button Name="LoadVideoButton" Margin="4" Command="{Binding LoadVideoCommand}">Open Video</Button>
+        <TextBlock VerticalAlignment="Center" Margin="4">|</TextBlock>
+        <Button Name="LoadGazeButton" Margin="4" Command="{Binding LoadGazeCommand}">Load Gaze</Button>
+      </StackPanel>
+
+      <!--Video box-->
+      <Viewbox Grid.Row="1" Stretch="Uniform">
+        <Canvas Name="VideoCanvas" Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
+                PointerWheelChanged="VideoCanvas_OnPointerWheelChanged" Background="Transparent">
+          <Image Name="VideoFrameImage" Source="{Binding VideoFrame}"
+                 Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"/>
+          <ItemsControl Items="{Binding TrailPoints}" IsHitTestVisible="False"
+                        Width="{Binding VideoWidth}" Height="{Binding VideoHeight}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding Left}"/>
+                <Setter Property="Canvas.Top" Value="{Binding Top}"/>
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Ellipse Width="{Binding DataContext.GazeDiameter, ElementName=VideoCanvas}"
+                         Height="{Binding DataContext.GazeDiameter, ElementName=VideoCanvas}"
+                         Stroke="{Binding DataContext.GazeStrokeBrush, ElementName=VideoCanvas}"
+                         StrokeThickness="{Binding DataContext.GazeStrokeThickness, ElementName=VideoCanvas}"
+                         Opacity="{Binding Opacity}"
+                         IsVisible="{Binding IsVisible}"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Ellipse Name="GazeEllipse" Width="{Binding GazeDiameter}" Height="{Binding #GazeEllipse.Width}"
+                   Stroke="{Binding GazeStrokeBrush}" StrokeThickness="{Binding GazeStrokeThickness}"
+                   Opacity="{Binding GazeStrokeOpacity}"
+                   IsVisible="{Binding IsGazeEllipseVisible}"
+                   Canvas.Left="{Binding GazeCircleLeft}"
+                   Canvas.Top="{Binding GazeCircleTop}"/>
+          <Panel Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
+                 IsHitTestVisible="False" IsVisible="{Binding IsGazeAtNaN}">
+            <TextBlock Text="No gaze data" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                       Margin="4" Foreground="Red" FontWeight="Bold"/>
+          </Panel>
+        </Canvas>
+      </Viewbox>
+
+      <!--Video playback controls and display-->
+      <StackPanel Orientation="Vertical" Grid.Row="2">
+        <Slider Name="VideoTimeSlider" Margin="0 0 4 4" Minimum="0" IsEnabled="{Binding CanPlayVideo}"
+                Maximum="{Binding TotalVideoFrames}" Value="{Binding CurrentVideoFrame}"/>
+        <Panel>
+          <TextBlock Name="CurrentVideoTimeTextBlock" HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding CurrentVideoTime}"/>
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
+            <Button Name="PreviousFrameButton" ToolTip.Tip="Previous Frame" Height="32" VerticalContentAlignment="Center"
+                    Command="{Binding PreviousFrameCommand}">
+              ⮜
+            </Button>
+            <Button Name="PlayPauseButton" Height="32" VerticalContentAlignment="Center" Margin="2 0 2 0" Content="{Binding PlayPauseButtonText}"
+                    Command="{Binding PlayPauseCommand}" IsEnabled="{Binding IsPlaybackEnabled}"/>
+            <Button Name="NextFrameButton" ToolTip.Tip="Next Frame" Height="32" VerticalContentAlignment="Center"
+                    Command="{Binding NextFrameCommand}">
+              ⮞
+            </Button>
+          </StackPanel>
+          <TextBlock Name="TotalVideoTimeTextBlock" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4 0 4 0" Text="{Binding TotalVideoTime}"/>
+        </Panel>
+      </StackPanel>
+
+    </Grid>
+
+    <!--Status bar-->
+    <DockPanel Grid.Row="4" Grid.Column="0" LastChildFill="True" VerticalAlignment="Center">
+      <TextBlock DockPanel.Dock="Left" Name="StatusTextBlock" Text="{Binding StatusText}"/>
+      <ProgressBar Name="StatusProgressBar" Margin="4 0 4 0" Minimum="0" Maximum="100" IsIndeterminate="{Binding IsProgressbarIndeterminate}"
+                   Value="{Binding ProgressBarValue}" IsVisible="{Binding IsProgressBarVisible}"/>
+    </DockPanel>
+
+    <!--Side pane-->
+    <DockPanel Margin="0" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
+      <ScrollViewer DockPanel.Dock="Top" Margin="2">
+        <StackPanel>
+          <Expander Margin="4 2" IsExpanded="True" Header="Gaze info" HorizontalContentAlignment="Center"
+                    VerticalAlignment="Top">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Eyetracking FPS</TextBlock>
+                <NumericUpDown Name="EyetrackingFPSUpDown" Margin="4" Width="120" Value="{Binding EyetrackingFPS}" Increment="1" Minimum="1"/>
+              </StackPanel>
+            </StackPanel>
+          </Expander>
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+
+  </Grid>
+</UserControl>
