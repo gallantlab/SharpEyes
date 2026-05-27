@@ -668,7 +668,7 @@ namespace SharpEyes.ViewModels
 				Name = "All supported files",
 				Extensions = { "npy", "csv", "txt" }
 			};
-			if (EyelinkParser.IsEDFSupported)
+			if (GazeLoader.IsEDFSupported)
 				allFilesFilter.Extensions.Add("edf");
 			openFileDialog.Filters.Add(allFilesFilter);
 			openFileDialog.Filters.Add(new FileDialogFilter()
@@ -686,7 +686,7 @@ namespace SharpEyes.ViewModels
 				Name = "Eyelink text file",
 				Extensions = { "txt" }
 			});
-			if (EyelinkParser.IsEDFSupported)
+			if (GazeLoader.IsEDFSupported)
 				openFileDialog.Filters.Add(new FileDialogFilter()
 				{
 					Name = "Eyelink EDF file",
@@ -696,55 +696,10 @@ namespace SharpEyes.ViewModels
 
 			if (fileName == null || fileName.Length == 0)
 				return;
-			string extension = System.IO.Path.GetExtension(fileName[0]);
-			if (extension == ".npy")
-				RawGazeLocations = Num.load(fileName[0]);
-			else if (extension == ".txt")
-			{
-				int parsedSampleRate;
-				RawGazeLocations = EyelinkParser.ParseTextFile(fileName[0], out parsedSampleRate);
-				if (parsedSampleRate > 0)
-					EyetrackingFPS = parsedSampleRate;
-			}
-			else if (extension == ".edf")
-			{
-				int parsedSampleRate;
-				RawGazeLocations = EyelinkParser.ParseEDFFile(fileName[0], out parsedSampleRate);
-				if (parsedSampleRate > 0)
-					EyetrackingFPS = parsedSampleRate;
-			}
-			else // parse a csv file
-			{
-				using StreamReader csvFile = new StreamReader(fileName[0]);
-				string line = csvFile.ReadLine();
-				List<double[]> values = new List<double[]>();
-				bool isFirstLine = true;
-				while (line != null)
-				{
-					try
-					{
-						string[] tokens = line.Split(',');
-						double x = Double.Parse(tokens[0]);
-						double y = Double.Parse(tokens[1]);
-						values.Add(new double[]{x, y});
-						isFirstLine = false;
-						line = csvFile.ReadLine();
-					}
-					catch (Exception e)
-					{	// so if the first line is a header, we throw it away,
-						// but if there's a parsing error anywhere else we raise it
-						if (!isFirstLine)
-							throw;
-					}
-				}
-
-				RawGazeLocations = new NDArray(NPTypeCode.Double, Shape.Matrix(values.Count, 2));
-				for (int i = 0; i < values.Count; i++)
-				{
-					RawGazeLocations[i, 0] = values[i][0];
-					RawGazeLocations[i, 1] = values[i][1];
-				}
-			}
+			int parsedSampleRate;
+			RawGazeLocations = GazeLoader.Load(fileName[0], out parsedSampleRate);
+			if (parsedSampleRate > 0)
+				EyetrackingFPS = parsedSampleRate;
 			IsGazeLoaded = true;
 			gazeFileName = fileName[0];
 			ReapplyFilterIfEnabled();
@@ -768,7 +723,7 @@ namespace SharpEyes.ViewModels
 
 			if (fileName != null)
 			{
-				Num.save(fileName, DisplayedGazeLocations);
+				GazeLoader.Save(fileName, DisplayedGazeLocations);
 			}
 		}
 
