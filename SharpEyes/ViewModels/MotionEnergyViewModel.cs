@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Reactive;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using NumSharp;
@@ -131,7 +132,20 @@ namespace SharpEyes.ViewModels
 		public double PadValue
 		{
 			get => _padValue;
-			set => this.RaiseAndSetIfChanged(ref _padValue, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _padValue, value);
+				this.RaisePropertyChanged("PadValueBrush");
+			}
+		}
+
+		public SolidColorBrush PadValueBrush
+		{
+			get
+			{
+				byte grayValue = (byte)(_padValue * 255);
+				return new SolidColorBrush(new Color(255, grayValue, grayValue, grayValue));
+			}
 		}
 
 		private double _frameScale = 0.125;
@@ -337,6 +351,7 @@ namespace SharpEyes.ViewModels
 			TotalVideoTime = _videoReader.FramesToTimecode(_videoReader.frameCount - 1);
 			VideoWidth = _videoReader.width;
 			VideoHeight = _videoReader.height;
+			VideoFps = _videoReader.fps;
 			this.RaisePropertyChanged("CanPlayVideo");
 		}
 

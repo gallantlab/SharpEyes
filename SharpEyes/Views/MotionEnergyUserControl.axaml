@@ -36,9 +36,10 @@
         <Viewbox Stretch="Uniform" IsVisible="{Binding !IsLoadedFromRecentering}">
           <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"/>
         </Viewbox>
-        <!--Recentered video (passed from recentering tab): doubled canvas, image offset by gaze-->
+        <!--Recentered video (passed from recentering tab): padded canvas, image offset by gaze-->
         <Viewbox Stretch="Uniform" IsVisible="{Binding IsLoadedFromRecentering}">
-          <Canvas Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}">
+          <Canvas Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}"
+                  Background="{Binding PadValueBrush}">
             <Canvas Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
                     Canvas.Left="{Binding RecenteringImageLeft}"
                     Canvas.Top="{Binding RecenteringImageTop}">
@@ -75,10 +76,104 @@
                    Value="{Binding ProgressBarValue}" IsVisible="{Binding IsProgressBarVisible}"/>
     </DockPanel>
 
-    <!--Side panel (empty; to be filled in a future task)-->
+    <!--Side panel-->
     <DockPanel Margin="0" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
       <ScrollViewer DockPanel.Dock="Top" Margin="2">
-        <StackPanel/>
+        <StackPanel>
+
+          <Expander Margin="4 2" IsExpanded="True" Header="Video output" HorizontalContentAlignment="Center">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Pad percent</TextBlock>
+                <NumericUpDown Margin="4" Width="150" Value="{Binding PadPercent}" Increment="10" Minimum="100"
+                               FormatString="0"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Pad value</TextBlock>
+                <NumericUpDown Margin="4" Width="150" Value="{Binding PadValue}" Increment="0.05" Minimum="0.0" Maximum="1.0"
+                               FormatString="0.00"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Frame scale</TextBlock>
+                <NumericUpDown Margin="4" Width="150" Value="{Binding FrameScale}" Increment="0.025" Minimum="0.01" Maximum="1.0"
+                               FormatString="0.000"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Margin="0 4 0 0">
+                <TextBlock VerticalAlignment="Center" Width="150">Output frame</TextBlock>
+                <TextBlock VerticalAlignment="Center" Text="{Binding OutputFrameSizeText}"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Video frame</TextBlock>
+                <TextBlock VerticalAlignment="Center" Text="{Binding VideoFrameSizeText}"/>
+              </StackPanel>
+            </StackPanel>
+          </Expander>
+
+          <Expander Margin="4 2" IsExpanded="True" Header="Motion-energy pyramid" HorizontalContentAlignment="Center">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Video FPS</TextBlock>
+                <NumericUpDown Margin="4" Width="150" Value="{Binding VideoFps}" Increment="1" Minimum="1"
+                               FormatString="0.##"/>
+              </StackPanel>
+
+              <TextBlock Margin="0 16 0 2" FontWeight="SemiBold">Spatial frequencies</TextBlock>
+              <ListBox Items="{Binding SpatialFrequencies}" Height="100" Margin="0 0 0 2"
+                       SelectedIndex="{Binding SelectedSpatialFrequencyIndex}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding}"/>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Orientation="Horizontal">
+                <NumericUpDown Width="160" Value="{Binding NewSpatialFrequency}" Increment="1" Minimum="0"
+                               FormatString="0.##"/>
+                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                        Command="{Binding AddSpatialFrequencyCommand}">+</Button>
+                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                        Command="{Binding RemoveSpatialFrequencyCommand}">-</Button>
+              </StackPanel>
+
+              <TextBlock Margin="0 16 0 2" FontWeight="SemiBold">Temporal frequencies</TextBlock>
+              <ListBox Items="{Binding TemporalFrequencies}" Height="80" Margin="0 0 0 2"
+                       SelectedIndex="{Binding SelectedTemporalFrequencyIndex}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding}"/>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Orientation="Horizontal">
+                <NumericUpDown Width="160" Value="{Binding NewTemporalFrequency}" Increment="1" Minimum="0"
+                               FormatString="0.##"/>
+                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                        Command="{Binding AddTemporalFrequencyCommand}">+</Button>
+                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                        Command="{Binding RemoveTemporalFrequencyCommand}">-</Button>
+              </StackPanel>
+
+              <TextBlock Margin="0 16 0 2" FontWeight="SemiBold">Directions</TextBlock>
+              <ListBox Items="{Binding Directions}" Height="120" Margin="0 0 0 2"
+                       SelectedIndex="{Binding SelectedDirectionIndex}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding}"/>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Orientation="Horizontal">
+                <NumericUpDown Width="160" Value="{Binding NewDirection}" Increment="45" Minimum="0" Maximum="315"
+                               FormatString="0.##"/>
+                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                        Command="{Binding AddDirectionCommand}">+</Button>
+                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                        Command="{Binding RemoveDirectionCommand}">-</Button>
+              </StackPanel>
+            </StackPanel>
+          </Expander>
+
+        </StackPanel>
       </ScrollViewer>
     </DockPanel>
 
