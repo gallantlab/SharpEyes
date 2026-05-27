@@ -436,8 +436,8 @@ namespace SharpEyes.ViewModels
 
 		private void SyncFrameSizeToModel()
 		{
-			_motionEnergyModel.FrameWidth = (int)(_videoWidth * _frameScale);
-			_motionEnergyModel.FrameHeight = (int)(_videoHeight * _frameScale);
+			_motionEnergyModel.FrameWidth = (int)(_videoWidth * _padPercent / 100 * _frameScale);
+			_motionEnergyModel.FrameHeight = (int)(_videoHeight * _padPercent / 100 * _frameScale);
 		}
 
 		public void LoadFromRecentering(VideoReader videoReader, NDArray gazeLocations, int dataStartFrame, int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight)
