@@ -185,6 +185,10 @@
                   </StackPanel>
                 </StackPanel>
               </Expander>
+              <ToggleSwitch Margin="0 8 0 0" OnContent="Show motion-energy pyramid" OffContent="Show motion-energy pyramid"
+                            IsChecked="{Binding ShowMotionEnergyPyramid}"/>
+              <Button Margin="4 4 4 4" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"
+                      Command="{Binding ComputePyramidCommand}">Compute pyramid</Button>
             </StackPanel>
           </Expander>
 

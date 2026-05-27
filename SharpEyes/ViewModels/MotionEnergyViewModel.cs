@@ -282,6 +282,15 @@ namespace SharpEyes.ViewModels
 			? "Directions"
 			: String.Format("Directions: {0}", String.Join(", ", Directions));
 
+		private bool _showMotionEnergyPyramid = false;
+		public bool ShowMotionEnergyPyramid
+		{
+			get => _showMotionEnergyPyramid;
+			set => this.RaiseAndSetIfChanged(ref _showMotionEnergyPyramid, value);
+		}
+
+		public ReactiveCommand<Unit, Unit> ComputePyramidCommand { get; }
+
 		// == Feature computation ==
 
 		private int _startFrame = 0;
@@ -389,6 +398,7 @@ namespace SharpEyes.ViewModels
 					_motionEnergyModel.Directions = new List<double>(Directions);
 				}
 			});
+			ComputePyramidCommand = ReactiveCommand.CreateFromTask(ComputePyramid);
 			ComputeFeaturesCommand = ReactiveCommand.CreateFromTask(ComputeFeatures);
 			SpatialFrequencies.CollectionChanged += (s, e) => this.RaisePropertyChanged("SpatialFrequenciesHeaderText");
 			TemporalFrequencies.CollectionChanged += (s, e) => this.RaisePropertyChanged("TemporalFrequenciesHeaderText");
@@ -474,6 +484,11 @@ namespace SharpEyes.ViewModels
 		{
 			_videoReader.CurrentFrameNumber = frame;
 			UpdateDisplay();
+		}
+
+		private async Task ComputePyramid()
+		{
+			// TODO: implement pyramid construction
 		}
 
 		private async Task ComputeFeatures()
