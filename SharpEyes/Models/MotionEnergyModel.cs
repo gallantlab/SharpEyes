@@ -7,6 +7,19 @@ using Python.Runtime;
 
 namespace SharpEyes.Models
 {
+	public class MotionEnergyFilterParameters
+	{
+		public double CenterVertical { get; set; }
+		public double CenterHorizontal { get; set; }
+		public double Direction { get; set; }
+		public double SpatialFrequency { get; set; }
+		public double SpatialEnvelope { get; set; }
+		public double TemporalFrequency { get; set; }
+		public double TemporalEnvelope { get; set; }
+		public int FilterTemporalWidth { get; set; }
+		public double SpatialPhaseOffset { get; set; }
+	}
+
 	public class MotionEnergyModel
 	{
 		// == Parameters (user-adjustable, persisted) ==
@@ -51,6 +64,7 @@ namespace SharpEyes.Models
 		private PyObject? _pyramidObject = null;
 
 		public int FilterCount { get; private set; } = 0;
+		public List<MotionEnergyFilterParameters> FilterParameters { get; private set; } = new List<MotionEnergyFilterParameters>();
 		public bool IsPyramidBuilt => _pyramidObject != null;
 		public bool RebuildRequired { get; private set; } = true;
 
@@ -76,7 +90,34 @@ namespace SharpEyes.Models
 				);
 
 				dynamic pyramid = _pyramidObject;
-				try { FilterCount = (int)pyramid.nfilters; } catch { FilterCount = 0; }
+				try
+				{
+					FilterCount = (int)pyramid.nfilters;
+					List<MotionEnergyFilterParameters> parameters = new List<MotionEnergyFilterParameters>();
+					dynamic filtersList = pyramid.filters;
+					for (int filterIndex = 0; filterIndex < FilterCount; filterIndex++)
+					{
+						dynamic filterDict = filtersList[filterIndex];
+						parameters.Add(new MotionEnergyFilterParameters
+						{
+							CenterVertical       = (double)filterDict["centerv"],
+							CenterHorizontal     = (double)filterDict["centerh"],
+							Direction            = (double)filterDict["direction"],
+							SpatialFrequency     = (double)filterDict["spatial_freq"],
+							SpatialEnvelope      = (double)filterDict["spatial_env"],
+							TemporalFrequency    = (double)filterDict["temporal_freq"],
+							TemporalEnvelope     = (double)filterDict["temporal_env"],
+							FilterTemporalWidth  = (int)filterDict["filter_temporal_width"],
+							SpatialPhaseOffset   = (double)filterDict["spatial_phase_offset"],
+						});
+					}
+					FilterParameters = parameters;
+				}
+				catch
+				{
+					FilterCount = 0;
+					FilterParameters = new List<MotionEnergyFilterParameters>();
+				}
 			}
 
 			RebuildRequired = false;
