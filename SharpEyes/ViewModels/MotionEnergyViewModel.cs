@@ -541,6 +541,11 @@ namespace SharpEyes.ViewModels
 			UpdateDisplay();
 		}
 
+		public void ShowFrame()
+		{
+			ShowFrame(CurrentVideoFrame);
+		}
+
 		public void ShowFrame(int frame)
 		{
 			_videoReader.CurrentFrameNumber = frame;
