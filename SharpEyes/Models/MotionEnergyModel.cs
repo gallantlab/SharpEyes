@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using NumSharp;
 using Python.Runtime;
@@ -85,8 +86,9 @@ namespace SharpEyes.Models
 					directiondeg: dirList
 				);
 
-				try { FilterCount = (int)_pyramidObject.nfilters; } catch { FilterCount = 0; }
-				try { FeatureCount = (int)_pyramidObject.nfeatures; } catch { FeatureCount = 0; }
+				dynamic pyramid = _pyramidObject;
+				try { FilterCount = (int)pyramid.nfilters; } catch { FilterCount = 0; }
+				try { FeatureCount = (int)pyramid.nfeatures; } catch { FeatureCount = 0; }
 			}
 
 			RebuildRequired = false;
@@ -109,15 +111,28 @@ namespace SharpEyes.Models
 				using (Py.GIL())
 				{
 					dynamic np = Py.Import("numpy");
+					dynamic ctypes = Py.Import("ctypes");
 
-					// Convert NumSharp NDArray to a Python numpy float32 array normalized to [0, 1]
-					byte[] rawData = frames.Data<byte>();
-					PyBytes bytesObject = new PyBytes(rawData);
-					dynamic npArray = np.frombuffer(bytesObject, dtype: np.uint8)
-						.reshape(nFrames, height, width)
-						.astype(np.float32).__truediv__(255.0f);
+					// Pin the C# array and create a numpy view into it (zero-copy),
+					// then immediately copy into a new numpy array before releasing the pin
+					byte[] rawData = frames.Data<byte>().ToArray();
+					GCHandle handle = GCHandle.Alloc(rawData, GCHandleType.Pinned);
+					dynamic npArray;
+					try
+					{
+						long ptr = handle.AddrOfPinnedObject().ToInt64();
+						dynamic cArrayType = ctypes.c_uint8 * rawData.Length;
+						dynamic cArray = cArrayType.from_address(ptr);
+						npArray = np.ctypeslib.as_array(cArray).copy()
+							.reshape(nFrames, height, width)
+							.astype(np.float32).__truediv__(255.0f);
+					}
+					finally
+					{
+						handle.Free();
+					}
 
-					dynamic result = _pyramidObject.project_stimulus(npArray);
+					dynamic result = ((dynamic)_pyramidObject).project_stimulus(npArray);
 					nFeatures = (int)result.shape[1];
 
 					// Convert float32 numpy result back to C# float[]
