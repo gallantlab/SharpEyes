@@ -70,7 +70,7 @@ namespace SharpEyes.Models
 
 				_pyramidObject = moten.MotionEnergyPyramid(
 					stimulus_vhsize: new PyTuple(new PyObject[] { new PyInt(FrameHeight), new PyInt(FrameWidth) }),
-					stimulus_fps: new PyFloat(fps),
+					stimulus_fps: new PyInt((int)fps),
 					spatial_frequencies: sfList,
 					temporal_frequencies: tfList,
 					spatial_directions: dirList
