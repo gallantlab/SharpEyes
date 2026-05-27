@@ -25,13 +25,6 @@ namespace SharpEyes.Models
 			set { _frameWidth = value; RebuildRequired = true; }
 		}
 
-		private double? _fpsOverride = null;
-		public double? FpsOverride
-		{
-			get => _fpsOverride;
-			set { _fpsOverride = value; RebuildRequired = true; }
-		}
-
 		private List<double> _spatialFrequencies = new List<double> { 0, 2, 4, 8, 16, 32 };
 		public List<double> SpatialFrequencies
 		{
