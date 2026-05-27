@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reactive;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -14,7 +13,6 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Eyetracking;
 using NumSharp;
-using OpenCvSharp;
 using ReactiveUI;
 using SharpEyes.Models;
 using Num = NumSharp.np;
@@ -265,17 +263,7 @@ namespace SharpEyes.ViewModels
 		public bool CanPlayVideo => videoReader != null;
 		public bool ExportEnabled => IsGazeLoaded && videoReader != null;
 
-		private int? FindFirstTTLGazeIndex()
-		{
-			if ((object)gazeLocations == null || gazeLocations.Shape[1] < 4)
-				return null;
-			for (int i = 0; i < gazeLocations.Shape[0]; i++)
-				if ((double)gazeLocations[i, 3] != 0.0)
-					return i;
-			return null;
-		}
-
-		public bool HasTTLData => IsGazeLoaded && FindFirstTTLGazeIndex() != null;
+		public bool HasTTLData => IsGazeLoaded && Recenterer.FindFirstTTLGazeIndex(gazeLocations) != null;
 
 		private bool _startFromFirstTTL = true;
 		public bool StartFromFirstTTL
@@ -369,7 +357,7 @@ namespace SharpEyes.ViewModels
 			LoadVideoCommand = ReactiveCommand.Create(LoadVideo);
 			PlayPauseCommand = ReactiveCommand.Create(PlayPause);
 			LoadGazeCommand = ReactiveCommand.Create(LoadGaze);
-			ExportCommand = ReactiveCommand.Create(Export);
+			ExportCommand = ReactiveCommand.CreateFromTask(Export);
 			JumpToFirstTTLCommand = ReactiveCommand.Create(JumpToFirstTTL);
 			videoPlaybackTimer = new DispatcherTimer();
 			videoPlaybackTimer.Tick += this.VideoTimerTick;
@@ -382,7 +370,7 @@ namespace SharpEyes.ViewModels
 
 		public void JumpToFirstTTL()
 		{
-			int? firstTTLGazeIndex = FindFirstTTLGazeIndex();
+			int? firstTTLGazeIndex = Recenterer.FindFirstTTLGazeIndex(gazeLocations);
 			if (firstTTLGazeIndex == null || videoReader == null || dataStartFrame == null) return;
 			double gazeElapsedTime = (double)firstTTLGazeIndex.Value / EyetrackingFPS;
 			int videoFrame = dataStartFrame.Value + (int)(gazeElapsedTime * videoReader.fps);
@@ -654,7 +642,7 @@ namespace SharpEyes.ViewModels
 
 		// == Export ==
 
-		public async void Export()
+		private async Task Export()
 		{
 			if (!ExportEnabled) return;
 
@@ -694,199 +682,24 @@ namespace SharpEyes.ViewModels
 			ProgressBarValue = 0;
 			StatusText = "Exporting...";
 
-			string path = destinationPath;
-			await Task.Run(() => RunExport(path, isPng, includeRaw));
+			IProgress<double> progressReporter = new Progress<double>(value => ProgressBarValue = value);
+			Recenterer exporter = new Recenterer(
+				videoReader,
+				gazeLocations,
+				dataStartFrame.Value,
+				StartFromFirstTTL,
+				EyetrackingFPS,
+				GazeSpaceWidth,
+				GazeSpaceHeight,
+				FrameScale,
+				PadValue,
+				FlipColors);
+			await exporter.ExportAsync(destinationPath, isPng, includeRaw, progressReporter);
 
 			IsProgressBarVisible = false;
 			IsPlaybackEnabled = true;
 			StatusText = "Export complete";
 		}
 
-		private void RunExport(string destinationPath, bool isPng, bool includeRaw)
-		{
-			int scaledWidth  = Math.Max(1, (int)(VideoWidth  * FrameScale));
-			int scaledHeight = Math.Max(1, (int)(VideoHeight * FrameScale));
-			int outputWidth  = scaledWidth  * 2;
-			int outputHeight = scaledHeight * 2;
-
-			double frameIndexingFactor = (double)EyetrackingFPS / videoReader.fps;
-
-			int gazeStartIndex = 0;
-			int videoStartFrame = dataStartFrame.Value;
-			if (StartFromFirstTTL)
-			{
-				int? firstTTLGazeIndex = FindFirstTTLGazeIndex();
-				if (firstTTLGazeIndex != null)
-				{
-					gazeStartIndex = firstTTLGazeIndex.Value;
-					double gazeElapsedTime = (double)gazeStartIndex / EyetrackingFPS;
-					videoStartFrame = dataStartFrame.Value + (int)(gazeElapsedTime * videoReader.fps);
-				}
-			}
-
-			int videoFramesAvailable = videoReader.frameCount - videoStartFrame;
-			int maxFrameFromGaze = (int)Math.Floor((gazeLocations.Shape[0] - gazeStartIndex) / frameIndexingFactor);
-			int nFramesToExport = Math.Min(videoFramesAvailable, maxFrameFromGaze);
-
-			double padBGR = PadValue * 255.0;
-
-			// Create output directories for PNG
-			if (isPng)
-			{
-				if (includeRaw)
-				{
-					Directory.CreateDirectory(System.IO.Path.Combine(destinationPath, "recentered"));
-					Directory.CreateDirectory(System.IO.Path.Combine(destinationPath, "raw"));
-				}
-				else
-				{
-					Directory.CreateDirectory(destinationPath);
-				}
-			}
-
-			// For numpy: pre-allocate flat byte arrays, fill during loop, build NDArray after
-			byte[] allRecenterredGray = isPng ? null : new byte[nFramesToExport * outputHeight * outputWidth];
-			byte[] allRawGray = (isPng || !includeRaw) ? null : new byte[nFramesToExport * outputHeight * outputWidth];
-
-			// Translation matrix: [[1, 0, tx], [0, 1, ty]] in CV_64F
-			Mat translationMatrix = new Mat(2, 3, MatType.CV_64F, Scalar.All(0.0));
-			translationMatrix.At<double>(0, 0) = 1.0;
-			translationMatrix.At<double>(1, 1) = 1.0;
-
-			videoReader.Seek(videoStartFrame);
-			int actualFrameCount = 0;
-
-			for (int frame = 0; frame < nFramesToExport; frame++)
-			{
-				if (!videoReader.ReadFrame()) break;
-
-				int eyetrackingIndex = gazeStartIndex + (int)(frame * frameIndexingFactor);
-				if (eyetrackingIndex >= gazeLocations.Shape[0]) break;
-
-				double gazeXValue = (double)gazeLocations[eyetrackingIndex, 0];
-				double gazeYValue = (double)gazeLocations[eyetrackingIndex, 1];
-				// Replace NaN gaze with center of gaze space
-				if (Double.IsNaN(gazeXValue)) gazeXValue = GazeSpaceWidth  / 2.0;
-				if (Double.IsNaN(gazeYValue)) gazeYValue = GazeSpaceHeight / 2.0;
-
-				double dx = GazeSpaceWidth  / 2.0 - gazeXValue;
-				double dy = GazeSpaceHeight / 2.0 - gazeYValue;
-				double tx = dx * FrameScale + scaledWidth  / 2.0;
-				double ty = dy * FrameScale + scaledHeight / 2.0;
-
-				// Downscale frame
-				Mat scaledFrame = new Mat();
-				Cv2.Resize(videoReader.cvFrame, scaledFrame, new OpenCvSharp.Size(scaledWidth, scaledHeight));
-
-				// Apply recentered warp (inverse mapping via warpAffine)
-				translationMatrix.At<double>(0, 2) = tx;
-				translationMatrix.At<double>(1, 2) = ty;
-				Mat recenterredFrame = new Mat();
-				Cv2.WarpAffine(scaledFrame, recenterredFrame, translationMatrix,
-					new OpenCvSharp.Size(outputWidth, outputHeight),
-					borderMode: BorderTypes.Constant,
-					borderValue: new Scalar(padBGR, padBGR, padBGR));
-
-				if (isPng)
-				{
-					Mat frameToSave = recenterredFrame;
-					Mat flipped = null;
-					if (FlipColors)
-					{
-						flipped = new Mat();
-						Cv2.CvtColor(recenterredFrame, flipped, ColorConversionCodes.BGR2RGB);
-						frameToSave = flipped;
-					}
-					string pngPath = includeRaw
-						? System.IO.Path.Combine(destinationPath, "recentered", String.Format("frame-{0:000000}.png", frame))
-						: System.IO.Path.Combine(destinationPath, String.Format("frame-{0:000000}.png", frame));
-					Cv2.ImWrite(pngPath, frameToSave);
-					flipped?.Dispose();
-				}
-				else
-				{
-					// Convert to grayscale and copy row-by-row into pre-allocated flat array
-					Mat grayFrame = new Mat();
-					Cv2.CvtColor(recenterredFrame, grayFrame, ColorConversionCodes.BGR2GRAY);
-					int offset = actualFrameCount * outputHeight * outputWidth;
-					int step = (int)grayFrame.Step();
-					for (int y = 0; y < outputHeight; y++)
-						Marshal.Copy(IntPtr.Add(grayFrame.Data, y * step), allRecenterredGray, offset + y * outputWidth, outputWidth);
-					grayFrame.Dispose();
-				}
-
-				if (includeRaw)
-				{
-					// Centered warp: frame is always placed at the center of the doubled canvas
-					translationMatrix.At<double>(0, 2) = scaledWidth  / 2.0;
-					translationMatrix.At<double>(1, 2) = scaledHeight / 2.0;
-					Mat rawFrame = new Mat();
-					Cv2.WarpAffine(scaledFrame, rawFrame, translationMatrix,
-						new OpenCvSharp.Size(outputWidth, outputHeight),
-						borderMode: BorderTypes.Constant,
-						borderValue: new Scalar(padBGR, padBGR, padBGR));
-
-					if (isPng)
-					{
-						Mat frameToSave = rawFrame;
-						Mat flipped = null;
-						if (FlipColors)
-						{
-							flipped = new Mat();
-							Cv2.CvtColor(rawFrame, flipped, ColorConversionCodes.BGR2RGB);
-							frameToSave = flipped;
-						}
-						string rawPngPath = System.IO.Path.Combine(destinationPath, "raw", String.Format("frame-{0:000000}.png", frame));
-						Cv2.ImWrite(rawPngPath, frameToSave);
-						flipped?.Dispose();
-					}
-					else
-					{
-						Mat grayRaw = new Mat();
-						Cv2.CvtColor(rawFrame, grayRaw, ColorConversionCodes.BGR2GRAY);
-						int offset = actualFrameCount * outputHeight * outputWidth;
-						int step = (int)grayRaw.Step();
-						for (int y = 0; y < outputHeight; y++)
-							Marshal.Copy(IntPtr.Add(grayRaw.Data, y * step), allRawGray, offset + y * outputWidth, outputWidth);
-						grayRaw.Dispose();
-					}
-
-					rawFrame.Dispose();
-				}
-
-				scaledFrame.Dispose();
-				recenterredFrame.Dispose();
-				actualFrameCount++;
-
-				double progress = (double)actualFrameCount / nFramesToExport * 100.0;
-				Dispatcher.UIThread.Post(() => ProgressBarValue = progress);
-			}
-
-			translationMatrix.Dispose();
-
-			// Save numpy arrays
-			if (!isPng)
-			{
-				NDArray recenterredArray = new NDArray(NPTypeCode.Byte, new Shape(actualFrameCount, outputHeight, outputWidth));
-				for (int f = 0; f < actualFrameCount; f++)
-					for (int y = 0; y < outputHeight; y++)
-						for (int x = 0; x < outputWidth; x++)
-							recenterredArray[f, y, x] = allRecenterredGray[f * outputHeight * outputWidth + y * outputWidth + x];
-				Num.save(destinationPath, recenterredArray);
-
-				if (includeRaw)
-				{
-					NDArray rawArray = new NDArray(NPTypeCode.Byte, new Shape(actualFrameCount, outputHeight, outputWidth));
-					for (int f = 0; f < actualFrameCount; f++)
-						for (int y = 0; y < outputHeight; y++)
-							for (int x = 0; x < outputWidth; x++)
-								rawArray[f, y, x] = allRawGray[f * outputHeight * outputWidth + y * outputWidth + x];
-
-					string rawNpyPath = System.IO.Path.GetFileNameWithoutExtension(destinationPath) + " raw.npy";
-					rawNpyPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(destinationPath)!, rawNpyPath);
-					Num.save(rawNpyPath, rawArray);
-				}
-			}
-		}
 	}
 }
