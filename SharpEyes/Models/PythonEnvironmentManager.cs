@@ -94,6 +94,9 @@ namespace SharpEyes.Models
 					sys.path.append(sitePackagesPath);
 				}
 			}
+
+			// Release the GIL from the initializing thread so any thread can acquire it
+			PythonEngine.BeginAllowThreads();
 		}
 
 		private string GetPythonHome()
