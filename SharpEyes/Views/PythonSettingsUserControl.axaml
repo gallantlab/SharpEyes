@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:SharpEyes.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="560"
+             x:Class="SharpEyes.Views.PythonSettingsUserControl">
+  <Design.DataContext>
+    <vm:PythonSettingsViewModel/>
+  </Design.DataContext>
+
+  <DockPanel LastChildFill="True">
+
+    <!--Restart warning strip-->
+    <Border DockPanel.Dock="Bottom" Background="#805500" Padding="8 6"
+            IsVisible="{Binding RestartRequiredVisible}">
+      <TextBlock Text="Restart SharpEyes to apply Python changes." Foreground="White"/>
+    </Border>
+
+    <ScrollViewer DockPanel.Dock="Top">
+      <StackPanel Margin="8">
+
+        <!--Source mode drop-down-->
+        <TextBlock Margin="0 0 0 4">Python source</TextBlock>
+        <ComboBox Margin="0 0 0 12" Width="240" HorizontalAlignment="Left"
+                  SelectedIndex="{Binding SelectedSourceModeIndex}">
+          <ComboBoxItem>System Python</ComboBoxItem>
+          <ComboBoxItem>Conda Environment</ComboBoxItem>
+          <ComboBoxItem>Bundled Python</ComboBoxItem>
+        </ComboBox>
+
+        <!-- ── System Python section ── -->
+        <StackPanel IsVisible="{Binding IsSystemModeSelected}" Margin="0 0 0 8">
+          <TextBlock FontWeight="SemiBold" Margin="0 0 0 4">System Python</TextBlock>
+          <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+            <TextBox Width="320" Text="{Binding SystemPythonExecutablePath}"
+                     Watermark="Path to python executable"/>
+            <Button Margin="4 0 0 0" Command="{Binding BrowseCommand}">Browse</Button>
+          </StackPanel>
+          <Button Margin="0 0 0 8" Command="{Binding SetupSystemPythonCommand}">
+            Create venv and install pymoten
+          </Button>
+
+          <!--Dependency status-->
+          <TextBlock FontWeight="SemiBold" Margin="0 4 0 2">Dependencies</TextBlock>
+          <StackPanel Orientation="Horizontal" Margin="0 0 0 2">
+            <TextBlock Width="80">numpy</TextBlock>
+            <TextBlock Text="{Binding NumPyStatusText}"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0 0 0 2">
+            <TextBlock Width="80">Pillow</TextBlock>
+            <TextBlock Text="{Binding PillowStatusText}"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+            <TextBlock Width="80">moten</TextBlock>
+            <TextBlock Text="{Binding MotenStatusText}"/>
+          </StackPanel>
+          <Button Command="{Binding CheckDependenciesCommand}">Check dependencies</Button>
+        </StackPanel>
+
+        <!-- ── Conda Environment section ── -->
+        <StackPanel IsVisible="{Binding IsCondaModeSelected}" Margin="0 0 0 8">
+          <TextBlock FontWeight="SemiBold" Margin="0 0 0 4">Conda Environment</TextBlock>
+          <StackPanel IsEnabled="{Binding IsCondaAvailable}">
+            <!--Existing environments-->
+            <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+              <ComboBox Width="240" Items="{Binding CondaEnvironments}"
+                        SelectedIndex="{Binding SelectedCondaEnvironmentIndex}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Name}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <Button Margin="4 0 0 0" Command="{Binding RefreshCondaEnvironmentsCommand}">Refresh</Button>
+            </StackPanel>
+            <Button Margin="0 0 0 8" Command="{Binding InstallPymotenIntoCondaCommand}">
+              Install pymoten into selected environment
+            </Button>
+
+            <Separator Margin="0 4 0 4"/>
+
+            <!--Create new environment-->
+            <TextBlock Margin="0 0 0 4">New environment name</TextBlock>
+            <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+              <TextBox Width="200" Text="{Binding NewCondaEnvironmentName}"/>
+              <Button Margin="4 0 0 0" Command="{Binding CreateCondaEnvironmentCommand}">Create environment</Button>
+            </StackPanel>
+
+            <!--Dependency status-->
+            <TextBlock FontWeight="SemiBold" Margin="0 4 0 2">Dependencies</TextBlock>
+            <StackPanel Orientation="Horizontal" Margin="0 0 0 2">
+              <TextBlock Width="80">numpy</TextBlock>
+              <TextBlock Text="{Binding NumPyStatusText}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0 0 0 2">
+              <TextBlock Width="80">Pillow</TextBlock>
+              <TextBlock Text="{Binding PillowStatusText}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+              <TextBlock Width="80">moten</TextBlock>
+              <TextBlock Text="{Binding MotenStatusText}"/>
+            </StackPanel>
+            <Button Command="{Binding CheckDependenciesCommand}">Check dependencies</Button>
+          </StackPanel>
+          <TextBlock IsVisible="{Binding !IsCondaAvailable}" Foreground="Gray">
+            conda not found. Install conda and relaunch SharpEyes to use this option.
+          </TextBlock>
+        </StackPanel>
+
+        <!-- ── Bundled Python section ── -->
+        <StackPanel IsVisible="{Binding IsBundledModeSelected}" Margin="0 0 0 8">
+          <TextBlock FontWeight="SemiBold" Margin="0 0 0 4">Bundled Python</TextBlock>
+          <Button Margin="0 0 0 4" Command="{Binding DownloadBundledPythonCommand}">
+            Download and install
+          </Button>
+          <ProgressBar Margin="0 0 0 8" Minimum="0" Maximum="100"
+                       Value="{Binding DownloadProgress}"
+                       IsVisible="{Binding IsDownloadProgressVisible}"/>
+
+          <!--Dependency status-->
+          <TextBlock FontWeight="SemiBold" Margin="0 4 0 2">Dependencies</TextBlock>
+          <StackPanel Orientation="Horizontal" Margin="0 0 0 2">
+            <TextBlock Width="80">numpy</TextBlock>
+            <TextBlock Text="{Binding NumPyStatusText}"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0 0 0 2">
+            <TextBlock Width="80">Pillow</TextBlock>
+            <TextBlock Text="{Binding PillowStatusText}"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+            <TextBlock Width="80">moten</TextBlock>
+            <TextBlock Text="{Binding MotenStatusText}"/>
+          </StackPanel>
+          <Button Command="{Binding CheckDependenciesCommand}">Check dependencies</Button>
+        </StackPanel>
+
+        <!--Shared status text-->
+        <TextBlock Text="{Binding StatusText}" Margin="0 8 0 0"
+                   IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </DockPanel>
+</UserControl>
