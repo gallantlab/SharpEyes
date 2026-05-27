@@ -40,6 +40,12 @@ namespace SharpEyes.ViewModels
 			});
 
 			SharpEyes.Models.PythonEnvironmentManager.Instance.LoadSettings();
+
+			this.WhenAnyValue(x => x.SelectedTabIndex)
+				.Subscribe(index =>
+				{
+					if (index == 4) motionEnergyViewModel.InitializePython();
+				});
 		}
 	}
 }
