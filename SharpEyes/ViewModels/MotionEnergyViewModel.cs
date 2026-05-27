@@ -239,6 +239,49 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> AddDirectionCommand { get; }
 		public ReactiveCommand<Unit, Unit> RemoveDirectionCommand { get; }
 
+		private bool _isSpatialFrequenciesExpanded = false;
+		public bool IsSpatialFrequenciesExpanded
+		{
+			get => _isSpatialFrequenciesExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isSpatialFrequenciesExpanded, value);
+				this.RaisePropertyChanged("SpatialFrequenciesHeaderText");
+			}
+		}
+
+		private bool _isTemporalFrequenciesExpanded = false;
+		public bool IsTemporalFrequenciesExpanded
+		{
+			get => _isTemporalFrequenciesExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isTemporalFrequenciesExpanded, value);
+				this.RaisePropertyChanged("TemporalFrequenciesHeaderText");
+			}
+		}
+
+		private bool _isDirectionsExpanded = false;
+		public bool IsDirectionsExpanded
+		{
+			get => _isDirectionsExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isDirectionsExpanded, value);
+				this.RaisePropertyChanged("DirectionsHeaderText");
+			}
+		}
+
+		public string SpatialFrequenciesHeaderText => _isSpatialFrequenciesExpanded
+			? "Spatial frequencies"
+			: String.Format("Spatial frequencies: {0}", String.Join(", ", SpatialFrequencies));
+		public string TemporalFrequenciesHeaderText => _isTemporalFrequenciesExpanded
+			? "Temporal frequencies"
+			: String.Format("Temporal frequencies: {0}", String.Join(", ", TemporalFrequencies));
+		public string DirectionsHeaderText => _isDirectionsExpanded
+			? "Directions"
+			: String.Format("Directions: {0}", String.Join(", ", Directions));
+
 		// == Feature computation ==
 
 		private int _startFrame = 0;
@@ -347,6 +390,9 @@ namespace SharpEyes.ViewModels
 				}
 			});
 			ComputeFeaturesCommand = ReactiveCommand.CreateFromTask(ComputeFeatures);
+			SpatialFrequencies.CollectionChanged += (s, e) => this.RaisePropertyChanged("SpatialFrequenciesHeaderText");
+			TemporalFrequencies.CollectionChanged += (s, e) => this.RaisePropertyChanged("TemporalFrequenciesHeaderText");
+			Directions.CollectionChanged += (s, e) => this.RaisePropertyChanged("DirectionsHeaderText");
 		}
 
 		private void SyncFrameSizeToModel()

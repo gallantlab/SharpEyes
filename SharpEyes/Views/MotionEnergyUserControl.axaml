@@ -117,62 +117,74 @@
                                FormatString="0.##"/>
               </StackPanel>
 
-              <TextBlock Margin="0 16 0 2" FontWeight="SemiBold">Spatial frequencies</TextBlock>
-              <ListBox Items="{Binding SpatialFrequencies}" Height="100" Margin="0 0 0 2"
-                       BorderBrush="Gray" BorderThickness="1"
-                       SelectedIndex="{Binding SelectedSpatialFrequencyIndex}">
-                <ListBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding}"/>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-              <StackPanel Orientation="Horizontal">
-                <NumericUpDown Width="160" Value="{Binding NewSpatialFrequency}" Increment="1" Minimum="0"
-                               FormatString="0.##"/>
-                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                        Command="{Binding AddSpatialFrequencyCommand}">+</Button>
-                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                        Command="{Binding RemoveSpatialFrequencyCommand}">-</Button>
-              </StackPanel>
+              <Expander Margin="0 8 0 0" IsExpanded="{Binding IsSpatialFrequenciesExpanded}"
+                        Header="{Binding SpatialFrequenciesHeaderText}">
+                <StackPanel>
+                  <ListBox Items="{Binding SpatialFrequencies}" Height="100" Margin="0 2 0 2"
+                           BorderBrush="Gray" BorderThickness="1"
+                           SelectedIndex="{Binding SelectedSpatialFrequencyIndex}">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding}"/>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <StackPanel Orientation="Horizontal">
+                    <NumericUpDown Width="160" Value="{Binding NewSpatialFrequency}" Increment="1" Minimum="0"
+                                   FormatString="0.##"/>
+                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                            Command="{Binding AddSpatialFrequencyCommand}">+</Button>
+                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                            Command="{Binding RemoveSpatialFrequencyCommand}">-</Button>
+                  </StackPanel>
+                </StackPanel>
+              </Expander>
 
-              <TextBlock Margin="0 16 0 2" FontWeight="SemiBold">Temporal frequencies</TextBlock>
-              <ListBox Items="{Binding TemporalFrequencies}" Height="120" Margin="0 0 0 2"
-                       BorderBrush="Gray" BorderThickness="1"
-                       SelectedIndex="{Binding SelectedTemporalFrequencyIndex}">
-                <ListBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding}"/>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-              <StackPanel Orientation="Horizontal">
-                <NumericUpDown Width="160" Value="{Binding NewTemporalFrequency}" Increment="1" Minimum="0"
-                               FormatString="0.##"/>
-                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                        Command="{Binding AddTemporalFrequencyCommand}">+</Button>
-                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                        Command="{Binding RemoveTemporalFrequencyCommand}">-</Button>
-              </StackPanel>
+              <Expander Margin="0 4 0 0" IsExpanded="{Binding IsTemporalFrequenciesExpanded}"
+                        Header="{Binding TemporalFrequenciesHeaderText}">
+                <StackPanel>
+                  <ListBox Items="{Binding TemporalFrequencies}" Height="80" Margin="0 2 0 2"
+                           BorderBrush="Gray" BorderThickness="1"
+                           SelectedIndex="{Binding SelectedTemporalFrequencyIndex}">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding}"/>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <StackPanel Orientation="Horizontal">
+                    <NumericUpDown Width="160" Value="{Binding NewTemporalFrequency}" Increment="1" Minimum="0"
+                                   FormatString="0.##"/>
+                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                            Command="{Binding AddTemporalFrequencyCommand}">+</Button>
+                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                            Command="{Binding RemoveTemporalFrequencyCommand}">-</Button>
+                  </StackPanel>
+                </StackPanel>
+              </Expander>
 
-              <TextBlock Margin="0 16 0 2" FontWeight="SemiBold">Directions</TextBlock>
-              <ListBox Items="{Binding Directions}" Height="120" Margin="0 0 0 2"
-                       BorderBrush="Gray" BorderThickness="1"
-                       SelectedIndex="{Binding SelectedDirectionIndex}">
-                <ListBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding}"/>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-              <StackPanel Orientation="Horizontal">
-                <NumericUpDown Width="160" Value="{Binding NewDirection}" Increment="45" Minimum="0" Maximum="315"
-                               FormatString="0.##"/>
-                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                        Command="{Binding AddDirectionCommand}">+</Button>
-                <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                        Command="{Binding RemoveDirectionCommand}">-</Button>
-              </StackPanel>
+              <Expander Margin="0 4 0 0" IsExpanded="{Binding IsDirectionsExpanded}"
+                        Header="{Binding DirectionsHeaderText}">
+                <StackPanel>
+                  <ListBox Items="{Binding Directions}" Height="120" Margin="0 2 0 2"
+                           BorderBrush="Gray" BorderThickness="1"
+                           SelectedIndex="{Binding SelectedDirectionIndex}">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding}"/>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <StackPanel Orientation="Horizontal">
+                    <NumericUpDown Width="160" Value="{Binding NewDirection}" Increment="45" Minimum="0" Maximum="315"
+                                   FormatString="0.##"/>
+                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                            Command="{Binding AddDirectionCommand}">+</Button>
+                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                            Command="{Binding RemoveDirectionCommand}">-</Button>
+                  </StackPanel>
+                </StackPanel>
+              </Expander>
             </StackPanel>
           </Expander>
 
