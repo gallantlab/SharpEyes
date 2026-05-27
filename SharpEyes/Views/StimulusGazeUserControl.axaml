@@ -34,8 +34,6 @@
         <Button Name="LoadGazeButton" Margin="4"
                       Command="{Binding LoadGazeCommand}"
                       HotKey="Ctrl+L">Load Gaze</Button>
-        <Button Name="JumpToFirstTTLButton" Margin="4" Command="{Binding JumpToFirstTTLCommand}"
-                IsEnabled="{Binding HasTTLData}">Jump to first TTL</Button>
         <ToggleButton Name="MoveGazeButton" Margin="4" IsChecked="{Binding IsMovingGaze}"
                       IsEnabled="{Binding IsGazeLoaded}"
                       HotKey="2">Move Gaze</ToggleButton>
@@ -141,14 +139,36 @@
         <StackPanel>
           <!-- Data start finding-->
           <!--Gaze marker info-->
-          <Expander Margin="4 2" IsExpanded="True" Header="Data start finding" HorizontalContentAlignment="Center"
+          <Expander Margin="4 2" IsExpanded="True" Header="Temporal alignment" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">
             <StackPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
-                <Button Margin="4 " Width="180" HorizontalContentAlignment="Center"
-                      Command="{Binding SetCurrentAsDataStartCommand}">Set current as data start</Button>
-              <Button Margin="4 " Width="180" HorizontalContentAlignment="Center">Auto find data start</Button>
+                <Button Margin="4 " Width="240" HorizontalContentAlignment="Center"
+                      Command="{Binding SetCurrentAsDataStartCommand}">Set current as eyetracking start</Button>
+              <Button Margin="4 " Width="240" HorizontalContentAlignment="Center">Auto find eyetracking start</Button>
               <ToggleSwitch OnContent="Set default keyframes" OffContent="Set default keyframes" HorizontalAlignment="Center"
                             IsChecked="{Binding SetDefaultKeyFrames}"/>
+              
+              <Button Name="JumpToFirstTTLButton" Margin="4" Command="{Binding JumpToFirstTTLCommand}"
+                      IsEnabled="{Binding HasTTLData}">Jump to first eyetracking TTL</Button>
+              <Button Margin="4" Width="240" HorizontalContentAlignment="Center"
+                      Command="{Binding SetCurrentAsFirstTTLCommand}"
+                      IsEnabled="{Binding HasTTLData}">Set current as first eyetracking TTL</Button>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 4 0 0">
+                <TextBlock VerticalAlignment="Center" Width="150">Shift by (frames)</TextBlock>
+                <NumericUpDown Margin="4" Width="120" Value="{Binding EyetrackingShiftFrameCount}" Increment="1" Minimum="1"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Margin="4" Width="104" HorizontalContentAlignment="Center"
+                        Command="{Binding ShiftEyetrackingBackCommand}"
+                        IsEnabled="{Binding IsGazeLoaded}">&#x25C4; Shift back</Button>
+                <Button Margin="4" Width="120" HorizontalContentAlignment="Center"
+                        Command="{Binding ShiftEyetrackingForwardCommand}"
+                        IsEnabled="{Binding IsGazeLoaded}">Shift forward &#x25BA;</Button>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock VerticalAlignment="Center" Width="150">Data start frame</TextBlock>
+                <TextBlock VerticalAlignment="Center" Margin="4" Text="{Binding DataStartFrame}"/>
+              </StackPanel>
             </StackPanel>
           </Expander>
           <Expander Margin="4 2" IsExpanded="True" Header="Gaze info" HorizontalContentAlignment="Center"

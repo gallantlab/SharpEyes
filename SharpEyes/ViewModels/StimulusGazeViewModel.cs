@@ -32,6 +32,9 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit>? FindDataStartCommand { get; set; } = null;
 		public ReactiveCommand<Unit, Unit> SendToRecenteringCommand { get; set; }
 		public ReactiveCommand<Unit, Unit>? JumpToFirstTTLCommand { get; set; } = null;
+		public ReactiveCommand<Unit, Unit> ShiftEyetrackingForwardCommand { get; set; }
+		public ReactiveCommand<Unit, Unit> ShiftEyetrackingBackCommand { get; set; }
+		public ReactiveCommand<Unit, Unit>? SetCurrentAsFirstTTLCommand { get; set; } = null;
 
 		// Set by MainWindowViewModel after construction
 		public RecenteringViewModel? RecenteringViewModel { get; set; }
@@ -185,6 +188,14 @@ namespace SharpEyes.ViewModels
 		public bool HasTTLData => IsGazeLoaded && Recenterer.FindFirstTTLGazeIndex(DisplayedGazeLocations) != null;
 
 		internal int? dataStartFrame = null;
+		public int? DataStartFrame => dataStartFrame;
+
+		private int _eyetrackingShiftFrameCount = 1;
+		public int EyetrackingShiftFrameCount
+		{
+			get => _eyetrackingShiftFrameCount;
+			set => this.RaiseAndSetIfChanged(ref _eyetrackingShiftFrameCount, value);
+		}
 
 		private int? dataEndFrame
 		{
@@ -401,6 +412,9 @@ namespace SharpEyes.ViewModels
 			NextFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(1); });
 			SendToRecenteringCommand = ReactiveCommand.Create(SendToRecentering);
 			JumpToFirstTTLCommand = ReactiveCommand.Create(JumpToFirstTTL);
+			ShiftEyetrackingForwardCommand = ReactiveCommand.Create(ShiftEyetrackingForward);
+			ShiftEyetrackingBackCommand = ReactiveCommand.Create(ShiftEyetrackingBack);
+			SetCurrentAsFirstTTLCommand = ReactiveCommand.Create(SetCurrentAsFirstTTL);
 			TrailPoints = new ObservableCollection<TrailGazePoint>(
 				Enumerable.Range(0, 10).Select(_ => new TrailGazePoint()));
 		}
@@ -755,6 +769,7 @@ namespace SharpEyes.ViewModels
 		public void SetCurrentAsDataStart()
 		{
 			dataStartFrame = videoReader.CurrentFrameNumber;
+			this.RaisePropertyChanged("DataStartFrame");
 
 			VideoKeyFrames.Clear();
 			if (SetDefaultKeyFrames)
@@ -783,6 +798,35 @@ namespace SharpEyes.ViewModels
 			int videoFrame = dataStartFrame.Value + (int)(gazeElapsedTime * videoReader.fps);
 			videoFrame = Math.Clamp(videoFrame, 0, videoReader.frameCount - 1);
 			ShowFrame(videoFrame);
+		}
+
+		public void SetCurrentAsFirstTTL()
+		{
+			if (videoReader == null || (object)DisplayedGazeLocations == null) return;
+			int? firstTTLGazeIndex = Recenterer.FindFirstTTLGazeIndex(DisplayedGazeLocations);
+			if (firstTTLGazeIndex == null) return;
+			double gazeElapsedTime = (double)firstTTLGazeIndex.Value / EyetrackingFPS;
+			dataStartFrame = CurrentVideoFrame - (int)(gazeElapsedTime * videoReader.fps);
+			this.RaisePropertyChanged("DataStartFrame");
+			UpdateDisplay();
+		}
+
+		public void ShiftEyetrackingForward()
+		{
+			if (dataStartFrame == null) return;
+			dataStartFrame = dataStartFrame.Value + EyetrackingShiftFrameCount;
+			this.RaisePropertyChanged("DataStartFrame");
+			if (videoReader != null)
+				UpdateDisplay();
+		}
+
+		public void ShiftEyetrackingBack()
+		{
+			if (dataStartFrame == null) return;
+			dataStartFrame = dataStartFrame.Value - EyetrackingShiftFrameCount;
+			this.RaisePropertyChanged("DataStartFrame");
+			if (videoReader != null)
+				UpdateDisplay();
 		}
 
 		public void ReapplyFilterIfEnabled()
