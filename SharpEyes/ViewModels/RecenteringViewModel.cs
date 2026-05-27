@@ -32,6 +32,11 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> LoadGazeCommand { get; set; }
 		public ReactiveCommand<Unit, Unit> ExportCommand { get; set; }
 		public ReactiveCommand<Unit, Unit> JumpToFirstTTLCommand { get; set; }
+		public ReactiveCommand<Unit, Unit> SendToMotionEnergyCommand { get; set; }
+
+		// Set by MainWindowViewModel
+		public MotionEnergyViewModel? MotionEnergyViewModel { get; set; }
+		public Action? SwitchToMotionEnergyTab { get; set; }
 
 		// == window reference for showing dialogs
 		public Avalonia.Controls.Window? MainWindow =>
@@ -377,6 +382,7 @@ namespace SharpEyes.ViewModels
 			LoadGazeCommand = ReactiveCommand.Create(LoadGaze);
 			ExportCommand = ReactiveCommand.CreateFromTask(Export);
 			JumpToFirstTTLCommand = ReactiveCommand.Create(JumpToFirstTTL);
+			SendToMotionEnergyCommand = ReactiveCommand.Create(SendToMotionEnergy);
 			videoPlaybackTimer = new DispatcherTimer();
 			videoPlaybackTimer.Tick += this.VideoTimerTick;
 
@@ -673,6 +679,21 @@ namespace SharpEyes.ViewModels
 				dataStartFrame = videoReader.CurrentFrameNumber;
 				this.RaisePropertyChanged("DataStartFrame");
 			}
+		}
+
+		// == Send to motion-energy ==
+
+		private void SendToMotionEnergy()
+		{
+			if (!ExportEnabled || MotionEnergyViewModel == null) return;
+			MotionEnergyViewModel.LoadFromRecentering(
+				videoReader,
+				gazeLocations,
+				dataStartFrame.Value,
+				EyetrackingFPS,
+				GazeSpaceWidth,
+				GazeSpaceHeight);
+			SwitchToMotionEnergyTab?.Invoke();
 		}
 
 		// == Export ==

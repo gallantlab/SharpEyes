@@ -30,6 +30,8 @@ namespace SharpEyes.ViewModels
 			motionEnergyViewModel = new MotionEnergyViewModel();
 			stimulusGazeViewModel.RecenteringViewModel = recenteringViewModel;
 			stimulusGazeViewModel.SwitchToRecenteringTab = () => SelectedTabIndex = 3;
+			recenteringViewModel.MotionEnergyViewModel = motionEnergyViewModel;
+			recenteringViewModel.SwitchToMotionEnergyTab = () => SelectedTabIndex = 4;
 
 			OpenSettingsCommand = ReactiveCommand.Create(() =>
 			{

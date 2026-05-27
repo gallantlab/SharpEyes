@@ -181,6 +181,8 @@
               </StackPanel>
               <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"
                       Command="{Binding ExportCommand}" IsEnabled="{Binding ExportEnabled}">Export</Button>
+              <Button Margin="4 2 4 4" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"
+                      Command="{Binding SendToMotionEnergyCommand}" IsEnabled="{Binding ExportEnabled}">Send to motion-energy</Button>
             </StackPanel>
           </Expander>
 

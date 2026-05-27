@@ -32,8 +32,19 @@
 
       <!--Video display-->
       <Panel Grid.Row="1">
-        <Viewbox Stretch="Uniform">
+        <!--Plain video (opened directly)-->
+        <Viewbox Stretch="Uniform" IsVisible="{Binding !IsLoadedFromRecentering}">
           <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"/>
+        </Viewbox>
+        <!--Recentered video (passed from recentering tab): doubled canvas, image offset by gaze-->
+        <Viewbox Stretch="Uniform" IsVisible="{Binding IsLoadedFromRecentering}">
+          <Canvas Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}">
+            <Canvas Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
+                    Canvas.Left="{Binding RecenteringImageLeft}"
+                    Canvas.Top="{Binding RecenteringImageTop}">
+              <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"/>
+            </Canvas>
+          </Canvas>
         </Viewbox>
       </Panel>
 
