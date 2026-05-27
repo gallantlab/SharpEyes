@@ -1,4 +1,5 @@
 using System.Reactive;
+using System.Reactive.Linq;
 using ReactiveUI;
 using SharpEyes.Views;
 
@@ -18,7 +19,11 @@ namespace SharpEyes.ViewModels
 		public int SelectedTabIndex
 		{
 			get => _selectedTabIndex;
-			set => this.RaiseAndSetIfChanged(ref _selectedTabIndex, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _selectedTabIndex, value);
+				if (value == 4) motionEnergyViewModel.InitializePython();
+			}
 		}
 
 		public MainWindowViewModel()
@@ -40,12 +45,6 @@ namespace SharpEyes.ViewModels
 			});
 
 			SharpEyes.Models.PythonEnvironmentManager.Instance.LoadSettings();
-
-			this.WhenAnyValue(x => x.SelectedTabIndex)
-				.Subscribe(index =>
-				{
-					if (index == 4) motionEnergyViewModel.InitializePython();
-				});
 		}
 	}
 }
