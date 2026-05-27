@@ -11,7 +11,7 @@ namespace SharpEyes.Models
 	{
 		// == Parameters (user-adjustable, persisted) ==
 
-		private int _frameHeight = 270;
+		private int _frameHeight = 360;
 		public int FrameHeight
 		{
 			get => _frameHeight;
