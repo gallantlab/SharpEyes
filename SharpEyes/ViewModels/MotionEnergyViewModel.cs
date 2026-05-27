@@ -38,6 +38,8 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _progressBarValue, value);
 		}
 
+		private readonly MotionEnergyModel _motionEnergyModel = new MotionEnergyModel();
+
 		private VideoReader? _videoReader = null;
 		private DispatcherTimer _videoPlaybackTimer;
 
