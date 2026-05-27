@@ -216,9 +216,18 @@ namespace SharpEyes.ViewModels
 		private async Task CreateCondaEnvironment()
 		{
 			if (String.IsNullOrWhiteSpace(NewCondaEnvironmentName)) return;
+			string createdName = NewCondaEnvironmentName;
 			IProgress<string> statusProgress = new Progress<string>(text => StatusText = text);
-			await _manager.CreateCondaEnvironment(NewCondaEnvironmentName, statusProgress);
+			await _manager.CreateCondaEnvironment(createdName, statusProgress);
 			RefreshCondaEnvironments();
+			for (int index = 0; index < CondaEnvironments.Count; index++)
+			{
+				if (CondaEnvironments[index].Name == createdName)
+				{
+					SelectedCondaEnvironmentIndex = index;
+					break;
+				}
+			}
 			CheckDependencies();
 			_manager.SaveSettings();
 		}
