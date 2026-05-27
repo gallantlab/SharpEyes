@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reactive;
 using Avalonia.Media;
@@ -54,6 +55,7 @@ namespace SharpEyes.ViewModels
 				this.RaisePropertyChanged("RecenteringImageLeft");
 				this.RaisePropertyChanged("OutputFrameSizeText");
 				this.RaisePropertyChanged("VideoFrameSizeText");
+				SyncFrameSizeToModel();
 			}
 		}
 
@@ -68,6 +70,7 @@ namespace SharpEyes.ViewModels
 				this.RaisePropertyChanged("RecenteringImageTop");
 				this.RaisePropertyChanged("OutputFrameSizeText");
 				this.RaisePropertyChanged("VideoFrameSizeText");
+				SyncFrameSizeToModel();
 			}
 		}
 
@@ -159,6 +162,7 @@ namespace SharpEyes.ViewModels
 				this.RaiseAndSetIfChanged(ref _frameScale, value);
 				this.RaisePropertyChanged("OutputFrameSizeText");
 				this.RaisePropertyChanged("VideoFrameSizeText");
+				SyncFrameSizeToModel();
 			}
 		}
 
@@ -291,24 +295,51 @@ namespace SharpEyes.ViewModels
 			NextFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(1); });
 			_videoPlaybackTimer = new DispatcherTimer();
 			_videoPlaybackTimer.Tick += VideoTimerTick;
-			AddSpatialFrequencyCommand = ReactiveCommand.Create(() => SpatialFrequencies.Add(_newSpatialFrequency));
+			AddSpatialFrequencyCommand = ReactiveCommand.Create(() =>
+			{
+				SpatialFrequencies.Add(_newSpatialFrequency);
+				_motionEnergyModel.SpatialFrequencies = new List<double>(SpatialFrequencies);
+			});
 			RemoveSpatialFrequencyCommand = ReactiveCommand.Create(() =>
 			{
 				if (_selectedSpatialFrequencyIndex >= 0 && _selectedSpatialFrequencyIndex < SpatialFrequencies.Count)
+				{
 					SpatialFrequencies.RemoveAt(_selectedSpatialFrequencyIndex);
+					_motionEnergyModel.SpatialFrequencies = new List<double>(SpatialFrequencies);
+				}
 			});
-			AddTemporalFrequencyCommand = ReactiveCommand.Create(() => TemporalFrequencies.Add(_newTemporalFrequency));
+			AddTemporalFrequencyCommand = ReactiveCommand.Create(() =>
+			{
+				TemporalFrequencies.Add(_newTemporalFrequency);
+				_motionEnergyModel.TemporalFrequencies = new List<double>(TemporalFrequencies);
+			});
 			RemoveTemporalFrequencyCommand = ReactiveCommand.Create(() =>
 			{
 				if (_selectedTemporalFrequencyIndex >= 0 && _selectedTemporalFrequencyIndex < TemporalFrequencies.Count)
+				{
 					TemporalFrequencies.RemoveAt(_selectedTemporalFrequencyIndex);
+					_motionEnergyModel.TemporalFrequencies = new List<double>(TemporalFrequencies);
+				}
 			});
-			AddDirectionCommand = ReactiveCommand.Create(() => Directions.Add(_newDirection));
+			AddDirectionCommand = ReactiveCommand.Create(() =>
+			{
+				Directions.Add(_newDirection);
+				_motionEnergyModel.Directions = new List<double>(Directions);
+			});
 			RemoveDirectionCommand = ReactiveCommand.Create(() =>
 			{
 				if (_selectedDirectionIndex >= 0 && _selectedDirectionIndex < Directions.Count)
+				{
 					Directions.RemoveAt(_selectedDirectionIndex);
+					_motionEnergyModel.Directions = new List<double>(Directions);
+				}
 			});
+		}
+
+		private void SyncFrameSizeToModel()
+		{
+			_motionEnergyModel.FrameWidth = (int)(_videoWidth * _frameScale);
+			_motionEnergyModel.FrameHeight = (int)(_videoHeight * _frameScale);
 		}
 
 		public void LoadFromRecentering(VideoReader videoReader, NDArray gazeLocations, int dataStartFrame, int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight)
