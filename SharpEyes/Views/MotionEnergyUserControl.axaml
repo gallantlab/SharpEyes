@@ -119,6 +119,7 @@
 
               <TextBlock Margin="0 16 0 2" FontWeight="SemiBold">Spatial frequencies</TextBlock>
               <ListBox Items="{Binding SpatialFrequencies}" Height="100" Margin="0 0 0 2"
+                       BorderBrush="Gray" BorderThickness="1"
                        SelectedIndex="{Binding SelectedSpatialFrequencyIndex}">
                 <ListBox.ItemTemplate>
                   <DataTemplate>
@@ -136,7 +137,8 @@
               </StackPanel>
 
               <TextBlock Margin="0 16 0 2" FontWeight="SemiBold">Temporal frequencies</TextBlock>
-              <ListBox Items="{Binding TemporalFrequencies}" Height="80" Margin="0 0 0 2"
+              <ListBox Items="{Binding TemporalFrequencies}" Height="120" Margin="0 0 0 2"
+                       BorderBrush="Gray" BorderThickness="1"
                        SelectedIndex="{Binding SelectedTemporalFrequencyIndex}">
                 <ListBox.ItemTemplate>
                   <DataTemplate>
@@ -155,6 +157,7 @@
 
               <TextBlock Margin="0 16 0 2" FontWeight="SemiBold">Directions</TextBlock>
               <ListBox Items="{Binding Directions}" Height="120" Margin="0 0 0 2"
+                       BorderBrush="Gray" BorderThickness="1"
                        SelectedIndex="{Binding SelectedDirectionIndex}">
                 <ListBox.ItemTemplate>
                   <DataTemplate>
