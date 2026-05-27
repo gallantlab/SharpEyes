@@ -50,7 +50,16 @@
                                    Name="RecenteringUserControl"
                                    DataContext="{Binding recenteringViewModel}"/>
       </TabItem>
+      <TabItem Header="Motion-Energy" VerticalContentAlignment="Center">
+        <uc:MotionEnergyUserControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                    Name="MotionEnergyUserControl"
+                                    DataContext="{Binding motionEnergyViewModel}"/>
+      </TabItem>
     </TabControl>
+    <Button Name="HamburgerButton" HorizontalAlignment="Left" VerticalAlignment="Top"
+            Margin="14 14 8 0" ZIndex="10"
+            Command="{Binding OpenSettingsCommand}"
+            ToolTip.Tip="Settings">&#9776;</Button>
   </Grid>
 
 </Window>
