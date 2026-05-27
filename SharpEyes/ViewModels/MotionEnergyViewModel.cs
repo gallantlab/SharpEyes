@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reactive;
+using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -238,6 +239,17 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> AddDirectionCommand { get; }
 		public ReactiveCommand<Unit, Unit> RemoveDirectionCommand { get; }
 
+		// == Feature computation ==
+
+		private int _startFrame = 0;
+		public int StartFrame
+		{
+			get => _startFrame;
+			set => this.RaiseAndSetIfChanged(ref _startFrame, value);
+		}
+
+		public ReactiveCommand<Unit, Unit> ComputeFeaturesCommand { get; }
+
 		private Bitmap? _videoFrame = null;
 		public Bitmap? VideoFrame
 		{
@@ -334,6 +346,7 @@ namespace SharpEyes.ViewModels
 					_motionEnergyModel.Directions = new List<double>(Directions);
 				}
 			});
+			ComputeFeaturesCommand = ReactiveCommand.CreateFromTask(ComputeFeatures);
 		}
 
 		private void SyncFrameSizeToModel()
@@ -415,6 +428,11 @@ namespace SharpEyes.ViewModels
 		{
 			_videoReader.CurrentFrameNumber = frame;
 			UpdateDisplay();
+		}
+
+		private async Task ComputeFeatures()
+		{
+			// TODO: implement feature extraction
 		}
 
 		private int VideoTimeToDataIndex(int videoFrame)

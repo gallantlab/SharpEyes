@@ -176,6 +176,18 @@
             </StackPanel>
           </Expander>
 
+          <Expander Margin="4 2" IsExpanded="True" Header="Compute features" HorizontalContentAlignment="Center">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="150">Start frame</TextBlock>
+                <NumericUpDown Margin="4" Width="150" Value="{Binding StartFrame}" Increment="1" Minimum="0"
+                               FormatString="0"/>
+              </StackPanel>
+              <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"
+                      Command="{Binding ComputeFeaturesCommand}">Compute features</Button>
+            </StackPanel>
+          </Expander>
+
         </StackPanel>
       </ScrollViewer>
     </DockPanel>
