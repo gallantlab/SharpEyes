@@ -57,11 +57,8 @@ namespace SharpEyes.Models
 
 		// Constructs the moten.MotionEnergyPyramid from current parameters.
 		// Must be called after PythonEnvironmentManager.Initialize().
-		// videoFps is the source video frame rate; FpsOverride takes precedence if set.
-		public void BuildPyramid(double videoFps)
+		public void BuildPyramid(double fps)
 		{
-			double effectiveFps = FpsOverride ?? videoFps;
-
 			using (Py.GIL())
 			{
 				dynamic moten = Py.Import("moten.pyramids");
@@ -73,7 +70,7 @@ namespace SharpEyes.Models
 
 				_pyramidObject = moten.MotionEnergyPyramid(
 					vhsize: new PyTuple(new PyObject[] { new PyInt(FrameHeight), new PyInt(FrameWidth) }),
-					fps: new PyFloat(effectiveFps),
+					fps: new PyFloat(fps),
 					sf_cycles_s: sfList,
 					tf_Hz: tfList,
 					directiondeg: dirList
@@ -145,7 +142,6 @@ namespace SharpEyes.Models
 		{
 			FrameHeight = settings.MotionEnergyFrameHeight;
 			FrameWidth = settings.MotionEnergyFrameWidth;
-			FpsOverride = settings.MotionEnergyFpsOverride;
 			SpatialFrequencies = new List<double>(settings.MotionEnergySpatialFrequencies);
 			TemporalFrequencies = new List<double>(settings.MotionEnergyTemporalFrequencies);
 			Directions = new List<double>(settings.MotionEnergyDirections);
@@ -156,7 +152,6 @@ namespace SharpEyes.Models
 		{
 			settings.MotionEnergyFrameHeight = FrameHeight;
 			settings.MotionEnergyFrameWidth = FrameWidth;
-			settings.MotionEnergyFpsOverride = FpsOverride;
 			settings.MotionEnergySpatialFrequencies = new List<double>(SpatialFrequencies);
 			settings.MotionEnergyTemporalFrequencies = new List<double>(TemporalFrequencies);
 			settings.MotionEnergyDirections = new List<double>(Directions);

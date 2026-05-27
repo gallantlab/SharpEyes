@@ -17,21 +17,6 @@ namespace SharpEyes.Models
 		public int MotionEnergyFrameHeight { get; set; } = 270;
 		public int MotionEnergyFrameWidth { get; set; } = 480;
 
-		// Nullable FPS override stored as a bool + value pair for XmlSerializer compatibility
-		public bool MotionEnergyFpsOverrideEnabled { get; set; } = false;
-		public double MotionEnergyFpsOverrideValue { get; set; } = 0;
-
-		[XmlIgnore]
-		public double? MotionEnergyFpsOverride
-		{
-			get => MotionEnergyFpsOverrideEnabled ? (double?)MotionEnergyFpsOverrideValue : null;
-			set
-			{
-				MotionEnergyFpsOverrideEnabled = value.HasValue;
-				MotionEnergyFpsOverrideValue = value ?? 0;
-			}
-		}
-
 		[XmlArray("MotionEnergySpatialFrequencies")]
 		[XmlArrayItem("double")]
 		public List<double> MotionEnergySpatialFrequencies { get; set; } = new List<double> { 0, 2, 4, 8, 16, 32 };
