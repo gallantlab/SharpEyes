@@ -69,11 +69,11 @@ namespace SharpEyes.Models
 				dynamic dirList = np.array(_directions.ToArray());
 
 				_pyramidObject = moten.MotionEnergyPyramid(
-					vhsize: new PyTuple(new PyObject[] { new PyInt(FrameHeight), new PyInt(FrameWidth) }),
-					fps: new PyFloat(fps),
-					sf_cycles_s: sfList,
-					tf_Hz: tfList,
-					directiondeg: dirList
+					stimulus_vhsize: new PyTuple(new PyObject[] { new PyInt(FrameHeight), new PyInt(FrameWidth) }),
+					stimulus_fps: new PyFloat(fps),
+					spatial_frequencies: sfList,
+					temporal_frequencies: tfList,
+					spatial_directions: dirList
 				);
 
 				dynamic pyramid = _pyramidObject;
