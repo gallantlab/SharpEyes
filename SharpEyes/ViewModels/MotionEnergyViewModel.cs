@@ -486,9 +486,50 @@ namespace SharpEyes.ViewModels
 			UpdateDisplay();
 		}
 
+		public async void InitializePython()
+		{
+			if (PythonEnvironmentManager.Instance.IsInitialized) return;
+			StatusText = "Initializing Python...";
+			IsProgressBarVisible = true;
+			try
+			{
+				await Task.Run(() => PythonEnvironmentManager.Instance.Initialize());
+				StatusText = "Python initialized.";
+			}
+			catch (Exception exception)
+			{
+				StatusText = String.Format("Failed to initialize Python: {0}", exception.Message);
+			}
+			finally
+			{
+				IsProgressBarVisible = false;
+			}
+		}
+
 		private async Task ComputePyramid()
 		{
-			// TODO: implement pyramid construction
+			StatusText = "Building pyramid...";
+			IsProgressBarVisible = true;
+			ProgressBarValue = 0;
+			try
+			{
+				double fps = _videoFps;
+				await Task.Run(() =>
+				{
+					PythonEnvironmentManager.Instance.Initialize();
+					_motionEnergyModel.BuildPyramid(fps);
+				});
+				StatusText = String.Format("Pyramid built: {0} filters, {1} features",
+					_motionEnergyModel.FilterCount, _motionEnergyModel.FeatureCount);
+			}
+			catch (Exception exception)
+			{
+				StatusText = String.Format("Error building pyramid: {0}", exception.Message);
+			}
+			finally
+			{
+				IsProgressBarVisible = false;
+			}
 		}
 
 		private async Task ComputeFeatures()
