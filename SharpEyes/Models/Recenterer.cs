@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using NumSharp;
 using OpenCvSharp;
@@ -62,7 +63,7 @@ namespace SharpEyes.Models
 
 		private (int scaledWidth, int scaledHeight, int outputWidth, int outputHeight,
 		         double frameIndexingFactor, int gazeStartIndex, int nFramesToExport, double padGray)
-		ComputeExportParameters()
+		ComputeExportParameters(int videoFrameOffset = 0)
 		{
 			int scaledWidth  = Math.Max(1, (int)(videoReader.width  * frameScale));
 			int scaledHeight = Math.Max(1, (int)(videoReader.height * frameScale));
@@ -83,6 +84,9 @@ namespace SharpEyes.Models
 					videoStartFrame = dataStartFrame + (int)(gazeElapsedTime * videoReader.fps);
 				}
 			}
+
+			videoStartFrame += videoFrameOffset;
+			gazeStartIndex  += (int)(videoFrameOffset * frameIndexingFactor);
 
 			int videoFramesAvailable = videoReader.frameCount - videoStartFrame;
 			int maxFrameFromGaze = (int)Math.Floor((gazeLocations.Shape[0] - gazeStartIndex) / frameIndexingFactor);
@@ -150,7 +154,8 @@ namespace SharpEyes.Models
 			int scaledWidth, int scaledHeight, int outputWidth, int outputHeight, double padGray,
 			bool includeRaw, IProgress<double> progress,
 			Action<Mat, int> processRecenteredFrame,
-			Action<Mat, int>? processRawFrame)
+			Action<Mat, int>? processRawFrame,
+			CancellationToken cancellationToken = default)
 		{
 			// Translation matrix: [[1, 0, tx], [0, 1, ty]] in CV_64F
 			Mat translationMatrix = new Mat(2, 3, MatType.CV_64F, Scalar.All(0.0));
@@ -160,6 +165,7 @@ namespace SharpEyes.Models
 			int actualFrameCount = 0;
 			for (int frame = 0; frame < nFramesToExport; frame++)
 			{
+				cancellationToken.ThrowIfCancellationRequested();
 				if (!videoReader.ReadFrame()) break;
 
 				int eyetrackingIndex = gazeStartIndex + (int)(frame * frameIndexingFactor);
@@ -249,7 +255,8 @@ namespace SharpEyes.Models
 
 		private (byte[] recenteredFrames, byte[] paddedRawFrames, int actualFrameCount) BuildNumpyArrays(bool includeRaw,
 			int nFramesToExport, int gazeStartIndex, double frameIndexingFactor, int scaledWidth, int scaledHeight,
-			int outputWidth, int outputHeight, double padGray, IProgress<double> progress)
+			int outputWidth, int outputHeight, double padGray, IProgress<double> progress,
+			CancellationToken cancellationToken = default)
 		{
 			// Pre-allocate flat byte arrays, fill during loop, build NDArray after
 			byte[] recenteredFrames = new byte[nFramesToExport * outputHeight * outputWidth];
@@ -276,34 +283,32 @@ namespace SharpEyes.Models
 					for (int y = 0; y < outputHeight; y++)
 						Marshal.Copy(IntPtr.Add(padded.Data, y * rawStep), paddedRawFrames, offset + y * outputWidth, outputWidth);
 					padded.Dispose();
-				}) : null);
+				}) : null,
+				cancellationToken);
 
 			return (recenteredFrames, paddedRawFrames, actualFrameCount);
 		}
 
-		public async Task<NDArray> BuildRecenteredFramesAsync(IProgress<double> progress)
+		public async Task<NDArray> BuildRecenteredFramesAsync(int videoFrameOffset, IProgress<double> progress, CancellationToken cancellationToken = default)
 		{
 			return await Task.Run(() =>
 			{
 				(int scaledWidth, int scaledHeight, int outputWidth, int outputHeight,
-				 double frameIndexingFactor, int gazeStartIndex, int nFramesToExport, double padGray) = ComputeExportParameters();
+				 double frameIndexingFactor, int gazeStartIndex, int nFramesToExport, double padGray) = ComputeExportParameters(videoFrameOffset);
 
 				(byte[] recenteredGray, byte[] _, int actualFrameCount) = BuildNumpyArrays(
 					false, nFramesToExport, gazeStartIndex, frameIndexingFactor,
-					scaledWidth, scaledHeight, outputWidth, outputHeight, padGray, progress);
+					scaledWidth, scaledHeight, outputWidth, outputHeight, padGray, progress, cancellationToken);
 
 				return BuildNDArray(recenteredGray, actualFrameCount, outputHeight, outputWidth);
-			});
+			}, cancellationToken);
 		}
 
 		private NDArray BuildNDArray(byte[] flatArray, int frameCount, int height, int width)
 		{
-			NDArray array = new NDArray(NPTypeCode.Byte, new Shape(frameCount, height, width));
-			for (int f = 0; f < frameCount; f++)
-				for (int y = 0; y < height; y++)
-					for (int x = 0; x < width; x++)
-						array[f, y, x] = flatArray[f * height * width + y * width + x];
-			return array;
+			byte[] data = new byte[frameCount * height * width];
+			Buffer.BlockCopy(flatArray, 0, data, 0, data.Length);
+			return new NDArray(data).reshape(frameCount, height, width);
 		}
 
 		private void SaveNumpyArray(byte[] flatArray, int frameCount, int height, int width, string path)

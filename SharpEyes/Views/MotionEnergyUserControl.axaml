@@ -178,7 +178,8 @@
         <DockPanel Grid.Row="1" Grid.Column="0" LastChildFill="True" VerticalAlignment="Center">
             <TextBlock DockPanel.Dock="Left" Text="{Binding StatusText}" />
             <ProgressBar Margin="4 0 4 0" Minimum="0" Maximum="100"
-                         Value="{Binding ProgressBarValue}" IsVisible="{Binding IsProgressBarVisible}" />
+                         Value="{Binding ProgressBarValue}" IsVisible="{Binding IsProgressBarVisible}"
+                         IsIndeterminate="{Binding IsProgressBarIndeterminate}" />
         </DockPanel>
 
         <!--Side panel-->
@@ -259,7 +260,7 @@
                             <Expander Margin="0 4 0 0" IsExpanded="{Binding IsTemporalFrequenciesExpanded}"
                                       Header="{Binding TemporalFrequenciesHeaderText}">
                                 <StackPanel>
-                                    <ListBox Items="{Binding TemporalFrequencies}" Height="80" Margin="0 2 0 2"
+                                    <ListBox Items="{Binding TemporalFrequencies}" Height="120" Margin="0 2 0 2"
                                              BorderBrush="Gray" BorderThickness="1"
                                              SelectedIndex="{Binding SelectedTemporalFrequencyIndex}">
                                         <ListBox.ItemTemplate>
@@ -333,9 +334,8 @@
                             </StackPanel>
                             <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180"
                                     HorizontalContentAlignment="Center"
-                                    Command="{Binding ComputeFeaturesCommand}">
-                                Compute features
-                            </Button>
+                                    Command="{Binding ComputeFeaturesCommand}"
+                                    Content="{Binding ComputeFeaturesButtonText}" />
                         </StackPanel>
                     </Expander>
 

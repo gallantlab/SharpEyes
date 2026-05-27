@@ -141,6 +141,7 @@ namespace SharpEyes.Models
 				{
 					dynamic np = Py.Import("numpy");
 					dynamic ctypes = Py.Import("ctypes");
+					dynamic npCtypeslib = Py.Import("numpy.ctypeslib");
 
 					// Pin the C# array and create a numpy view into it (zero-copy),
 					// then immediately copy into a new numpy array before releasing the pin
@@ -152,7 +153,7 @@ namespace SharpEyes.Models
 						long ptr = handle.AddrOfPinnedObject().ToInt64();
 						dynamic cArrayType = ctypes.c_uint8 * rawData.Length;
 						dynamic cArray = cArrayType.from_address(ptr);
-						npArray = np.ctypeslib.as_array(cArray).copy()
+						npArray = npCtypeslib.as_array(cArray).copy()
 							.reshape(nFrames, height, width)
 							.astype(np.float32).__truediv__(255.0f);
 					}

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reactive;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -341,6 +342,21 @@ namespace SharpEyes.ViewModels
 
 		public ReactiveCommand<Unit, Unit> ComputeFeaturesCommand { get; }
 
+		private CancellationTokenSource? _computeFeaturesTokenSource = null;
+
+		private bool _isComputingFeatures = false;
+		public bool IsComputingFeatures
+		{
+			get => _isComputingFeatures;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isComputingFeatures, value);
+				this.RaisePropertyChanged("ComputeFeaturesButtonText");
+			}
+		}
+
+		public string ComputeFeaturesButtonText => _isComputingFeatures ? "Cancel" : "Compute features";
+
 		private Bitmap? _videoFrame = null;
 		public Bitmap? VideoFrame
 		{
@@ -438,7 +454,13 @@ namespace SharpEyes.ViewModels
 				}
 			});
 			ComputePyramidCommand = ReactiveCommand.CreateFromTask(ComputePyramid);
-			ComputeFeaturesCommand = ReactiveCommand.CreateFromTask(ComputeFeatures);
+			ComputeFeaturesCommand = ReactiveCommand.Create(() =>
+			{
+				if (_isComputingFeatures)
+					_computeFeaturesTokenSource?.Cancel();
+				else
+					_ = ComputeFeatures();
+			});
 			SpatialFrequencies.CollectionChanged += (s, e) => this.RaisePropertyChanged("SpatialFrequenciesHeaderText");
 			TemporalFrequencies.CollectionChanged += (s, e) => this.RaisePropertyChanged("TemporalFrequenciesHeaderText");
 			Directions.CollectionChanged += (s, e) => this.RaisePropertyChanged("DirectionsHeaderText");
@@ -661,7 +683,103 @@ namespace SharpEyes.ViewModels
 
 		private async Task ComputeFeatures()
 		{
-			// TODO: implement feature extraction
+			if (_videoReader == null || (object)_gazeLocations == null || _dataStartFrame == null) return;
+
+			CancellationTokenSource tokenSource = new CancellationTokenSource();
+			_computeFeaturesTokenSource = tokenSource;
+			CancellationToken cancellationToken = tokenSource.Token;
+			IsComputingFeatures = true;
+			IsProgressBarVisible = true;
+
+			try
+			{
+				// Phase 1: build recentered frames (determinate progress)
+				StatusText = "Processing frames...";
+				IsProgressBarIndeterminate = false;
+				ProgressBarValue = 0;
+				Recenterer recenterer = new Recenterer(
+					_videoReader, _gazeLocations, _dataStartFrame.Value,
+					false, _eyetrackingFPS, _gazeSpaceWidth, _gazeSpaceHeight,
+					_frameScale, _padValue, false);
+				IProgress<double> frameProgress = new Progress<double>(value => ProgressBarValue = value);
+				NDArray frames;
+				try
+				{
+					frames = await recenterer.BuildRecenteredFramesAsync(_startFrame, frameProgress, cancellationToken);
+				}
+				catch (OperationCanceledException) { throw; }
+				catch (Exception exception)
+				{
+					StatusText = String.Format("Error processing frames: {0}", exception.Message);
+					return;
+				}
+
+				cancellationToken.ThrowIfCancellationRequested();
+
+				// Phase 2: build pyramid (always, regardless of prior state)
+				StatusText = "Building pyramid...";
+				try
+				{
+					await Task.Run(() =>
+					{
+						PythonEnvironmentManager.Instance.Initialize();
+						_motionEnergyModel.BuildPyramid(_videoFps);
+					}, cancellationToken);
+				}
+				catch (OperationCanceledException) { throw; }
+				catch (Exception exception)
+				{
+					StatusText = String.Format("Error building pyramid: {0}", exception.Message);
+					return;
+				}
+				this.RaisePropertyChanged("ModelFrameWidth");
+				this.RaisePropertyChanged("ModelFrameHeight");
+				UpdatePyramidOverlay();
+
+				cancellationToken.ThrowIfCancellationRequested();
+
+				// Phase 3: extract features (indeterminate progress)
+				StatusText = "Computing motion energy...";
+				IsProgressBarIndeterminate = true;
+				NDArray features;
+				try
+				{
+					IProgress<double> extractProgress = new Progress<double>(_ => { });
+					features = await _motionEnergyModel.ExtractAsync(frames, extractProgress);
+				}
+				catch (OperationCanceledException) { throw; }
+				catch (Exception exception)
+				{
+					StatusText = String.Format("Error computing motion energy: {0}", exception.Message);
+					return;
+				}
+
+				_motionEnergyFeatures = features;
+				IsProgressBarIndeterminate = false;
+				IsProgressBarVisible = false;
+
+				// Save to disk
+				SaveFileDialog saveDialog = new SaveFileDialog() { Title = "Save motion energy features" };
+				saveDialog.Filters.Add(new FileDialogFilter() { Name = "NumPy arrays", Extensions = { "npy" } });
+				string? savePath = await saveDialog.ShowAsync(MainWindow);
+				if (savePath != null)
+					await Task.Run(() => Num.save(savePath, features));
+
+				StatusText = String.Format("Motion energy computed: {0} frames x {1} features",
+					features.Shape[0], features.Shape[1]);
+			}
+			catch (OperationCanceledException)
+			{
+				StatusText = "Cancelled.";
+			}
+			finally
+			{
+				tokenSource.Dispose();
+				_computeFeaturesTokenSource = null;
+				IsComputingFeatures = false;
+				IsProgressBarVisible = false;
+				IsProgressBarIndeterminate = false;
+			}
 		}
 
 		private int VideoTimeToDataIndex(int videoFrame)
