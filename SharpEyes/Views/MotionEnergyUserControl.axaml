@@ -81,7 +81,7 @@
       <ScrollViewer DockPanel.Dock="Top" Margin="2">
         <StackPanel>
 
-          <Expander Margin="4 2" IsExpanded="True" Header="Video output" HorizontalContentAlignment="Center">
+          <Expander Margin="4 2" IsExpanded="True" Header="Motion-energy frame parameters" HorizontalContentAlignment="Center">
             <StackPanel>
               <StackPanel Orientation="Horizontal">
                 <TextBlock VerticalAlignment="Center" Width="150">Pad percent</TextBlock>
