@@ -4,9 +4,11 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Num = NumSharp.np;
 using NumSharp;
 using ReactiveUI;
 using SharpEyes.Models;
@@ -50,6 +52,13 @@ namespace SharpEyes.ViewModels
 		{
 			get => _isProgressBarVisible;
 			set => this.RaiseAndSetIfChanged(ref _isProgressBarVisible, value);
+		}
+
+		private bool _isProgressBarIndeterminate = false;
+		public bool IsProgressBarIndeterminate
+		{
+			get => _isProgressBarIndeterminate;
+			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
 		}
 
 		private double _progressBarValue = 0;
@@ -101,6 +110,7 @@ namespace SharpEyes.ViewModels
 		private int _eyetrackingFPS = 60;
 		private int _gazeSpaceWidth = 1024;
 		private int _gazeSpaceHeight = 768;
+		private NDArray? _motionEnergyFeatures = null;
 
 		private bool _isLoadedFromRecentering = false;
 		public bool IsLoadedFromRecentering
