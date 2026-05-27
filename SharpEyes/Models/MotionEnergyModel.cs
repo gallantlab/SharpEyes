@@ -51,7 +51,6 @@ namespace SharpEyes.Models
 		private PyObject? _pyramidObject = null;
 
 		public int FilterCount { get; private set; } = 0;
-		public int FeatureCount { get; private set; } = 0;
 		public bool IsPyramidBuilt => _pyramidObject != null;
 		public bool RebuildRequired { get; private set; } = true;
 
@@ -78,7 +77,6 @@ namespace SharpEyes.Models
 
 				dynamic pyramid = _pyramidObject;
 				try { FilterCount = (int)pyramid.nfilters; } catch { FilterCount = 0; }
-				try { FeatureCount = (int)pyramid.nfeatures; } catch { FeatureCount = 0; }
 			}
 
 			RebuildRequired = false;
