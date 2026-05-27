@@ -167,7 +167,8 @@
               </StackPanel>
               <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <TextBlock VerticalAlignment="Center" Width="150">Data start frame</TextBlock>
-                <TextBlock VerticalAlignment="Center" Margin="4" Text="{Binding DataStartFrame}"/>
+                <NumericUpDown Margin="4" Width="120" Value="{Binding DataStartFrame}" Increment="1"
+                               IsEnabled="{Binding IsGazeLoaded}"/>
               </StackPanel>
             </StackPanel>
           </Expander>

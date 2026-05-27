@@ -188,7 +188,17 @@ namespace SharpEyes.ViewModels
 		public bool HasTTLData => IsGazeLoaded && Recenterer.FindFirstTTLGazeIndex(DisplayedGazeLocations) != null;
 
 		internal int? dataStartFrame = null;
-		public int? DataStartFrame => dataStartFrame;
+		public int? DataStartFrame
+		{
+			get => dataStartFrame;
+			set
+			{
+				dataStartFrame = value;
+				this.RaisePropertyChanged("DataStartFrame");
+				if (videoReader != null)
+					UpdateDisplay();
+			}
+		}
 
 		private int _eyetrackingShiftFrameCount = 1;
 		public int EyetrackingShiftFrameCount

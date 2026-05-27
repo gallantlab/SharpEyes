@@ -140,6 +140,17 @@ namespace SharpEyes.ViewModels
 		// Gaze overlay info
 		private NDArray? gazeLocations = null;
 		private int? dataStartFrame = null;
+		public int DataStartFrame
+		{
+			get => dataStartFrame ?? 0;
+			set
+			{
+				dataStartFrame = value;
+				this.RaisePropertyChanged("DataStartFrame");
+				if (videoReader != null)
+					UpdateDisplay();
+			}
+		}
 
 		private int? dataFrame
 		{
@@ -436,6 +447,7 @@ namespace SharpEyes.ViewModels
 			SetupVideo(videoFilePath);
 			this.gazeLocations = gazeData.Clone() as NDArray;
 			this.dataStartFrame = gazeDataStartFrame;
+			this.RaisePropertyChanged("DataStartFrame");
 			EyetrackingFPS = eyetrackingFPS;
 			IsGazeLoaded = true;
 			UpdateDisplay();
@@ -657,7 +669,10 @@ namespace SharpEyes.ViewModels
 			}
 			IsGazeLoaded = true;
 			if (videoReader != null)
+			{
 				dataStartFrame = videoReader.CurrentFrameNumber;
+				this.RaisePropertyChanged("DataStartFrame");
+			}
 		}
 
 		// == Export ==
