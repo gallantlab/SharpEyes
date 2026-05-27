@@ -5,208 +5,343 @@
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              xmlns:vm="clr-namespace:SharpEyes.ViewModels"
              x:Class="SharpEyes.Views.MotionEnergyUserControl">
-  <Design.DataContext>
-    <vm:MotionEnergyViewModel/>
-  </Design.DataContext>
-  <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="4" ShowGridLines="False">
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="*"/>
-      <ColumnDefinition Width="350"/>
-    </Grid.ColumnDefinitions>
-    <Grid.RowDefinitions>
-      <RowDefinition Height="*"/>
-      <RowDefinition Height="36"/>
-    </Grid.RowDefinitions>
+    <Design.DataContext>
+        <vm:MotionEnergyViewModel />
+    </Design.DataContext>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="4" ShowGridLines="False">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="350" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="36" />
+        </Grid.RowDefinitions>
 
-    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ShowGridLines="False" Grid.Row="0" Grid.Column="0">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="48"/>
-        <RowDefinition Height="*"/>
-        <RowDefinition Height="96"/>
-      </Grid.RowDefinitions>
+        <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ShowGridLines="False" Grid.Row="0"
+              Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="96" />
+            </Grid.RowDefinitions>
 
-      <!--Top button row-->
-      <StackPanel Orientation="Horizontal" Grid.Row="0">
-        <Button Margin="4" Command="{Binding LoadVideoCommand}">Open Video</Button>
-      </StackPanel>
+            <!--Top button row-->
+            <StackPanel Orientation="Horizontal" Grid.Row="0">
+                <Button Margin="4" Command="{Binding LoadVideoCommand}">Open Video</Button>
+            </StackPanel>
 
-      <!--Video display-->
-      <Panel Grid.Row="1">
-        <!--Plain video (opened directly)-->
-        <Viewbox Stretch="Uniform" IsVisible="{Binding !IsLoadedFromRecentering}">
-          <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"/>
-        </Viewbox>
-        <!--Recentered video (passed from recentering tab): padded canvas, image offset by gaze-->
-        <Viewbox Stretch="Uniform" IsVisible="{Binding IsLoadedFromRecentering}">
-          <Canvas Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}"
-                  Background="{Binding PadValueBrush}">
-            <Canvas Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
-                    Canvas.Left="{Binding RecenteringImageLeft}"
-                    Canvas.Top="{Binding RecenteringImageTop}">
-              <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"/>
-            </Canvas>
-          </Canvas>
-        </Viewbox>
-      </Panel>
+            <!--Video display-->
+            <Panel Grid.Row="1">
+                <!--Plain video (opened directly)-->
+                <Viewbox Stretch="Uniform" IsVisible="{Binding !IsLoadedFromRecentering}">
+                    <Panel Width="{Binding ModelFrameWidth}" Height="{Binding ModelFrameHeight}">
+                        <Viewbox Stretch="Uniform">
+                            <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}"
+                                   Height="{Binding VideoHeight}" />
+                        </Viewbox>
+                        <Viewbox Stretch="Uniform"
+                                 Width="{Binding ModelFrameWidth}" Height="{Binding ModelFrameHeight}">
+                            <Grid Width="{Binding ModelFrameWidth}" Height="{Binding ModelFrameHeight}"
+                                  IsHitTestVisible="False">
+                                <ItemsControl Items="{Binding PyramidCircles}" IsHitTestVisible="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.Styles>
+                                        <Style Selector="ContentPresenter">
+                                            <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                                        </Style>
+                                    </ItemsControl.Styles>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Ellipse Width="{Binding Diameter}" Height="{Binding Diameter}"
+                                                     Stroke="{Binding Stroke}"
+                                                     StrokeThickness="{Binding StrokeThickness}"
+                                                     Fill="Transparent" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <ItemsControl Items="{Binding PyramidArrows}" IsHitTestVisible="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.Styles>
+                                        <Style Selector="ContentPresenter">
+                                            <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}" />
+                                            <Setter Property="Canvas.Top" Value="{Binding CanvasTop}" />
+                                        </Style>
+                                    </ItemsControl.Styles>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Path Data="{Binding Geometry}" Stroke="{Binding Stroke}"
+                                                  StrokeThickness="{Binding StrokeThickness}"
+                                                  Fill="Transparent" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </Viewbox>
+                    </Panel>
+                </Viewbox>
+                <!--Recentered video (passed from recentering tab): padded canvas, image offset by gaze-->
+                <Viewbox Stretch="Uniform" IsVisible="{Binding IsLoadedFromRecentering}">
+                    <Canvas Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}"
+                            Background="{Binding PadValueBrush}">
+                        <Canvas Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
+                                Canvas.Left="{Binding RecenteringImageLeft}"
+                                Canvas.Top="{Binding RecenteringImageTop}">
+                            <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}"
+                                   Height="{Binding VideoHeight}" />
 
-      <!--Video playback controls-->
-      <StackPanel Orientation="Vertical" Grid.Row="2">
-        <Slider Margin="0 0 4 4" Minimum="0" IsEnabled="{Binding CanPlayVideo}"
-                Maximum="{Binding TotalVideoFrames}" Value="{Binding CurrentVideoFrame}"/>
-        <Panel>
-          <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding CurrentVideoTime}"/>
-          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
-            <Button ToolTip.Tip="Previous Frame" Height="32" VerticalContentAlignment="Center"
-                    Command="{Binding PreviousFrameCommand}">⮜</Button>
-            <Button Height="32" VerticalContentAlignment="Center" Margin="2 0 2 0"
-                    Content="{Binding PlayPauseButtonText}" Command="{Binding PlayPauseCommand}"/>
-            <Button ToolTip.Tip="Next Frame" Height="32" VerticalContentAlignment="Center"
-                    Command="{Binding NextFrameCommand}">⮞</Button>
-          </StackPanel>
-          <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4 0 4 0"
-                     Text="{Binding TotalVideoTime}"/>
-        </Panel>
-      </StackPanel>
+                        </Canvas>
+                        <Viewbox Stretch="Uniform"
+                                 Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}">
+                            <Grid Width="{Binding ModelFrameWidth}" Height="{Binding ModelFrameHeight}">
+                                <ItemsControl Items="{Binding PyramidCircles}" IsHitTestVisible="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.Styles>
+                                        <Style Selector="ContentPresenter">
+                                            <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                                        </Style>
+                                    </ItemsControl.Styles>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Ellipse Width="{Binding Diameter}" Height="{Binding Diameter}"
+                                                     Stroke="{Binding Stroke}"
+                                                     StrokeThickness="{Binding StrokeThickness}"
+                                                     Fill="Transparent" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <ItemsControl Items="{Binding PyramidArrows}" IsHitTestVisible="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.Styles>
+                                        <Style Selector="ContentPresenter">
+                                            <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}" />
+                                            <Setter Property="Canvas.Top" Value="{Binding CanvasTop}" />
+                                        </Style>
+                                    </ItemsControl.Styles>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Path Data="{Binding Geometry}" Stroke="{Binding Stroke}"
+                                                  StrokeThickness="{Binding StrokeThickness}"
+                                                  Fill="Transparent" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </Viewbox>
+                    </Canvas>
+                </Viewbox>
+            </Panel>
+
+            <!--Video playback controls-->
+            <StackPanel Orientation="Vertical" Grid.Row="2">
+                <Slider Margin="0 0 4 4" Minimum="0" IsEnabled="{Binding CanPlayVideo}"
+                        Maximum="{Binding TotalVideoFrames}" Value="{Binding CurrentVideoFrame}" />
+                <Panel>
+                    <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding CurrentVideoTime}" />
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
+                        <Button ToolTip.Tip="Previous Frame" Height="32" VerticalContentAlignment="Center"
+                                Command="{Binding PreviousFrameCommand}">
+                            ⮜
+                        </Button>
+                        <Button Height="32" VerticalContentAlignment="Center" Margin="2 0 2 0"
+                                Content="{Binding PlayPauseButtonText}" Command="{Binding PlayPauseCommand}" />
+                        <Button ToolTip.Tip="Next Frame" Height="32" VerticalContentAlignment="Center"
+                                Command="{Binding NextFrameCommand}">
+                            ⮞
+                        </Button>
+                    </StackPanel>
+                    <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4 0 4 0"
+                               Text="{Binding TotalVideoTime}" />
+                </Panel>
+            </StackPanel>
+        </Grid>
+
+        <!--Status bar-->
+        <DockPanel Grid.Row="1" Grid.Column="0" LastChildFill="True" VerticalAlignment="Center">
+            <TextBlock DockPanel.Dock="Left" Text="{Binding StatusText}" />
+            <ProgressBar Margin="4 0 4 0" Minimum="0" Maximum="100"
+                         Value="{Binding ProgressBarValue}" IsVisible="{Binding IsProgressBarVisible}" />
+        </DockPanel>
+
+        <!--Side panel-->
+        <DockPanel Margin="0" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
+            <ScrollViewer DockPanel.Dock="Top" Margin="2">
+                <StackPanel>
+
+                    <Expander Margin="4 2" IsExpanded="True" Header="Motion-energy frame parameters"
+                              HorizontalContentAlignment="Center">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Pad percent</TextBlock>
+                                <NumericUpDown Margin="4" Width="150" Value="{Binding PadPercent}" Increment="10"
+                                               Minimum="100"
+                                               FormatString="0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Pad value</TextBlock>
+                                <NumericUpDown Margin="4" Width="150" Value="{Binding PadValue}" Increment="0.05"
+                                               Minimum="0.0" Maximum="1.0"
+                                               FormatString="0.00" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Frame scale</TextBlock>
+                                <NumericUpDown Margin="4" Width="150" Value="{Binding FrameScale}" Increment="0.025"
+                                               Minimum="0.01" Maximum="1.0"
+                                               FormatString="0.000" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0 4 0 0">
+                                <TextBlock VerticalAlignment="Center" Width="150">Output frame</TextBlock>
+                                <TextBlock VerticalAlignment="Center" Text="{Binding OutputFrameSizeText}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Video frame</TextBlock>
+                                <TextBlock VerticalAlignment="Center" Text="{Binding VideoFrameSizeText}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander Margin="4 2" IsExpanded="True" Header="Motion-energy pyramid"
+                              HorizontalContentAlignment="Center">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Video FPS</TextBlock>
+                                <NumericUpDown Margin="4" Width="150" Value="{Binding VideoFps}" Increment="1"
+                                               Minimum="1"
+                                               FormatString="0.##" />
+                            </StackPanel>
+
+                            <Expander Margin="0 8 0 0" IsExpanded="{Binding IsSpatialFrequenciesExpanded}"
+                                      Header="{Binding SpatialFrequenciesHeaderText}">
+                                <StackPanel>
+                                    <ListBox Items="{Binding SpatialFrequencies}" Height="100" Margin="0 2 0 2"
+                                             BorderBrush="Gray" BorderThickness="1"
+                                             SelectedIndex="{Binding SelectedSpatialFrequencyIndex}">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" />
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <StackPanel Orientation="Horizontal">
+                                        <NumericUpDown Width="160" Value="{Binding NewSpatialFrequency}" Increment="1"
+                                                       Minimum="0"
+                                                       FormatString="0.##" />
+                                        <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                                                Command="{Binding AddSpatialFrequencyCommand}">
+                                            +
+                                        </Button>
+                                        <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                                                Command="{Binding RemoveSpatialFrequencyCommand}">
+                                            -
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander Margin="0 4 0 0" IsExpanded="{Binding IsTemporalFrequenciesExpanded}"
+                                      Header="{Binding TemporalFrequenciesHeaderText}">
+                                <StackPanel>
+                                    <ListBox Items="{Binding TemporalFrequencies}" Height="80" Margin="0 2 0 2"
+                                             BorderBrush="Gray" BorderThickness="1"
+                                             SelectedIndex="{Binding SelectedTemporalFrequencyIndex}">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" />
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <StackPanel Orientation="Horizontal">
+                                        <NumericUpDown Width="160" Value="{Binding NewTemporalFrequency}" Increment="1"
+                                                       Minimum="0"
+                                                       FormatString="0.##" />
+                                        <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                                                Command="{Binding AddTemporalFrequencyCommand}">
+                                            +
+                                        </Button>
+                                        <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                                                Command="{Binding RemoveTemporalFrequencyCommand}">
+                                            -
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander Margin="0 4 0 0" IsExpanded="{Binding IsDirectionsExpanded}"
+                                      Header="{Binding DirectionsHeaderText}">
+                                <StackPanel>
+                                    <ListBox Items="{Binding Directions}" Height="120" Margin="0 2 0 2"
+                                             BorderBrush="Gray" BorderThickness="1"
+                                             SelectedIndex="{Binding SelectedDirectionIndex}">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" />
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <StackPanel Orientation="Horizontal">
+                                        <NumericUpDown Width="160" Value="{Binding NewDirection}" Increment="45"
+                                                       Minimum="0" Maximum="315"
+                                                       FormatString="0.##" />
+                                        <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                                                Command="{Binding AddDirectionCommand}">
+                                            +
+                                        </Button>
+                                        <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
+                                                Command="{Binding RemoveDirectionCommand}">
+                                            -
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Expander>
+                            <ToggleSwitch Margin="0 8 0 0" OnContent="Show motion-energy pyramid"
+                                          OffContent="Show motion-energy pyramid"
+                                          IsChecked="{Binding ShowMotionEnergyPyramid}" />
+                            <Button Margin="4 4 4 4" HorizontalAlignment="Center" Width="180"
+                                    HorizontalContentAlignment="Center"
+                                    Command="{Binding ComputePyramidCommand}">
+                                Compute pyramid
+                            </Button>
+                        </StackPanel>
+                    </Expander>
+
+                    <Expander Margin="4 2" IsExpanded="True" Header="Compute features"
+                              HorizontalContentAlignment="Center">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Start frame</TextBlock>
+                                <NumericUpDown Margin="4" Width="150" Value="{Binding StartFrame}" Increment="1"
+                                               Minimum="0"
+                                               FormatString="0" />
+                            </StackPanel>
+                            <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180"
+                                    HorizontalContentAlignment="Center"
+                                    Command="{Binding ComputeFeaturesCommand}">
+                                Compute features
+                            </Button>
+                        </StackPanel>
+                    </Expander>
+
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+
     </Grid>
-
-    <!--Status bar-->
-    <DockPanel Grid.Row="1" Grid.Column="0" LastChildFill="True" VerticalAlignment="Center">
-      <TextBlock DockPanel.Dock="Left" Text="{Binding StatusText}"/>
-      <ProgressBar Margin="4 0 4 0" Minimum="0" Maximum="100"
-                   Value="{Binding ProgressBarValue}" IsVisible="{Binding IsProgressBarVisible}"/>
-    </DockPanel>
-
-    <!--Side panel-->
-    <DockPanel Margin="0" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
-      <ScrollViewer DockPanel.Dock="Top" Margin="2">
-        <StackPanel>
-
-          <Expander Margin="4 2" IsExpanded="True" Header="Motion-energy frame parameters" HorizontalContentAlignment="Center">
-            <StackPanel>
-              <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" Width="150">Pad percent</TextBlock>
-                <NumericUpDown Margin="4" Width="150" Value="{Binding PadPercent}" Increment="10" Minimum="100"
-                               FormatString="0"/>
-              </StackPanel>
-              <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" Width="150">Pad value</TextBlock>
-                <NumericUpDown Margin="4" Width="150" Value="{Binding PadValue}" Increment="0.05" Minimum="0.0" Maximum="1.0"
-                               FormatString="0.00"/>
-              </StackPanel>
-              <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" Width="150">Frame scale</TextBlock>
-                <NumericUpDown Margin="4" Width="150" Value="{Binding FrameScale}" Increment="0.025" Minimum="0.01" Maximum="1.0"
-                               FormatString="0.000"/>
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Margin="0 4 0 0">
-                <TextBlock VerticalAlignment="Center" Width="150">Output frame</TextBlock>
-                <TextBlock VerticalAlignment="Center" Text="{Binding OutputFrameSizeText}"/>
-              </StackPanel>
-              <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" Width="150">Video frame</TextBlock>
-                <TextBlock VerticalAlignment="Center" Text="{Binding VideoFrameSizeText}"/>
-              </StackPanel>
-            </StackPanel>
-          </Expander>
-
-          <Expander Margin="4 2" IsExpanded="True" Header="Motion-energy pyramid" HorizontalContentAlignment="Center">
-            <StackPanel>
-              <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" Width="150">Video FPS</TextBlock>
-                <NumericUpDown Margin="4" Width="150" Value="{Binding VideoFps}" Increment="1" Minimum="1"
-                               FormatString="0.##"/>
-              </StackPanel>
-
-              <Expander Margin="0 8 0 0" IsExpanded="{Binding IsSpatialFrequenciesExpanded}"
-                        Header="{Binding SpatialFrequenciesHeaderText}">
-                <StackPanel>
-                  <ListBox Items="{Binding SpatialFrequencies}" Height="100" Margin="0 2 0 2"
-                           BorderBrush="Gray" BorderThickness="1"
-                           SelectedIndex="{Binding SelectedSpatialFrequencyIndex}">
-                    <ListBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding}"/>
-                      </DataTemplate>
-                    </ListBox.ItemTemplate>
-                  </ListBox>
-                  <StackPanel Orientation="Horizontal">
-                    <NumericUpDown Width="160" Value="{Binding NewSpatialFrequency}" Increment="1" Minimum="0"
-                                   FormatString="0.##"/>
-                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                            Command="{Binding AddSpatialFrequencyCommand}">+</Button>
-                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                            Command="{Binding RemoveSpatialFrequencyCommand}">-</Button>
-                  </StackPanel>
-                </StackPanel>
-              </Expander>
-
-              <Expander Margin="0 4 0 0" IsExpanded="{Binding IsTemporalFrequenciesExpanded}"
-                        Header="{Binding TemporalFrequenciesHeaderText}">
-                <StackPanel>
-                  <ListBox Items="{Binding TemporalFrequencies}" Height="80" Margin="0 2 0 2"
-                           BorderBrush="Gray" BorderThickness="1"
-                           SelectedIndex="{Binding SelectedTemporalFrequencyIndex}">
-                    <ListBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding}"/>
-                      </DataTemplate>
-                    </ListBox.ItemTemplate>
-                  </ListBox>
-                  <StackPanel Orientation="Horizontal">
-                    <NumericUpDown Width="160" Value="{Binding NewTemporalFrequency}" Increment="1" Minimum="0"
-                                   FormatString="0.##"/>
-                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                            Command="{Binding AddTemporalFrequencyCommand}">+</Button>
-                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                            Command="{Binding RemoveTemporalFrequencyCommand}">-</Button>
-                  </StackPanel>
-                </StackPanel>
-              </Expander>
-
-              <Expander Margin="0 4 0 0" IsExpanded="{Binding IsDirectionsExpanded}"
-                        Header="{Binding DirectionsHeaderText}">
-                <StackPanel>
-                  <ListBox Items="{Binding Directions}" Height="120" Margin="0 2 0 2"
-                           BorderBrush="Gray" BorderThickness="1"
-                           SelectedIndex="{Binding SelectedDirectionIndex}">
-                    <ListBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding}"/>
-                      </DataTemplate>
-                    </ListBox.ItemTemplate>
-                  </ListBox>
-                  <StackPanel Orientation="Horizontal">
-                    <NumericUpDown Width="160" Value="{Binding NewDirection}" Increment="45" Minimum="0" Maximum="315"
-                                   FormatString="0.##"/>
-                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                            Command="{Binding AddDirectionCommand}">+</Button>
-                    <Button Margin="4 0 0 0" Width="28" HorizontalContentAlignment="Center"
-                            Command="{Binding RemoveDirectionCommand}">-</Button>
-                  </StackPanel>
-                </StackPanel>
-              </Expander>
-              <ToggleSwitch Margin="0 8 0 0" OnContent="Show motion-energy pyramid" OffContent="Show motion-energy pyramid"
-                            IsChecked="{Binding ShowMotionEnergyPyramid}"/>
-              <Button Margin="4 4 4 4" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"
-                      Command="{Binding ComputePyramidCommand}">Compute pyramid</Button>
-            </StackPanel>
-          </Expander>
-
-          <Expander Margin="4 2" IsExpanded="True" Header="Compute features" HorizontalContentAlignment="Center">
-            <StackPanel>
-              <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" Width="150">Start frame</TextBlock>
-                <NumericUpDown Margin="4" Width="150" Value="{Binding StartFrame}" Increment="1" Minimum="0"
-                               FormatString="0"/>
-              </StackPanel>
-              <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"
-                      Command="{Binding ComputeFeaturesCommand}">Compute features</Button>
-            </StackPanel>
-          </Expander>
-
-        </StackPanel>
-      </ScrollViewer>
-    </DockPanel>
-
-  </Grid>
 </UserControl>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -12,6 +13,24 @@ using SharpEyes.Models;
 
 namespace SharpEyes.ViewModels
 {
+	public class PyramidCircleOverlay
+	{
+		public double Left { get; set; }
+		public double Top { get; set; }
+		public double Diameter { get; set; }
+		public IBrush Stroke { get; set; }
+		public double StrokeThickness { get; set; }
+	}
+
+	public class PyramidArrowOverlay
+	{
+		public double CanvasLeft { get; set; }
+		public double CanvasTop { get; set; }
+		public Geometry Geometry { get; set; }
+		public IBrush Stroke { get; set; }
+		public double StrokeThickness { get; set; }
+	}
+
 	public class MotionEnergyViewModel : ViewModelBase
 	{
 		public ReactiveCommand<Unit, Unit> LoadVideoCommand { get; }
@@ -167,6 +186,9 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
+		public int ModelFrameWidth => _motionEnergyModel.FrameWidth;
+		public int ModelFrameHeight => _motionEnergyModel.FrameHeight;
+
 		public string OutputFrameSizeText => String.Format("{0} x {1}",
 			(int)(VideoWidth * _padPercent / 100.0 * _frameScale),
 			(int)(VideoHeight * _padPercent / 100.0 * _frameScale));
@@ -286,8 +308,15 @@ namespace SharpEyes.ViewModels
 		public bool ShowMotionEnergyPyramid
 		{
 			get => _showMotionEnergyPyramid;
-			set => this.RaiseAndSetIfChanged(ref _showMotionEnergyPyramid, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _showMotionEnergyPyramid, value);
+				UpdatePyramidOverlay();
+			}
 		}
+
+		public ObservableCollection<PyramidCircleOverlay> PyramidCircles { get; } = new ObservableCollection<PyramidCircleOverlay>();
+		public ObservableCollection<PyramidArrowOverlay> PyramidArrows { get; } = new ObservableCollection<PyramidArrowOverlay>();
 
 		public ReactiveCommand<Unit, Unit> ComputePyramidCommand { get; }
 
@@ -506,6 +535,91 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
+		private void UpdatePyramidOverlay()
+		{
+			PyramidCircles.Clear();
+			PyramidArrows.Clear();
+			if (!_showMotionEnergyPyramid || _motionEnergyModel.FilterParameters.Count == 0) return;
+
+			IBrush overlayBrush = new SolidColorBrush(Color.FromArgb(200, 255, 220, 0));
+			double strokeThickness = 1.5;
+
+			Dictionary<(double, double, double), HashSet<double>> filterDirectionsByCircle =
+				new Dictionary<(double, double, double), HashSet<double>>();
+
+			foreach (MotionEnergyFilterParameters filter in _motionEnergyModel.FilterParameters)
+			{
+				(double, double, double) key = (filter.CenterHorizontal, filter.CenterVertical, filter.SpatialEnvelope);
+				if (!filterDirectionsByCircle.ContainsKey(key))
+					filterDirectionsByCircle[key] = new HashSet<double>();
+				filterDirectionsByCircle[key].Add(filter.Direction);
+			}
+
+			int frameHeight = _motionEnergyModel.FrameHeight;
+			foreach (KeyValuePair<(double, double, double), HashSet<double>> circleEntry in filterDirectionsByCircle)
+			{
+				double centerX = circleEntry.Key.Item1 * frameHeight;
+				double centerY = circleEntry.Key.Item2 * frameHeight;
+				double radius  = circleEntry.Key.Item3 * frameHeight;
+
+				PyramidCircles.Add(new PyramidCircleOverlay
+				{
+					Left           = centerX - radius,
+					Top            = centerY - radius,
+					Diameter       = 2 * radius,
+					Stroke         = overlayBrush,
+					StrokeThickness = strokeThickness
+				});
+
+				foreach (double direction in circleEntry.Value)
+				{
+					double directionRadians = direction * Math.PI / 180.0;
+					double dx = Math.Cos(directionRadians);
+					double dy = -Math.Sin(directionRadians);
+
+					Point arrowStart = new Point(centerX + radius * dx,        centerY + radius * dy);
+					Point arrowTip   = new Point(centerX + 1.25 * radius * dx, centerY + 1.25 * radius * dy);
+
+					double wingLength = 0.25 * radius;
+					double wingAngle  = Math.PI / 6.0;
+					Point wing1 = new Point(
+						arrowTip.X + wingLength * Math.Cos(directionRadians + Math.PI + wingAngle),
+						arrowTip.Y - wingLength * Math.Sin(directionRadians + Math.PI + wingAngle));
+					Point wing2 = new Point(
+						arrowTip.X + wingLength * Math.Cos(directionRadians + Math.PI - wingAngle),
+						arrowTip.Y - wingLength * Math.Sin(directionRadians + Math.PI - wingAngle));
+
+					double canvasLeft = Math.Min(arrowStart.X, Math.Min(arrowTip.X, Math.Min(wing1.X, wing2.X)));
+					double canvasTop  = Math.Min(arrowStart.Y, Math.Min(arrowTip.Y, Math.Min(wing1.Y, wing2.Y)));
+
+					StreamGeometry arrowGeometry = new StreamGeometry();
+					using (StreamGeometryContext streamContext = arrowGeometry.Open())
+					{
+						streamContext.BeginFigure(new Point(arrowStart.X - canvasLeft, arrowStart.Y - canvasTop), false);
+						streamContext.LineTo(new Point(arrowTip.X - canvasLeft, arrowTip.Y - canvasTop));
+						streamContext.EndFigure(false);
+
+						streamContext.BeginFigure(new Point(arrowTip.X - canvasLeft, arrowTip.Y - canvasTop), false);
+						streamContext.LineTo(new Point(wing1.X - canvasLeft, wing1.Y - canvasTop));
+						streamContext.EndFigure(false);
+
+						streamContext.BeginFigure(new Point(arrowTip.X - canvasLeft, arrowTip.Y - canvasTop), false);
+						streamContext.LineTo(new Point(wing2.X - canvasLeft, wing2.Y - canvasTop));
+						streamContext.EndFigure(false);
+					}
+
+					PyramidArrows.Add(new PyramidArrowOverlay
+					{
+						CanvasLeft      = canvasLeft,
+						CanvasTop       = canvasTop,
+						Geometry        = arrowGeometry,
+						Stroke          = overlayBrush,
+						StrokeThickness = strokeThickness
+					});
+				}
+			}
+		}
+
 		private async Task ComputePyramid()
 		{
 			StatusText = "Building pyramid...";
@@ -521,6 +635,9 @@ namespace SharpEyes.ViewModels
 				});
 				StatusText = String.Format("Pyramid built: {0} filters",
 					_motionEnergyModel.FilterCount);
+				this.RaisePropertyChanged("ModelFrameWidth");
+				this.RaisePropertyChanged("ModelFrameHeight");
+				UpdatePyramidOverlay();
 			}
 			catch (Exception exception)
 			{
