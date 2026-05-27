@@ -34,6 +34,8 @@
         <Button Name="LoadGazeButton" Margin="4"
                       Command="{Binding LoadGazeCommand}"
                       HotKey="Ctrl+L">Load Gaze</Button>
+        <Button Name="JumpToFirstTTLButton" Margin="4" Command="{Binding JumpToFirstTTLCommand}"
+                IsEnabled="{Binding HasTTLData}">Jump to first TTL</Button>
         <ToggleButton Name="MoveGazeButton" Margin="4" IsChecked="{Binding IsMovingGaze}"
                       IsEnabled="{Binding IsGazeLoaded}"
                       HotKey="2">Move Gaze</ToggleButton>

@@ -16,7 +16,6 @@ using Eyetracking;
 using NumSharp;
 using ReactiveUI;
 using SharpEyes.Models;
-using Num = NumSharp.np;
 
 namespace SharpEyes.ViewModels
 {
@@ -32,6 +31,7 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> SetCurrentAsDataStartCommand { get; set; }
 		public ReactiveCommand<Unit, Unit>? FindDataStartCommand { get; set; } = null;
 		public ReactiveCommand<Unit, Unit> SendToRecenteringCommand { get; set; }
+		public ReactiveCommand<Unit, Unit>? JumpToFirstTTLCommand { get; set; } = null;
 
 		// Set by MainWindowViewModel after construction
 		public RecenteringViewModel? RecenteringViewModel { get; set; }
@@ -400,6 +400,7 @@ namespace SharpEyes.ViewModels
 			PreviousFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(-1); });
 			NextFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(1); });
 			SendToRecenteringCommand = ReactiveCommand.Create(SendToRecentering);
+			JumpToFirstTTLCommand = ReactiveCommand.Create(JumpToFirstTTL);
 			TrailPoints = new ObservableCollection<TrailGazePoint>(
 				Enumerable.Range(0, 10).Select(_ => new TrailGazePoint()));
 		}
@@ -772,6 +773,16 @@ namespace SharpEyes.ViewModels
 				return;
 			RecenteringViewModel.LoadFromStimulusGaze(videoFilePath, DisplayedGazeLocations, dataStartFrame.Value, EyetrackingFPS);
 			SwitchToRecenteringTab?.Invoke();
+		}
+
+		public void JumpToFirstTTL()
+		{
+			int? firstTTLGazeIndex = Recenterer.FindFirstTTLGazeIndex(DisplayedGazeLocations);
+			if (firstTTLGazeIndex == null || videoReader == null || dataStartFrame == null) return;
+			double gazeElapsedTime = (double)firstTTLGazeIndex.Value / EyetrackingFPS;
+			int videoFrame = dataStartFrame.Value + (int)(gazeElapsedTime * videoReader.fps);
+			videoFrame = Math.Clamp(videoFrame, 0, videoReader.frameCount - 1);
+			ShowFrame(videoFrame);
 		}
 
 		public void ReapplyFilterIfEnabled()
