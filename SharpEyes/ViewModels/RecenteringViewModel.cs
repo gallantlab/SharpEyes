@@ -379,7 +379,7 @@ namespace SharpEyes.ViewModels
 		{
 			LoadVideoCommand = ReactiveCommand.Create(LoadVideo);
 			PlayPauseCommand = ReactiveCommand.Create(PlayPause);
-			LoadGazeCommand = ReactiveCommand.Create(LoadGaze);
+			LoadGazeCommand = ReactiveCommand.CreateFromTask(LoadGaze);
 			ExportCommand = ReactiveCommand.CreateFromTask(Export);
 			JumpToFirstTTLCommand = ReactiveCommand.Create(JumpToFirstTTL);
 			SendToMotionEnergyCommand = ReactiveCommand.Create(SendToMotionEnergy);
@@ -585,7 +585,7 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		public async void LoadGaze()
+		public async Task LoadGaze()
 		{
 			OpenFileDialog openFileDialog = new OpenFileDialog()
 			{
@@ -624,55 +624,68 @@ namespace SharpEyes.ViewModels
 
 			if (fileName == null || fileName.Length == 0)
 				return;
-			string extension = System.IO.Path.GetExtension(fileName[0]);
-			if (extension == ".npy")
-				gazeLocations = Num.load(fileName[0]);
-			else if (extension == ".txt")
-			{
-				int parsedSampleRate;
-				gazeLocations = EyelinkParser.ParseTextFile(fileName[0], out parsedSampleRate);
-				if (parsedSampleRate > 0)
-					EyetrackingFPS = parsedSampleRate;
-			}
-			else if (extension == ".edf")
-			{
-				int parsedSampleRate;
-				gazeLocations = EyelinkParser.ParseEDFFile(fileName[0], out parsedSampleRate);
-				if (parsedSampleRate > 0)
-					EyetrackingFPS = parsedSampleRate;
-			}
-			else // parse a csv file
-			{
-				using StreamReader csvFile = new StreamReader(fileName[0]);
-				string line = csvFile.ReadLine();
-				List<double[]> values = new List<double[]>();
-				bool isFirstLine = true;
-				while (line != null)
-				{
-					try
-					{
-						string[] tokens = line.Split(',');
-						double x = Double.Parse(tokens[0]);
-						double y = Double.Parse(tokens[1]);
-						values.Add(new double[]{x, y});
-						isFirstLine = false;
-						line = csvFile.ReadLine();
-					}
-					catch (Exception e)
-					{	// so if the first line is a header, we throw it away,
-						// but if there's a parsing error anywhere else we raise it
-						if (!isFirstLine)
-							throw;
-					}
-				}
 
-				gazeLocations = new NDArray(NPTypeCode.Double, Shape.Matrix(values.Count, 2));
-				for (int i = 0; i < values.Count; i++)
+			IsProgressBarVisible = true;
+			IsProgressBarIndeterminate = true;
+			StatusText = "Loading gaze...";
+
+			string extension = System.IO.Path.GetExtension(fileName[0]);
+			NDArray? loadedGazeLocations = null;
+			int parsedSampleRate = 0;
+
+			await Task.Run(() =>
+			{
+				if (extension == ".npy")
+					loadedGazeLocations = Num.load(fileName[0]);
+				else if (extension == ".txt")
 				{
-					gazeLocations[i, 0] = values[i][0];
-					gazeLocations[i, 1] = values[i][1];
+					loadedGazeLocations = EyelinkParser.ParseTextFile(fileName[0], out parsedSampleRate);
 				}
-			}
+				else if (extension == ".edf")
+				{
+					loadedGazeLocations = EyelinkParser.ParseEDFFile(fileName[0], out parsedSampleRate);
+				}
+				else // parse a csv file
+				{
+					using StreamReader csvFile = new StreamReader(fileName[0]);
+					string line = csvFile.ReadLine();
+					List<double[]> values = new List<double[]>();
+					bool isFirstLine = true;
+					while (line != null)
+					{
+						try
+						{
+							string[] tokens = line.Split(',');
+							double x = Double.Parse(tokens[0]);
+							double y = Double.Parse(tokens[1]);
+							values.Add(new double[]{x, y});
+							isFirstLine = false;
+							line = csvFile.ReadLine();
+						}
+						catch (Exception e)
+						{	// so if the first line is a header, we throw it away,
+							// but if there's a parsing error anywhere else we raise it
+							if (!isFirstLine)
+								throw;
+						}
+					}
+
+					loadedGazeLocations = new NDArray(NPTypeCode.Double, Shape.Matrix(values.Count, 2));
+					for (int i = 0; i < values.Count; i++)
+					{
+						loadedGazeLocations[i, 0] = values[i][0];
+						loadedGazeLocations[i, 1] = values[i][1];
+					}
+				}
+			});
+
+			gazeLocations = loadedGazeLocations;
+			if (parsedSampleRate > 0)
+				EyetrackingFPS = parsedSampleRate;
+
+			IsProgressBarVisible = false;
+			IsProgressBarIndeterminate = false;
+			StatusText = "Idle";
 			IsGazeLoaded = true;
 			if (videoReader != null)
 			{
