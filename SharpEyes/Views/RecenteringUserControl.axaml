@@ -34,7 +34,8 @@
       </StackPanel>
 
       <!--Video box: outer canvas is doubled size; inner canvas slides so gaze lands at center-->
-      <Viewbox Grid.Row="1" Stretch="Uniform">
+      <Panel Grid.Row="1">
+        <Viewbox Stretch="Uniform">
         <Canvas Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}"
                 Background="{Binding PadValueBrush}">
           <Canvas Name="VideoCanvas" Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
@@ -81,7 +82,11 @@
             </Panel>
           </Canvas>
         </Canvas>
-      </Viewbox>
+        </Viewbox>
+        <Border Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                Margin="4" Background="LimeGreen" CornerRadius="2"
+                IsVisible="{Binding IsTTL}" IsHitTestVisible="False"/>
+      </Panel>
 
       <!--Video playback controls and display-->
       <StackPanel Orientation="Vertical" Grid.Row="2">

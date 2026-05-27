@@ -158,6 +158,7 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _isGazeLoaded, value);
 				this.RaisePropertyChanged("IsGazeEllipseVisible");
+				this.RaisePropertyChanged("HasTTLData");
 			}
 		}
 
@@ -173,6 +174,16 @@ namespace SharpEyes.ViewModels
 		}
 
 		public bool IsGazeEllipseVisible => IsGazeLoaded && !IsGazeAtNaN;
+
+		private bool _isTTL = false;
+		public bool IsTTL
+		{
+			get => _isTTL;
+			set => this.RaiseAndSetIfChanged(ref _isTTL, value);
+		}
+
+		public bool HasTTLData => IsGazeLoaded && Recenterer.FindFirstTTLGazeIndex(DisplayedGazeLocations) != null;
+
 		internal int? dataStartFrame = null;
 
 		private int? dataEndFrame
@@ -480,6 +491,17 @@ namespace SharpEyes.ViewModels
 			return (int)(videoElapsedTime * EyetrackingFPS);
 		}
 
+		private bool CheckTTLInVideoFrame(int videoFrame)
+		{
+			if ((object)DisplayedGazeLocations == null || DisplayedGazeLocations.Shape[1] < 4) return false;
+			int startIndex = VideoTimeToDataIndex(videoFrame);
+			int endIndex = VideoTimeToDataIndex(videoFrame + 1);
+			for (int i = startIndex; i < endIndex && i < DisplayedGazeLocations.Shape[0]; i++)
+				if ((double)DisplayedGazeLocations[i, 3] != 0.0)
+					return true;
+			return false;
+		}
+
 		/// <summary>
 		/// For a given index in the data, get the corresponding video frame
 		/// </summary>
@@ -512,11 +534,13 @@ namespace SharpEyes.ViewModels
 					GazeX = gazeXValue;
 					GazeY = gazeYValue;
 				}
+				IsTTL = CheckTTLInVideoFrame(CurrentVideoFrame);
 				UpdateTrailPoints();
 			}
 			else
 			{
 				IsGazeAtNaN = false;
+				IsTTL = false;
 				foreach (TrailGazePoint point in TrailPoints)
 					point.IsVisible = false;
 			}
