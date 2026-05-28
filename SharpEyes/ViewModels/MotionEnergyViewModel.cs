@@ -838,7 +838,6 @@ namespace SharpEyes.ViewModels
 				// Save to disk
 				SaveFileDialog saveDialog = new SaveFileDialog() { Title = "Save motion energy features" };
 				saveDialog.Filters.Add(new FileDialogFilter() { Name = "NumPy arrays", Extensions = { "npy" } });
-				saveDialog.Directory = System.IO.Path.GetDirectoryName(_videoReader.videoFileName);
 				saveDialog.InitialFileName = System.IO.Path.GetFileNameWithoutExtension(_videoReader.videoFileName) + " motion energy.npy";
 				string? savePath = await saveDialog.ShowAsync(MainWindow);
 				if (savePath != null)

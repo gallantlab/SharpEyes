@@ -633,51 +633,61 @@ namespace SharpEyes.ViewModels
 			NDArray? loadedGazeLocations = null;
 			int parsedSampleRate = 0;
 
-			await Task.Run(() =>
+			try
 			{
-				if (extension == ".npy")
-					loadedGazeLocations = Num.load(fileName[0]);
-				else if (extension == ".txt")
+				await Task.Run(() =>
 				{
-					loadedGazeLocations = EyelinkParser.ParseTextFile(fileName[0], out parsedSampleRate);
-				}
-				else if (extension == ".edf")
-				{
-					loadedGazeLocations = EyelinkParser.ParseEDFFile(fileName[0], out parsedSampleRate);
-				}
-				else // parse a csv file
-				{
-					using StreamReader csvFile = new StreamReader(fileName[0]);
-					string line = csvFile.ReadLine();
-					List<double[]> values = new List<double[]>();
-					bool isFirstLine = true;
-					while (line != null)
+					if (extension == ".npy")
+						loadedGazeLocations = Num.load(fileName[0]);
+					else if (extension == ".txt")
 					{
-						try
+						loadedGazeLocations = EyelinkParser.ParseTextFile(fileName[0], out parsedSampleRate);
+					}
+					else if (extension == ".edf")
+					{
+						loadedGazeLocations = EyelinkParser.ParseEDFFile(fileName[0], out parsedSampleRate);
+					}
+					else // parse a csv file
+					{
+						using StreamReader csvFile = new StreamReader(fileName[0]);
+						string line = csvFile.ReadLine();
+						List<double[]> values = new List<double[]>();
+						bool isFirstLine = true;
+						while (line != null)
 						{
-							string[] tokens = line.Split(',');
-							double x = Double.Parse(tokens[0]);
-							double y = Double.Parse(tokens[1]);
-							values.Add(new double[]{x, y});
-							isFirstLine = false;
-							line = csvFile.ReadLine();
+							try
+							{
+								string[] tokens = line.Split(',');
+								double x = Double.Parse(tokens[0]);
+								double y = Double.Parse(tokens[1]);
+								values.Add(new double[]{x, y});
+								isFirstLine = false;
+								line = csvFile.ReadLine();
+							}
+							catch (Exception e)
+							{	// so if the first line is a header, we throw it away,
+								// but if there's a parsing error anywhere else we raise it
+								if (!isFirstLine)
+									throw;
+							}
 						}
-						catch (Exception e)
-						{	// so if the first line is a header, we throw it away,
-							// but if there's a parsing error anywhere else we raise it
-							if (!isFirstLine)
-								throw;
-						}
-					}
 
-					loadedGazeLocations = new NDArray(NPTypeCode.Double, Shape.Matrix(values.Count, 2));
-					for (int i = 0; i < values.Count; i++)
-					{
-						loadedGazeLocations[i, 0] = values[i][0];
-						loadedGazeLocations[i, 1] = values[i][1];
+						loadedGazeLocations = new NDArray(NPTypeCode.Double, Shape.Matrix(values.Count, 2));
+						for (int i = 0; i < values.Count; i++)
+						{
+							loadedGazeLocations[i, 0] = values[i][0];
+							loadedGazeLocations[i, 1] = values[i][1];
+						}
 					}
-				}
-			});
+				});
+			}
+			catch (InvalidDataException)
+			{
+				IsProgressBarVisible = false;
+				IsProgressBarIndeterminate = false;
+				StatusText = "Gaze file is malformed.";
+				return;
+			}
 
 			gazeLocations = loadedGazeLocations;
 			if (parsedSampleRate > 0)

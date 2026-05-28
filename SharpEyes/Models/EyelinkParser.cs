@@ -281,6 +281,25 @@ namespace Eyetracking
 		/// </summary>
 		public static NDArray ParseTextFile(string filePath, out int sampleRate)
 		{
+			bool hasEyelinkHeader = false;
+			using (StreamReader headerReader = new StreamReader(filePath, Encoding.UTF8))
+			{
+				string headerLine;
+				while ((headerLine = headerReader.ReadLine()) != null)
+				{
+					if (!headerLine.StartsWith("**"))
+						break;
+					if (headerLine.StartsWith("** TYPE: EDF_FILE"))
+					{
+						hasEyelinkHeader = true;
+						break;
+					}
+				}
+			}
+
+			if (!hasEyelinkHeader)
+				throw new InvalidDataException("File does not appear to be an EyeLink text file.");
+
 			List<double> gazeXList = new List<double>();
 			List<double> gazeYList = new List<double>();
 			List<double> pupilSizeList = new List<double>();
