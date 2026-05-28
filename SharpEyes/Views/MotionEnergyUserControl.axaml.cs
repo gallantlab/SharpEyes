@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -46,6 +47,48 @@ namespace SharpEyes.Views
 		private void VideoTimeSlider_DragFinished(object sender, VectorEventArgs e)
 		{
 			isDraggingVideoSlider = false;
+		}
+
+		private void SpatialFrequenciesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (viewModel == null) return;
+			ListBox listBox = (ListBox)sender;
+			List<int> selectedIndices = new List<int>();
+			foreach (object selectedItem in listBox.SelectedItems)
+			{
+				int index = viewModel.SpatialFrequencies.IndexOf((double)selectedItem);
+				if (index >= 0 && !selectedIndices.Contains(index))
+					selectedIndices.Add(index);
+			}
+			viewModel.SelectedSpatialFrequencyIndices = selectedIndices;
+		}
+
+		private void TemporalFrequenciesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (viewModel == null) return;
+			ListBox listBox = (ListBox)sender;
+			List<int> selectedIndices = new List<int>();
+			foreach (object selectedItem in listBox.SelectedItems)
+			{
+				int index = viewModel.TemporalFrequencies.IndexOf((double)selectedItem);
+				if (index >= 0 && !selectedIndices.Contains(index))
+					selectedIndices.Add(index);
+			}
+			viewModel.SelectedTemporalFrequencyIndices = selectedIndices;
+		}
+
+		private void DirectionsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (viewModel == null) return;
+			ListBox listBox = (ListBox)sender;
+			List<int> selectedIndices = new List<int>();
+			foreach (object selectedItem in listBox.SelectedItems)
+			{
+				int index = viewModel.Directions.IndexOf((double)selectedItem);
+				if (index >= 0 && !selectedIndices.Contains(index))
+					selectedIndices.Add(index);
+			}
+			viewModel.SelectedDirectionIndices = selectedIndices;
 		}
 	}
 }

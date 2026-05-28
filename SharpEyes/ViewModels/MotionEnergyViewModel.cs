@@ -42,7 +42,8 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit>? PlayPauseCommand { get; } = null;
 		public ReactiveCommand<Unit, Unit>? PreviousFrameCommand { get; } = null;
 		public ReactiveCommand<Unit, Unit>? NextFrameCommand { get; } = null;
-		public ReactiveCommand<Unit, Unit> RestoreDefaultsCommand { get; }
+		public ReactiveCommand<Unit, Unit> RestoreVideoDefaultsCommand { get; }
+		public ReactiveCommand<Unit, Unit> RestoreFilterDefaultsCommand { get; }
 
 		private string _statusText = "Idle";
 		public string StatusText
@@ -250,6 +251,10 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _selectedDirectionIndex, value);
 		}
 
+		public List<int> SelectedSpatialFrequencyIndices { get; set; } = new List<int>();
+		public List<int> SelectedTemporalFrequencyIndices { get; set; } = new List<int>();
+		public List<int> SelectedDirectionIndices { get; set; } = new List<int>();
+
 		private double _newSpatialFrequency = 0;
 		public double NewSpatialFrequency
 		{
@@ -427,7 +432,8 @@ namespace SharpEyes.ViewModels
 			motionEnergyFeatures.TemporalFrequencies = new List<double>(TemporalFrequencies);
 			motionEnergyFeatures.Directions = new List<double>(Directions);
 
-			RestoreDefaultsCommand = ReactiveCommand.Create(RestoreDefaults);
+			RestoreVideoDefaultsCommand = ReactiveCommand.Create(RestoreVideoDefaults);
+			RestoreFilterDefaultsCommand = ReactiveCommand.Create(RestoreFilterDefaults);
 			LoadVideoCommand = ReactiveCommand.Create(LoadVideo);
 			PlayPauseCommand = ReactiveCommand.Create(PlayPause);
 			PreviousFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(-1); });
@@ -441,11 +447,21 @@ namespace SharpEyes.ViewModels
 			});
 			RemoveSpatialFrequencyCommand = ReactiveCommand.Create(() =>
 			{
-				if (_selectedSpatialFrequencyIndex >= 0 && _selectedSpatialFrequencyIndex < SpatialFrequencies.Count)
-				{
-					SpatialFrequencies.RemoveAt(_selectedSpatialFrequencyIndex);
-					motionEnergyFeatures.SpatialFrequencies = new List<double>(SpatialFrequencies);
-				}
+				if (SelectedSpatialFrequencyIndices.Count == 0) return;
+				int minimumIndex = SelectedSpatialFrequencyIndices[0];
+				foreach (int index in SelectedSpatialFrequencyIndices)
+					if (index < minimumIndex) minimumIndex = index;
+				List<int> sortedDescending = new List<int>(SelectedSpatialFrequencyIndices);
+				sortedDescending.Sort((a, b) => b.CompareTo(a));
+				foreach (int index in sortedDescending)
+					SpatialFrequencies.RemoveAt(index);
+				motionEnergyFeatures.SpatialFrequencies = new List<double>(SpatialFrequencies);
+				if (minimumIndex > 0)
+					SelectedSpatialFrequencyIndex = minimumIndex - 1;
+				else if (SpatialFrequencies.Count > 0)
+					SelectedSpatialFrequencyIndex = 0;
+				else
+					SelectedSpatialFrequencyIndex = -1;
 			});
 			AddTemporalFrequencyCommand = ReactiveCommand.Create(() =>
 			{
@@ -454,11 +470,21 @@ namespace SharpEyes.ViewModels
 			});
 			RemoveTemporalFrequencyCommand = ReactiveCommand.Create(() =>
 			{
-				if (_selectedTemporalFrequencyIndex >= 0 && _selectedTemporalFrequencyIndex < TemporalFrequencies.Count)
-				{
-					TemporalFrequencies.RemoveAt(_selectedTemporalFrequencyIndex);
-					motionEnergyFeatures.TemporalFrequencies = new List<double>(TemporalFrequencies);
-				}
+				if (SelectedTemporalFrequencyIndices.Count == 0) return;
+				int minimumIndex = SelectedTemporalFrequencyIndices[0];
+				foreach (int index in SelectedTemporalFrequencyIndices)
+					if (index < minimumIndex) minimumIndex = index;
+				List<int> sortedDescending = new List<int>(SelectedTemporalFrequencyIndices);
+				sortedDescending.Sort((a, b) => b.CompareTo(a));
+				foreach (int index in sortedDescending)
+					TemporalFrequencies.RemoveAt(index);
+				motionEnergyFeatures.TemporalFrequencies = new List<double>(TemporalFrequencies);
+				if (minimumIndex > 0)
+					SelectedTemporalFrequencyIndex = minimumIndex - 1;
+				else if (TemporalFrequencies.Count > 0)
+					SelectedTemporalFrequencyIndex = 0;
+				else
+					SelectedTemporalFrequencyIndex = -1;
 			});
 			AddDirectionCommand = ReactiveCommand.Create(() =>
 			{
@@ -467,11 +493,21 @@ namespace SharpEyes.ViewModels
 			});
 			RemoveDirectionCommand = ReactiveCommand.Create(() =>
 			{
-				if (_selectedDirectionIndex >= 0 && _selectedDirectionIndex < Directions.Count)
-				{
-					Directions.RemoveAt(_selectedDirectionIndex);
-					motionEnergyFeatures.Directions = new List<double>(Directions);
-				}
+				if (SelectedDirectionIndices.Count == 0) return;
+				int minimumIndex = SelectedDirectionIndices[0];
+				foreach (int index in SelectedDirectionIndices)
+					if (index < minimumIndex) minimumIndex = index;
+				List<int> sortedDescending = new List<int>(SelectedDirectionIndices);
+				sortedDescending.Sort((a, b) => b.CompareTo(a));
+				foreach (int index in sortedDescending)
+					Directions.RemoveAt(index);
+				motionEnergyFeatures.Directions = new List<double>(Directions);
+				if (minimumIndex > 0)
+					SelectedDirectionIndex = minimumIndex - 1;
+				else if (Directions.Count > 0)
+					SelectedDirectionIndex = 0;
+				else
+					SelectedDirectionIndex = -1;
 			});
 			ComputePyramidCommand = ReactiveCommand.CreateFromTask(ComputePyramid);
 			ComputeFeaturesCommand = ReactiveCommand.Create(() =>
@@ -486,11 +522,15 @@ namespace SharpEyes.ViewModels
 			Directions.CollectionChanged += (s, e) => { this.RaisePropertyChanged("DirectionsHeaderText"); SaveSettings(); };
 		}
 
-		private void RestoreDefaults()
+		private void RestoreVideoDefaults()
 		{
 			PadPercent = 200;
 			PadValue = 0.1;
 			FrameScale = 0.125;
+		}
+
+		private void RestoreFilterDefaults()
+		{
 			SpatialFrequencies.Clear();
 			foreach (double value in new double[] { 0, 2, 4, 8, 16, 32 })
 				SpatialFrequencies.Add(value);
