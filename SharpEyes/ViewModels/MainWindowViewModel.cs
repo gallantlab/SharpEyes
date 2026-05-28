@@ -15,13 +15,15 @@ namespace SharpEyes.ViewModels
 
 		public ReactiveCommand<Unit, Unit>? OpenSettingsCommand { get; } = null;
 
-		private int _selectedTabIndex = 2;
+		private int _selectedTabIndex;
 		public int SelectedTabIndex
 		{
 			get => _selectedTabIndex;
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _selectedTabIndex, value);
+				SharpEyes.Models.Settings.Current.LastOpenTabIndex = value;
+				SharpEyes.Models.Settings.Current.Save();
 				if (value == 4) motionEnergyViewModel.InitializePython();
 				UpdateCurrentTabTimecodeDisplays();
 			}
@@ -41,6 +43,7 @@ namespace SharpEyes.ViewModels
 		public MainWindowViewModel()
 		{
 			SharpEyes.Models.PythonEnvironmentManager.Instance.LoadSettings();
+			_selectedTabIndex = SharpEyes.Models.Settings.Current.LastOpenTabIndex;
 			pupilFindingUserControlViewModel = new PupilFindingUserControlViewModel();
 			stimulusGazeViewModel = new StimulusGazeViewModel();
 			calibrationViewModel = new CalibrationViewModel();

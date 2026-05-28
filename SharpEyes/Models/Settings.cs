@@ -16,6 +16,8 @@ namespace SharpEyes.Models
 
 		public bool ShowFrameNumber { get; set; } = false;
 
+		public int LastOpenTabIndex { get; set; } = 2;
+
 		public int MotionEnergyFrameHeight { get; set; } = 270;
 		public int MotionEnergyFrameWidth { get; set; } = 480;
 
