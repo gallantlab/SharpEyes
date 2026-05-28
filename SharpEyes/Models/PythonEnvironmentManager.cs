@@ -51,7 +51,9 @@ namespace SharpEyes.Models
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 					platform = "x86_64-pc-windows-msvc";
 				else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-					platform = "aarch64-apple-darwin";
+					platform = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+						? "aarch64-apple-darwin"
+						: "x86_64-apple-darwin";
 				else
 					platform = "x86_64-unknown-linux-gnu";
 				return String.Format(
