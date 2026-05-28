@@ -2,19 +2,19 @@
 
 ## Installation
 
-Executables and installers are available on the [Releases page](https://github.com/gallantlab/SharpEyes/releases).
+Executables and installers are available on the [Releases page](https://github.com/gallantlab/SharpEyes/releases). Unzip the zip file and run `SharpEyes`
 
 ### Windows
 
-Two options are available: a standalone `.exe` and an installer. Either can be used.
+A standalone executable is available. It should have everything it needs.
 
 ### Linux
 
-A standalone `.exe` is available. Linux may require additional system libraries to be installed; SharpEyes will tell you which libraries are missing on launch.
+A standalone executable is available. Linux may require additional system libraries to be installed; SharpEyes will tell you which libraries are missing on launch.
 
 ### macOS
 
-macOS is not supported. You can attempt to build from source, but no support will be provided.
+I have no macOS development environment, so it's not supported. But because all the packages here are cross-platform, I see no reason why it can't be compiled from source on a mac. However, I can't provide any support for that.
 
 ## Python interop setup
 
