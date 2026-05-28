@@ -1,6 +1,6 @@
 # Calibration
 
-<img src="../../assets/calibration.png" width="800" />
+<img src="../assets/calibration.png" width="800" />
 
 This is currently under construction.
 

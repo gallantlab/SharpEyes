@@ -1,6 +1,6 @@
 # Motion-Energy
 
-<img src="../../assets/motion-energy.png" width="800" />
+<img src="../assets/motion-energy.png" width="800" />
 
 The Motion-Energy tab computes motion-energy features from a video using [PyMoten](https://github.com/gallantlab/pymoten). It can operate on recentered video sent from the [Recentering](recentering.md) tab, or on a raw video loaded directly. If you want to compute motion-energy for retinotopic videos, then they _have_ to be sent over from the [Recentering](./recentering.md) tab. The video preview overlays the motion-energy pyramid on the frames so you can visually verify the filter parameters before committing to a full computation.
 

@@ -1,6 +1,6 @@
 # Workflow
 
-<img src="../../assets/workflow.png" width="800" />
+<img src="../assets/workflow.png" width="800" />
 
 SharpEyes's workflow is divided into five tabs, each corresponding to a stage of processing. 
 

@@ -1,6 +1,6 @@
 # Recentering
 
-<img src="../../assets/recenetering.png" width="800" />
+<img src="../assets/recenetering.png" width="800" />
 
 The Recentering tab shifts each frame of the stimulus video so that the gaze position at that frame is always at the center of the output. The result is a retinotopic video where the content the subject was looking at is always centered. This corresponds to what gets projected to visual cortex on the brain.
 

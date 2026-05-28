@@ -1,6 +1,6 @@
 # Stimulus & Gaze
 
-<img src="../../assets/stimulus%20and%20gaze.png" width="800" />
+<img src="../assets/stimulus%20and%20gaze.png" width="800" />
 
 The Stimulus & Gaze tab lets you view the gaze location overlaid on the stimulus video, filter the gaze traces to smooth them, and manually edit individual gaze positions.
 

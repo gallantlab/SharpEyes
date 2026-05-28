@@ -1,6 +1,6 @@
 # Pupil Finding
 
-<img src="../../assets/pupil%20finding.png" width="800" />
+<img src="../assets/pupil%20finding.png" width="800" />
 
 The Pupil Finding tab takes a raw eyetracking video and finds the pupil location in each frame. SharpEyes uses a template-matching approach, where you accumulate correctly-positioned examples that the finder uses to improve over time.
 
