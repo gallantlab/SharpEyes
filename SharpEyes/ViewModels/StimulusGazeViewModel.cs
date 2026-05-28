@@ -796,7 +796,17 @@ namespace SharpEyes.ViewModels
 		{
 			if (RecenteringViewModel == null || videoFilePath == null || !IsGazeLoaded || dataStartFrame == null)
 				return;
-			RecenteringViewModel.LoadFromStimulusGaze(videoFilePath, DisplayedGazeLocations, dataStartFrame.Value, EyetrackingFPS);
+			GazeFilterSettings filterSettings = new GazeFilterSettings
+			{
+				IsEnabled = _isGazeFilterEnabled,
+				MedianFilterWindowSize = _filterWindowSize,
+				FilterPupilSize = _filterPupilSize,
+				EnableOutlierRemoval = _enableOutlierRemoval,
+				OutlierThresholdX = _outlierThresholdX,
+				OutlierThresholdY = _outlierThresholdY,
+				OutlierThresholdRadius = _outlierThresholdRadius
+			};
+			RecenteringViewModel.LoadFromStimulusGaze(videoFilePath, DisplayedGazeLocations, dataStartFrame.Value, EyetrackingFPS, filterSettings);
 			SwitchToRecenteringTab?.Invoke();
 		}
 

@@ -4,6 +4,17 @@ using NumSharp;
 
 namespace Eyetracking
 {
+	public class GazeFilterSettings
+	{
+		public bool IsEnabled { get; set; }
+		public int MedianFilterWindowSize { get; set; }
+		public bool FilterPupilSize { get; set; }
+		public bool EnableOutlierRemoval { get; set; }
+		public double OutlierThresholdX { get; set; }
+		public double OutlierThresholdY { get; set; }
+		public double OutlierThresholdRadius { get; set; }
+	}
+
 	public static class GazeFilter
 	{
 		/// <summary>

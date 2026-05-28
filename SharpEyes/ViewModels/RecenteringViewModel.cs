@@ -145,6 +145,7 @@ namespace SharpEyes.ViewModels
 		// Gaze overlay info
 		private NDArray? gazeLocations = null;
 		private string? gazeFileName = null;
+		private GazeFilterSettings? gazeFilterSettings = null;
 		private int? dataStartFrame = null;
 		public int DataStartFrame
 		{
@@ -446,7 +447,7 @@ namespace SharpEyes.ViewModels
 		/// Loads video and gaze directly from existing data, without file dialogs.
 		/// Called from the Stimulus and Gaze tab's "Send to Recentering" button.
 		/// </summary>
-		public void LoadFromStimulusGaze(string videoFilePath, NDArray gazeData, int gazeDataStartFrame, int eyetrackingFPS)
+		public void LoadFromStimulusGaze(string videoFilePath, NDArray gazeData, int gazeDataStartFrame, int eyetrackingFPS, GazeFilterSettings? filterSettings = null)
 		{
 			if (IsVideoPlaying)
 				PlayPause();
@@ -456,6 +457,7 @@ namespace SharpEyes.ViewModels
 			this.dataStartFrame = gazeDataStartFrame;
 			this.RaisePropertyChanged("DataStartFrame");
 			EyetrackingFPS = eyetrackingFPS;
+			gazeFilterSettings = filterSettings;
 			IsGazeLoaded = true;
 			UpdateDisplay();
 		}
@@ -715,6 +717,7 @@ namespace SharpEyes.ViewModels
 				videoReader,
 				gazeLocations,
 				gazeFileName,
+				gazeFilterSettings,
 				dataStartFrame.Value,
 				EyetrackingFPS,
 				GazeSpaceWidth,

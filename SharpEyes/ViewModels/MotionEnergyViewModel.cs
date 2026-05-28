@@ -14,6 +14,7 @@ using Num = NumSharp.np;
 using NumSharp;
 using ReactiveUI;
 using SharpEyes.Models;
+using Eyetracking;
 
 namespace SharpEyes.ViewModels
 {
@@ -111,6 +112,7 @@ namespace SharpEyes.ViewModels
 
 		private NDArray? _gazeLocations = null;
 		private string? _gazeFileName = null;
+		private GazeFilterSettings? _gazeFilterSettings = null;
 		private int? _dataStartFrame = null;
 		private int _eyetrackingFPS = 60;
 		private int _gazeSpaceWidth = 1024;
@@ -520,12 +522,13 @@ namespace SharpEyes.ViewModels
 			motionEnergyFeatures.FrameHeight = (int)(_videoHeight * _padPercent / 100 * _frameScale);
 		}
 
-		public void LoadFromRecentering(VideoReader videoReader, NDArray gazeLocations, string? gazeFileName, int dataStartFrame, int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight)
+		public void LoadFromRecentering(VideoReader videoReader, NDArray gazeLocations, string? gazeFileName, GazeFilterSettings? gazeFilterSettings, int dataStartFrame, int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight)
 		{
 			if (IsVideoPlaying) PlayPause();
 			_videoReader = videoReader;
 			_gazeLocations = gazeLocations;
 			_gazeFileName = gazeFileName;
+			_gazeFilterSettings = gazeFilterSettings;
 			_dataStartFrame = dataStartFrame;
 			_eyetrackingFPS = eyetrackingFPS;
 			_gazeSpaceWidth = gazeSpaceWidth;
@@ -862,6 +865,24 @@ namespace SharpEyes.ViewModels
 					textContent.AppendLine(String.Format("  Data start frame: {0}", _dataStartFrame.Value));
 					textContent.AppendLine(String.Format("  Gaze space width: {0}", _gazeSpaceWidth));
 					textContent.AppendLine(String.Format("  Gaze space height: {0}", _gazeSpaceHeight));
+					textContent.AppendLine();
+					textContent.AppendLine("Gaze filtering:");
+					if (_gazeFilterSettings == null || !_gazeFilterSettings.IsEnabled)
+					{
+						textContent.AppendLine("  None");
+					}
+					else
+					{
+						textContent.AppendLine(String.Format("  Median filter window size: {0}", _gazeFilterSettings.MedianFilterWindowSize));
+						textContent.AppendLine(String.Format("  Filter pupil size: {0}", _gazeFilterSettings.FilterPupilSize));
+						textContent.AppendLine(String.Format("  Outlier removal enabled: {0}", _gazeFilterSettings.EnableOutlierRemoval));
+						if (_gazeFilterSettings.EnableOutlierRemoval)
+						{
+							textContent.AppendLine(String.Format("  Outlier threshold X: {0}", _gazeFilterSettings.OutlierThresholdX));
+							textContent.AppendLine(String.Format("  Outlier threshold Y: {0}", _gazeFilterSettings.OutlierThresholdY));
+							textContent.AppendLine(String.Format("  Outlier threshold radius: {0}", _gazeFilterSettings.OutlierThresholdRadius));
+						}
+					}
 					textContent.AppendLine();
 					textContent.AppendLine("Motion-energy parameters:");
 					textContent.AppendLine(String.Format("  Pad percent: {0}", _padPercent));
