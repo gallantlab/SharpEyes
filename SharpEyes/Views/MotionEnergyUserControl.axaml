@@ -63,8 +63,8 @@
                         <views:MotionEnergyOverlayControl
                             Circles="{Binding PyramidCircles}"
                             Arrows="{Binding PyramidArrows}"
-                            Width="{Binding ModelFrameWidth}"
-                            Height="{Binding ModelFrameHeight}"
+                            Width="{Binding RecenteringCanvasWidth}"
+                            Height="{Binding RecenteringCanvasHeight}"
                             IsHitTestVisible="False" />
                     </Canvas>
                 </Viewbox>

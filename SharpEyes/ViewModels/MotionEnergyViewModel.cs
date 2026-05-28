@@ -697,7 +697,7 @@ namespace SharpEyes.ViewModels
 			if (!_showMotionEnergyPyramid || motionEnergyFeatures.FilterParameters.Count == 0) return;
 
 			IBrush overlayBrush = new SolidColorBrush(Color.FromArgb(200, 255, 220, 0));
-			double strokeThickness = 1.5;
+			double strokeThickness = 4;
 
 			Dictionary<(double, double, double), HashSet<double>> filterDirectionsByCircle =
 				new Dictionary<(double, double, double), HashSet<double>>();
@@ -710,7 +710,7 @@ namespace SharpEyes.ViewModels
 				filterDirectionsByCircle[key].Add(filter.Direction);
 			}
 
-			int frameHeight = motionEnergyFeatures.FrameHeight;
+			int frameHeight = RecenteringCanvasHeight;
 			foreach (KeyValuePair<(double, double, double), HashSet<double>> circleEntry in filterDirectionsByCircle)
 			{
 				double centerX = circleEntry.Key.Item1 * frameHeight;
