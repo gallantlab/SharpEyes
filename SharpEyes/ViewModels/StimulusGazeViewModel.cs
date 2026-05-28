@@ -733,7 +733,7 @@ namespace SharpEyes.ViewModels
 			openFileDialog.Filters.Add(new FileDialogFilter()
 			{
 				Name = "Eyelink text file",
-				Extensions = { "txt" }
+				Extensions = { "txt", "asc" }
 			});
 			if (GazeLoader.IsEDFSupported)
 				openFileDialog.Filters.Add(new FileDialogFilter()
