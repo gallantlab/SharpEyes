@@ -510,7 +510,7 @@ namespace SharpEyes.ViewModels
 				else
 					SelectedDirectionIndex = -1;
 			});
-			ComputePyramidCommand = ReactiveCommand.CreateFromTask(ComputePyramid);
+			ComputePyramidCommand = ReactiveCommand.CreateFromTask(() => ComputePyramid());
 			ComputeFeaturesCommand = ReactiveCommand.Create(() =>
 			{
 				if (_isComputingFeatures)
@@ -702,14 +702,15 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private void UpdatePyramidOverlay()
+		private async Task UpdatePyramidOverlay()
 		{
 			PyramidCircles.Clear();
 			PyramidArrows.Clear();
-			if (!_showMotionEnergyPyramid || motionEnergyFeatures.FilterParameters.Count == 0) return;
+			if (!_showMotionEnergyPyramid) return;
+			await ComputePyramid(false);
+			if (motionEnergyFeatures.FilterCount < 1) return;
 
 			IBrush overlayBrush = new SolidColorBrush(Color.FromArgb(200, 255, 220, 0));
-			double strokeThickness = 4;
 
 			Dictionary<(double, double, double), HashSet<double>> filterDirectionsByCircle =
 				new Dictionary<(double, double, double), HashSet<double>>();
@@ -722,12 +723,25 @@ namespace SharpEyes.ViewModels
 				filterDirectionsByCircle[key].Add(filter.Direction);
 			}
 
+			List<double> uniqueSpatialEnvelopes = new List<double>();
+			foreach (MotionEnergyFilterParameters filter in motionEnergyFeatures.FilterParameters)
+			{
+				if (!uniqueSpatialEnvelopes.Contains(filter.SpatialEnvelope))
+					uniqueSpatialEnvelopes.Add(filter.SpatialEnvelope);
+			}
+			uniqueSpatialEnvelopes.Sort();
+
+			Dictionary<double, double> strokeThicknessBySize = new Dictionary<double, double>();
+			for (int index = 0; index < uniqueSpatialEnvelopes.Count; index++)
+				strokeThicknessBySize[uniqueSpatialEnvelopes[index]] = index + 1;
+
 			int frameHeight = RecenteringCanvasHeight;
 			foreach (KeyValuePair<(double, double, double), HashSet<double>> circleEntry in filterDirectionsByCircle)
 			{
 				double centerX = circleEntry.Key.Item1 * frameHeight;
 				double centerY = circleEntry.Key.Item2 * frameHeight;
 				double radius  = circleEntry.Key.Item3 * frameHeight;
+				double strokeThickness = strokeThicknessBySize[circleEntry.Key.Item3] * 2;
 
 				PyramidCircles.Add(new PyramidCircleOverlay
 				{
@@ -770,7 +784,7 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private async Task ComputePyramid()
+		private async Task ComputePyramid(bool updateDisplay = true)
 		{
 			StatusText = "Building pyramid...";
 			IsProgressBarVisible = true;
@@ -787,7 +801,7 @@ namespace SharpEyes.ViewModels
 					motionEnergyFeatures.FilterCount);
 				this.RaisePropertyChanged("ModelFrameWidth");
 				this.RaisePropertyChanged("ModelFrameHeight");
-				UpdatePyramidOverlay();
+				if (updateDisplay) UpdatePyramidOverlay();
 			}
 			catch (Exception exception)
 			{
