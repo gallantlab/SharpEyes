@@ -30,7 +30,7 @@ namespace SharpEyes.Models
 		private static PythonEnvironmentManager? _instance;
 		public static PythonEnvironmentManager Instance => _instance ??= new PythonEnvironmentManager();
 
-		public AppSettings Settings { get; private set; } = new AppSettings();
+		public Settings Settings { get; private set; } = new Settings();
 		public bool IsInitialized { get; private set; } = false;
 
 		private static readonly string AppDataDirectory =
@@ -60,7 +60,7 @@ namespace SharpEyes.Models
 
 		public void LoadSettings()
 		{
-			Settings = AppSettings.Load();
+			Settings = Settings.Load();
 		}
 
 		public void SaveSettings()
@@ -162,7 +162,7 @@ namespace SharpEyes.Models
 			return Path.Combine(VenvPath, "lib", "python3.12", "site-packages");
 		}
 
-		private static string GetPythonExecutableForMode(AppSettings settings)
+		private static string GetPythonExecutableForMode(Settings settings)
 		{
 			switch (settings.PythonSourceMode)
 			{
@@ -184,7 +184,7 @@ namespace SharpEyes.Models
 			}
 		}
 
-		private static string GetPipExecutable(AppSettings settings)
+		private static string GetPipExecutable(Settings settings)
 		{
 			switch (settings.PythonSourceMode)
 			{
@@ -400,7 +400,7 @@ namespace SharpEyes.Models
 		public bool IsBundledPythonDownloaded()
 		{
 			string pythonExe = GetPythonExecutableForMode(
-				new AppSettings { PythonSourceMode = PythonSourceMode.Bundled });
+				new Settings { PythonSourceMode = PythonSourceMode.Bundled });
 			return File.Exists(pythonExe);
 		}
 

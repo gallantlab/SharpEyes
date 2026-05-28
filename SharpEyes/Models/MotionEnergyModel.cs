@@ -177,8 +177,8 @@ namespace SharpEyes.Models
 			});
 		}
 
-		// Copies parameter values from AppSettings into this model.
-		public void LoadFromSettings(AppSettings settings)
+		// Copies parameter values from Settings into this model.
+		public void LoadFromSettings(Settings settings)
 		{
 			FrameHeight = settings.MotionEnergyFrameHeight;
 			FrameWidth = settings.MotionEnergyFrameWidth;
@@ -187,8 +187,8 @@ namespace SharpEyes.Models
 			Directions = new List<double>(settings.MotionEnergyDirections);
 		}
 
-		// Copies parameter values from this model into AppSettings.
-		public void SaveToSettings(AppSettings settings)
+		// Copies parameter values from this model into Settings.
+		public void SaveToSettings(Settings settings)
 		{
 			settings.MotionEnergyFrameHeight = FrameHeight;
 			settings.MotionEnergyFrameWidth = FrameWidth;

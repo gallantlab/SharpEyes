@@ -151,7 +151,7 @@ namespace SharpEyes.ViewModels
 
 		public PythonSettingsViewModel()
 		{
-			AppSettings settings = _manager.Settings;
+			Settings settings = _manager.Settings;
 			_selectedSourceModeIndex = (int)settings.PythonSourceMode;
 			_systemPythonExecutablePath = settings.SystemPythonExecutablePath;
 

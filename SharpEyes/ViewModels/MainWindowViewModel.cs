@@ -28,6 +28,7 @@ namespace SharpEyes.ViewModels
 
 		public MainWindowViewModel()
 		{
+			SharpEyes.Models.PythonEnvironmentManager.Instance.LoadSettings();
 			pupilFindingUserControlViewModel = new PupilFindingUserControlViewModel();
 			stimulusGazeViewModel = new StimulusGazeViewModel();
 			calibrationViewModel = new CalibrationViewModel();
@@ -44,7 +45,6 @@ namespace SharpEyes.ViewModels
 				settingsWindow.ShowDialog(MainWindow);
 			});
 
-			SharpEyes.Models.PythonEnvironmentManager.Instance.LoadSettings();
 		}
 	}
 }

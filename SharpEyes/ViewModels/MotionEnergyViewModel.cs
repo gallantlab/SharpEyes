@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Reactive;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,6 +41,7 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit>? PlayPauseCommand { get; } = null;
 		public ReactiveCommand<Unit, Unit>? PreviousFrameCommand { get; } = null;
 		public ReactiveCommand<Unit, Unit>? NextFrameCommand { get; } = null;
+		public ReactiveCommand<Unit, Unit> RestoreDefaultsCommand { get; }
 
 		private string _statusText = "Idle";
 		public string StatusText
@@ -70,6 +72,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private readonly MotionEnergyModel _motionEnergyModel = new MotionEnergyModel();
+		private Settings settings = Settings.Load();
 
 		private VideoReader? _videoReader = null;
 		private DispatcherTimer _videoPlaybackTimer;
@@ -161,6 +164,7 @@ namespace SharpEyes.ViewModels
 				this.RaisePropertyChanged("RecenteringImageLeft");
 				this.RaisePropertyChanged("RecenteringImageTop");
 				this.RaisePropertyChanged("OutputFrameSizeText");
+				SaveSettings();
 			}
 		}
 
@@ -172,6 +176,7 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _padValue, value);
 				this.RaisePropertyChanged("PadValueBrush");
+				SaveSettings();
 			}
 		}
 
@@ -194,6 +199,7 @@ namespace SharpEyes.ViewModels
 				this.RaisePropertyChanged("OutputFrameSizeText");
 				this.RaisePropertyChanged("VideoFrameSizeText");
 				SyncFrameSizeToModel();
+				SaveSettings();
 			}
 		}
 
@@ -216,12 +222,9 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _videoFps, value);
 		}
 
-		public ObservableCollection<double> SpatialFrequencies { get; } =
-			new ObservableCollection<double> { 0, 2, 4, 8, 16, 32 };
-		public ObservableCollection<double> TemporalFrequencies { get; } =
-			new ObservableCollection<double> { 0, 2, 4, 8, 16 };
-		public ObservableCollection<double> Directions { get; } =
-			new ObservableCollection<double> { 0, 45, 90, 135, 180, 225, 270, 315 };
+		public ObservableCollection<double> SpatialFrequencies { get; } = new ObservableCollection<double>();
+		public ObservableCollection<double> TemporalFrequencies { get; } = new ObservableCollection<double>();
+		public ObservableCollection<double> Directions { get; } = new ObservableCollection<double>();
 
 		private int _selectedSpatialFrequencyIndex = -1;
 		public int SelectedSpatialFrequencyIndex
@@ -408,6 +411,20 @@ namespace SharpEyes.ViewModels
 
 		public MotionEnergyViewModel()
 		{
+			_padPercent = settings.MotionEnergyPadPercent;
+			_padValue = settings.MotionEnergyPadValue;
+			_frameScale = settings.MotionEnergyFrameScale;
+			foreach (double value in settings.MotionEnergySpatialFrequencies)
+				SpatialFrequencies.Add(value);
+			foreach (double value in settings.MotionEnergyTemporalFrequencies)
+				TemporalFrequencies.Add(value);
+			foreach (double value in settings.MotionEnergyDirections)
+				Directions.Add(value);
+			_motionEnergyModel.SpatialFrequencies = new List<double>(SpatialFrequencies);
+			_motionEnergyModel.TemporalFrequencies = new List<double>(TemporalFrequencies);
+			_motionEnergyModel.Directions = new List<double>(Directions);
+
+			RestoreDefaultsCommand = ReactiveCommand.Create(RestoreDefaults);
 			LoadVideoCommand = ReactiveCommand.Create(LoadVideo);
 			PlayPauseCommand = ReactiveCommand.Create(PlayPause);
 			PreviousFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(-1); });
@@ -461,9 +478,39 @@ namespace SharpEyes.ViewModels
 				else
 					_ = ComputeFeatures();
 			});
-			SpatialFrequencies.CollectionChanged += (s, e) => this.RaisePropertyChanged("SpatialFrequenciesHeaderText");
-			TemporalFrequencies.CollectionChanged += (s, e) => this.RaisePropertyChanged("TemporalFrequenciesHeaderText");
-			Directions.CollectionChanged += (s, e) => this.RaisePropertyChanged("DirectionsHeaderText");
+			SpatialFrequencies.CollectionChanged += (s, e) => { this.RaisePropertyChanged("SpatialFrequenciesHeaderText"); SaveSettings(); };
+			TemporalFrequencies.CollectionChanged += (s, e) => { this.RaisePropertyChanged("TemporalFrequenciesHeaderText"); SaveSettings(); };
+			Directions.CollectionChanged += (s, e) => { this.RaisePropertyChanged("DirectionsHeaderText"); SaveSettings(); };
+		}
+
+		private void RestoreDefaults()
+		{
+			PadPercent = 200;
+			PadValue = 0.1;
+			FrameScale = 0.125;
+			SpatialFrequencies.Clear();
+			foreach (double value in new double[] { 0, 2, 4, 8, 16, 32 })
+				SpatialFrequencies.Add(value);
+			_motionEnergyModel.SpatialFrequencies = new List<double>(SpatialFrequencies);
+			TemporalFrequencies.Clear();
+			foreach (double value in new double[] { 0, 2, 4, 8, 16 })
+				TemporalFrequencies.Add(value);
+			_motionEnergyModel.TemporalFrequencies = new List<double>(TemporalFrequencies);
+			Directions.Clear();
+			foreach (double value in new double[] { 0, 45, 90, 135, 180, 225, 270, 315 })
+				Directions.Add(value);
+			_motionEnergyModel.Directions = new List<double>(Directions);
+		}
+
+		private void SaveSettings()
+		{
+			settings.MotionEnergyPadPercent = _padPercent;
+			settings.MotionEnergyPadValue = _padValue;
+			settings.MotionEnergyFrameScale = _frameScale;
+			settings.MotionEnergySpatialFrequencies = new List<double>(SpatialFrequencies);
+			settings.MotionEnergyTemporalFrequencies = new List<double>(TemporalFrequencies);
+			settings.MotionEnergyDirections = new List<double>(Directions);
+			settings.Save();
 		}
 
 		private void SyncFrameSizeToModel()

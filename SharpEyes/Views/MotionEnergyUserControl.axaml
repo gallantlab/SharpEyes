@@ -216,6 +216,11 @@
                                 <TextBlock VerticalAlignment="Center" Width="150">Video frame</TextBlock>
                                 <TextBlock VerticalAlignment="Center" Text="{Binding VideoFrameSizeText}" />
                             </StackPanel>
+                            <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180"
+                                    HorizontalContentAlignment="Center"
+                                    Command="{Binding RestoreDefaultsCommand}">
+                                Restore defaults
+                            </Button>
                         </StackPanel>
                     </Expander>
 
