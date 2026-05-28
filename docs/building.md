@@ -77,15 +77,27 @@ arm64 Mac.
 ## Building on Windows and Linux
 
 The project is developed with Visual Studio (not VS Code) and JetBrains Rider.
-You can also build from the command line:
+You can also build Windows from the command line:
 
 ```bash
 # Windows
 dotnet build SharpEyes/SharpEyes.csproj -c Release -r win-x64
-
-# Linux (Ubuntu 24)
-dotnet build SharpEyes/SharpEyes.csproj -c Release -r linux-x64
 ```
 
-The correct OpenCvSharp native runtime for each platform is selected
-automatically based on the build target.
+### Linux runtime identifier
+
+Build Linux on an Ubuntu 24 host with the distro-specific RID, **not** the
+portable `linux-x64`:
+
+```bash
+dotnet build SharpEyes/SharpEyes.csproj -c Release -r ubuntu.24.04-x64
+```
+
+The project references `OpenCvSharp4.official.runtime.ubuntu.24.04-x64`, whose
+package ships `libOpenCvSharpExtern.so` only under `runtimes/ubuntu.24.04-x64/`.
+The .NET RID graph does not fall forward from the generic `linux-x64` to that
+asset, so a `linux-x64` build compiles successfully but ships **without** the
+native library and crashes when OpenCV is first used. The csproj sets
+`<UseRidGraph>true</UseRidGraph>` so the distro RID is available. Note that the
+SDK may only recognize `ubuntu.24.04-x64` when building on a matching Linux
+host; cross-building this RID from Windows or macOS is not supported.
