@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              xmlns:vm="clr-namespace:SharpEyes.ViewModels"
+             xmlns:views="clr-namespace:SharpEyes.Views"
              x:Class="SharpEyes.Views.MotionEnergyUserControl">
     <Design.DataContext>
         <vm:MotionEnergyViewModel />
@@ -40,53 +41,12 @@
                             <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}"
                                    Height="{Binding VideoHeight}" />
                         </Viewbox>
-                        <Viewbox Stretch="Uniform"
-                                 Width="{Binding ModelFrameWidth}" Height="{Binding ModelFrameHeight}">
-                            <Grid Width="{Binding ModelFrameWidth}" Height="{Binding ModelFrameHeight}"
-                                  IsHitTestVisible="False">
-                                <ItemsControl Items="{Binding PyramidCircles}" IsHitTestVisible="False">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <Canvas />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.Styles>
-                                        <Style Selector="ContentPresenter">
-                                            <Setter Property="Canvas.Left" Value="{Binding Left}" />
-                                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
-                                        </Style>
-                                    </ItemsControl.Styles>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Ellipse Width="{Binding Diameter}" Height="{Binding Diameter}"
-                                                     Stroke="{Binding Stroke}"
-                                                     StrokeThickness="{Binding StrokeThickness}"
-                                                     Fill="Transparent" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <ItemsControl Items="{Binding PyramidArrows}" IsHitTestVisible="False">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <Canvas />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.Styles>
-                                        <Style Selector="ContentPresenter">
-                                            <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}" />
-                                            <Setter Property="Canvas.Top" Value="{Binding CanvasTop}" />
-                                        </Style>
-                                    </ItemsControl.Styles>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Path Data="{Binding Geometry}" Stroke="{Binding Stroke}"
-                                                  StrokeThickness="{Binding StrokeThickness}"
-                                                  Fill="Transparent" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </Grid>
-                        </Viewbox>
+                        <views:MotionEnergyOverlayControl
+                            Circles="{Binding PyramidCircles}"
+                            Arrows="{Binding PyramidArrows}"
+                            Width="{Binding ModelFrameWidth}"
+                            Height="{Binding ModelFrameHeight}"
+                            IsHitTestVisible="False" />
                     </Panel>
                 </Viewbox>
                 <!--Recentered video (passed from recentering tab): padded canvas, image offset by gaze-->
@@ -100,52 +60,12 @@
                                    Height="{Binding VideoHeight}" />
 
                         </Canvas>
-                        <Viewbox Stretch="Uniform"
-                                 Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}">
-                            <Grid Width="{Binding ModelFrameWidth}" Height="{Binding ModelFrameHeight}">
-                                <ItemsControl Items="{Binding PyramidCircles}" IsHitTestVisible="False">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <Canvas />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.Styles>
-                                        <Style Selector="ContentPresenter">
-                                            <Setter Property="Canvas.Left" Value="{Binding Left}" />
-                                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
-                                        </Style>
-                                    </ItemsControl.Styles>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Ellipse Width="{Binding Diameter}" Height="{Binding Diameter}"
-                                                     Stroke="{Binding Stroke}"
-                                                     StrokeThickness="{Binding StrokeThickness}"
-                                                     Fill="Transparent" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <ItemsControl Items="{Binding PyramidArrows}" IsHitTestVisible="False">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <Canvas />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.Styles>
-                                        <Style Selector="ContentPresenter">
-                                            <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}" />
-                                            <Setter Property="Canvas.Top" Value="{Binding CanvasTop}" />
-                                        </Style>
-                                    </ItemsControl.Styles>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Path Data="{Binding Geometry}" Stroke="{Binding Stroke}"
-                                                  StrokeThickness="{Binding StrokeThickness}"
-                                                  Fill="Transparent" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </Grid>
-                        </Viewbox>
+                        <views:MotionEnergyOverlayControl
+                            Circles="{Binding PyramidCircles}"
+                            Arrows="{Binding PyramidArrows}"
+                            Width="{Binding ModelFrameWidth}"
+                            Height="{Binding ModelFrameHeight}"
+                            IsHitTestVisible="False" />
                     </Canvas>
                 </Viewbox>
             </Panel>
