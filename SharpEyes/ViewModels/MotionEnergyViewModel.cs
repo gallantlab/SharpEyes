@@ -71,7 +71,7 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _progressBarValue, value);
 		}
 
-		private readonly MotionEnergyModel _motionEnergyModel = new MotionEnergyModel();
+		private readonly MotionEnergyFeatures motionEnergyFeatures = new MotionEnergyFeatures();
 		private Settings settings = Settings.Load();
 
 		private VideoReader? _videoReader = null;
@@ -203,8 +203,8 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		public int ModelFrameWidth => _motionEnergyModel.FrameWidth;
-		public int ModelFrameHeight => _motionEnergyModel.FrameHeight;
+		public int ModelFrameWidth => motionEnergyFeatures.FrameWidth;
+		public int ModelFrameHeight => motionEnergyFeatures.FrameHeight;
 
 		public string OutputFrameSizeText => String.Format("{0} x {1}",
 			(int)(VideoWidth * _padPercent / 100.0 * _frameScale),
@@ -420,9 +420,9 @@ namespace SharpEyes.ViewModels
 				TemporalFrequencies.Add(value);
 			foreach (double value in settings.MotionEnergyDirections)
 				Directions.Add(value);
-			_motionEnergyModel.SpatialFrequencies = new List<double>(SpatialFrequencies);
-			_motionEnergyModel.TemporalFrequencies = new List<double>(TemporalFrequencies);
-			_motionEnergyModel.Directions = new List<double>(Directions);
+			motionEnergyFeatures.SpatialFrequencies = new List<double>(SpatialFrequencies);
+			motionEnergyFeatures.TemporalFrequencies = new List<double>(TemporalFrequencies);
+			motionEnergyFeatures.Directions = new List<double>(Directions);
 
 			RestoreDefaultsCommand = ReactiveCommand.Create(RestoreDefaults);
 			LoadVideoCommand = ReactiveCommand.Create(LoadVideo);
@@ -434,40 +434,40 @@ namespace SharpEyes.ViewModels
 			AddSpatialFrequencyCommand = ReactiveCommand.Create(() =>
 			{
 				SpatialFrequencies.Add(_newSpatialFrequency);
-				_motionEnergyModel.SpatialFrequencies = new List<double>(SpatialFrequencies);
+				motionEnergyFeatures.SpatialFrequencies = new List<double>(SpatialFrequencies);
 			});
 			RemoveSpatialFrequencyCommand = ReactiveCommand.Create(() =>
 			{
 				if (_selectedSpatialFrequencyIndex >= 0 && _selectedSpatialFrequencyIndex < SpatialFrequencies.Count)
 				{
 					SpatialFrequencies.RemoveAt(_selectedSpatialFrequencyIndex);
-					_motionEnergyModel.SpatialFrequencies = new List<double>(SpatialFrequencies);
+					motionEnergyFeatures.SpatialFrequencies = new List<double>(SpatialFrequencies);
 				}
 			});
 			AddTemporalFrequencyCommand = ReactiveCommand.Create(() =>
 			{
 				TemporalFrequencies.Add(_newTemporalFrequency);
-				_motionEnergyModel.TemporalFrequencies = new List<double>(TemporalFrequencies);
+				motionEnergyFeatures.TemporalFrequencies = new List<double>(TemporalFrequencies);
 			});
 			RemoveTemporalFrequencyCommand = ReactiveCommand.Create(() =>
 			{
 				if (_selectedTemporalFrequencyIndex >= 0 && _selectedTemporalFrequencyIndex < TemporalFrequencies.Count)
 				{
 					TemporalFrequencies.RemoveAt(_selectedTemporalFrequencyIndex);
-					_motionEnergyModel.TemporalFrequencies = new List<double>(TemporalFrequencies);
+					motionEnergyFeatures.TemporalFrequencies = new List<double>(TemporalFrequencies);
 				}
 			});
 			AddDirectionCommand = ReactiveCommand.Create(() =>
 			{
 				Directions.Add(_newDirection);
-				_motionEnergyModel.Directions = new List<double>(Directions);
+				motionEnergyFeatures.Directions = new List<double>(Directions);
 			});
 			RemoveDirectionCommand = ReactiveCommand.Create(() =>
 			{
 				if (_selectedDirectionIndex >= 0 && _selectedDirectionIndex < Directions.Count)
 				{
 					Directions.RemoveAt(_selectedDirectionIndex);
-					_motionEnergyModel.Directions = new List<double>(Directions);
+					motionEnergyFeatures.Directions = new List<double>(Directions);
 				}
 			});
 			ComputePyramidCommand = ReactiveCommand.CreateFromTask(ComputePyramid);
@@ -491,15 +491,15 @@ namespace SharpEyes.ViewModels
 			SpatialFrequencies.Clear();
 			foreach (double value in new double[] { 0, 2, 4, 8, 16, 32 })
 				SpatialFrequencies.Add(value);
-			_motionEnergyModel.SpatialFrequencies = new List<double>(SpatialFrequencies);
+			motionEnergyFeatures.SpatialFrequencies = new List<double>(SpatialFrequencies);
 			TemporalFrequencies.Clear();
 			foreach (double value in new double[] { 0, 2, 4, 8, 16 })
 				TemporalFrequencies.Add(value);
-			_motionEnergyModel.TemporalFrequencies = new List<double>(TemporalFrequencies);
+			motionEnergyFeatures.TemporalFrequencies = new List<double>(TemporalFrequencies);
 			Directions.Clear();
 			foreach (double value in new double[] { 0, 45, 90, 135, 180, 225, 270, 315 })
 				Directions.Add(value);
-			_motionEnergyModel.Directions = new List<double>(Directions);
+			motionEnergyFeatures.Directions = new List<double>(Directions);
 		}
 
 		private void SaveSettings()
@@ -515,8 +515,8 @@ namespace SharpEyes.ViewModels
 
 		private void SyncFrameSizeToModel()
 		{
-			_motionEnergyModel.FrameWidth = (int)(_videoWidth * _padPercent / 100 * _frameScale);
-			_motionEnergyModel.FrameHeight = (int)(_videoHeight * _padPercent / 100 * _frameScale);
+			motionEnergyFeatures.FrameWidth = (int)(_videoWidth * _padPercent / 100 * _frameScale);
+			motionEnergyFeatures.FrameHeight = (int)(_videoHeight * _padPercent / 100 * _frameScale);
 		}
 
 		public void LoadFromRecentering(VideoReader videoReader, NDArray gazeLocations, int dataStartFrame, int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight)
@@ -648,7 +648,7 @@ namespace SharpEyes.ViewModels
 		{
 			PyramidCircles.Clear();
 			PyramidArrows.Clear();
-			if (!_showMotionEnergyPyramid || _motionEnergyModel.FilterParameters.Count == 0) return;
+			if (!_showMotionEnergyPyramid || motionEnergyFeatures.FilterParameters.Count == 0) return;
 
 			IBrush overlayBrush = new SolidColorBrush(Color.FromArgb(200, 255, 220, 0));
 			double strokeThickness = 1.5;
@@ -656,7 +656,7 @@ namespace SharpEyes.ViewModels
 			Dictionary<(double, double, double), HashSet<double>> filterDirectionsByCircle =
 				new Dictionary<(double, double, double), HashSet<double>>();
 
-			foreach (MotionEnergyFilterParameters filter in _motionEnergyModel.FilterParameters)
+			foreach (MotionEnergyFilterParameters filter in motionEnergyFeatures.FilterParameters)
 			{
 				(double, double, double) key = (filter.CenterHorizontal, filter.CenterVertical, filter.SpatialEnvelope);
 				if (!filterDirectionsByCircle.ContainsKey(key))
@@ -664,7 +664,7 @@ namespace SharpEyes.ViewModels
 				filterDirectionsByCircle[key].Add(filter.Direction);
 			}
 
-			int frameHeight = _motionEnergyModel.FrameHeight;
+			int frameHeight = motionEnergyFeatures.FrameHeight;
 			foreach (KeyValuePair<(double, double, double), HashSet<double>> circleEntry in filterDirectionsByCircle)
 			{
 				double centerX = circleEntry.Key.Item1 * frameHeight;
@@ -740,10 +740,10 @@ namespace SharpEyes.ViewModels
 				await Task.Run(() =>
 				{
 					PythonEnvironmentManager.Instance.Initialize();
-					_motionEnergyModel.BuildPyramid(fps);
+					motionEnergyFeatures.BuildPyramid(fps);
 				});
 				StatusText = String.Format("Pyramid built: {0} filters",
-					_motionEnergyModel.FilterCount);
+					motionEnergyFeatures.FilterCount);
 				this.RaisePropertyChanged("ModelFrameWidth");
 				this.RaisePropertyChanged("ModelFrameHeight");
 				UpdatePyramidOverlay();
@@ -800,7 +800,7 @@ namespace SharpEyes.ViewModels
 					await Task.Run(() =>
 					{
 						PythonEnvironmentManager.Instance.Initialize();
-						_motionEnergyModel.BuildPyramid(_videoFps);
+						motionEnergyFeatures.BuildPyramid(_videoFps);
 					}, cancellationToken);
 				}
 				catch (OperationCanceledException) { throw; }
@@ -822,7 +822,7 @@ namespace SharpEyes.ViewModels
 				try
 				{
 					IProgress<double> extractProgress = new Progress<double>(_ => { });
-					features = await _motionEnergyModel.ExtractAsync(frames, extractProgress);
+					features = await motionEnergyFeatures.ExtractAsync(frames, extractProgress);
 				}
 				catch (OperationCanceledException) { throw; }
 				catch (Exception exception)

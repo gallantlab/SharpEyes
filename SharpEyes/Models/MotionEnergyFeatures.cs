@@ -20,7 +20,7 @@ namespace SharpEyes.Models
 		public double SpatialPhaseOffset { get; set; }
 	}
 
-	public class MotionEnergyModel
+	public class MotionEnergyFeatures
 	{
 		// == Parameters (user-adjustable, persisted) ==
 
