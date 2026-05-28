@@ -1,4 +1,5 @@
 # SharpEyes
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20401807.svg)](https://doi.org/10.5281/zenodo.20401807)
 A program for doing eyetracking and making motion-energy features out of stimulus videos.
 SharpEyes offers a UI for finding pupils in eyetracking videos, and the ability to edit the pupil locations manually, 
 which is way better than the Eyetracking package way of setting values and hoping for the best.

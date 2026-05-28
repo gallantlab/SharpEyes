@@ -1,0 +1,94 @@
+/* Remove the max-width cap on the grid so content fills the full viewport width */
+.md-grid {
+	max-width: 100%;
+}
+
+/* Remove right padding from the header so the search box is flush with the right edge */
+.md-header__inner {
+	padding-right: 0;
+}
+
+/* Match heading bottom spacing to paragraph spacing (0.5em) */
+.md-typeset h1 {margin-top: 6pt; margin-bottom: 2pt;} 
+.md-typeset h2 {margin-top: 4pt; margin-bottom: 2pt;} 
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {	
+	margin-top: 2pt;
+	margin-bottom: 2pt;
+}
+
+/* Remove paragraph spacing */
+.md-typeset p {
+	margin-top: 0;
+	margin-bottom: 4pt;
+}
+
+/* Remove all rounded corners */
+* {
+	border-radius: 0 !important;
+}
+
+/* Prevent font size from scaling up on very wide monitors.
+   The theme bumps html font-size to 137.5% at 100em and 150% at 125em;
+   locking it to 125% keeps text the same size on large screens. */
+@media screen and (min-width: 100em) {
+	html {
+		font-size: 125%;
+	}
+}
+
+@media screen and (min-width: 125em) {
+	html {
+		font-size: 125%;
+	}
+}
+
+/* Reduce font to 100% on screens narrower than 960px (60em).
+   This happens before any sidebar is hidden, preserving horizontal space
+   on medium-width screens without immediately collapsing the layout. */
+@media screen and (max-width: 60em) {
+	html {
+		font-size: 100%;
+	}
+}
+
+/* Keep the left navigation as an inline sticky sidebar above 780px (48.75em).
+   The theme converts it to a hamburger drawer below 1220px (76.25em);
+   this overrides that behavior down to 780px. */
+@media screen and (min-width: 48.75em) {
+	[dir=ltr] .md-sidebar--primary {
+		left: 0 !important;
+	}
+	[dir=rtl] .md-sidebar--primary {
+		right: 0 !important;
+	}
+	.md-sidebar--primary {
+		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none !important;
+		background-color: transparent !important;
+		box-shadow: none !important;
+		height: calc(100vh - 2.4rem) !important;
+		position: sticky !important;
+		top: 2.4rem !important;
+		transform: none !important;
+		z-index: auto !important;
+	}
+	/* Hide the hamburger button, which is only needed when the drawer is active */
+	.md-header__button[for=__drawer] {
+		display: none !important;
+	}
+	/* Re-apply content left margin that the theme only adds above 1220px */
+	[dir=ltr] .md-sidebar--primary ~ .md-content > .md-content__inner {
+		margin-left: 1.2rem !important;
+	}
+}
+
+/* Hide the right-hand "On this page" sidebar at 1440px (90em),
+   before the left navigation becomes a drawer at 780px (48.75em).
+   This ensures the TOC collapses first as the screen narrows. */
+
+.md-sidebar--secondary {
+		display: none !important;
+	}
