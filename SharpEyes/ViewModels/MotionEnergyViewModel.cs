@@ -880,7 +880,7 @@ namespace SharpEyes.ViewModels
 					textContent.AppendLine(String.Format("Stimulus video: {0}", _videoReader.videoFileName));
 					textContent.AppendLine(String.Format("Stimulus video frame rate: {0} FPS", _videoReader.fps));
 					textContent.AppendLine(String.Format("Stimulus video frame size: {0} x {1}", _videoReader.width, _videoReader.height));
-					textContent.AppendLine(String.Format("Stimulus video duration: {0} s ({1} frames)", TotalVideoTime, _videoReader.frameCount));
+					textContent.AppendLine(String.Format("Stimulus video duration: {0} ({1} frames)", _videoReader.FramesToTimecode(_videoReader.frameCount), _videoReader.frameCount));
 					textContent.AppendLine();
 					textContent.AppendLine(String.Format("Gaze file: {0}", _gazeFileName ?? "none"));
 					textContent.AppendLine();
