@@ -110,6 +110,7 @@ namespace SharpEyes.ViewModels
 		// == Gaze / recentering (populated via LoadFromRecentering) ==
 
 		private NDArray? _gazeLocations = null;
+		private string? _gazeFileName = null;
 		private int? _dataStartFrame = null;
 		private int _eyetrackingFPS = 60;
 		private int _gazeSpaceWidth = 1024;
@@ -519,11 +520,12 @@ namespace SharpEyes.ViewModels
 			motionEnergyFeatures.FrameHeight = (int)(_videoHeight * _padPercent / 100 * _frameScale);
 		}
 
-		public void LoadFromRecentering(VideoReader videoReader, NDArray gazeLocations, int dataStartFrame, int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight)
+		public void LoadFromRecentering(VideoReader videoReader, NDArray gazeLocations, string? gazeFileName, int dataStartFrame, int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight)
 		{
 			if (IsVideoPlaying) PlayPause();
 			_videoReader = videoReader;
 			_gazeLocations = gazeLocations;
+			_gazeFileName = gazeFileName;
 			_dataStartFrame = dataStartFrame;
 			_eyetrackingFPS = eyetrackingFPS;
 			_gazeSpaceWidth = gazeSpaceWidth;
@@ -841,7 +843,60 @@ namespace SharpEyes.ViewModels
 				saveDialog.InitialFileName = System.IO.Path.GetFileNameWithoutExtension(_videoReader.videoFileName) + " motion energy.npy";
 				string? savePath = await saveDialog.ShowAsync(MainWindow);
 				if (savePath != null)
+				{
 					await Task.Run(() => Num.save(savePath, features));
+
+					string saveDirectory = System.IO.Path.GetDirectoryName(savePath);
+					string saveBaseName = System.IO.Path.GetFileNameWithoutExtension(savePath);
+
+					System.Text.StringBuilder textContent = new System.Text.StringBuilder();
+					textContent.AppendLine(String.Format("Stimulus video: {0}", _videoReader.videoFileName));
+					textContent.AppendLine(String.Format("Stimulus video frame rate: {0} FPS", _videoReader.fps));
+					textContent.AppendLine(String.Format("Stimulus video frame size: {0} x {1}", _videoReader.width, _videoReader.height));
+					textContent.AppendLine(String.Format("Stimulus video duration: {0} s ({1} frames)", TotalVideoTime, _videoReader.frameCount));
+					textContent.AppendLine();
+					textContent.AppendLine(String.Format("Gaze file: {0}", _gazeFileName ?? "none"));
+					textContent.AppendLine();
+					textContent.AppendLine("Gaze info:");
+					textContent.AppendLine(String.Format("  Eyetracking FPS: {0}", _eyetrackingFPS));
+					textContent.AppendLine(String.Format("  Data start frame: {0}", _dataStartFrame.Value));
+					textContent.AppendLine(String.Format("  Gaze space width: {0}", _gazeSpaceWidth));
+					textContent.AppendLine(String.Format("  Gaze space height: {0}", _gazeSpaceHeight));
+					textContent.AppendLine();
+					textContent.AppendLine("Motion-energy parameters:");
+					textContent.AppendLine(String.Format("  Pad percent: {0}", _padPercent));
+					textContent.AppendLine(String.Format("  Pad value: {0}", _padValue));
+					textContent.AppendLine(String.Format("  Frame scale: {0}", _frameScale));
+					textContent.AppendLine(String.Format("  Output frame size: {0} x {1}",
+						(int)(_videoReader.width * _padPercent / 100.0 * _frameScale),
+						(int)(_videoReader.height * _padPercent / 100.0 * _frameScale)));
+					textContent.AppendLine(String.Format("  Video frame in output size: {0} x {1}",
+						(int)(_videoReader.width * _frameScale),
+						(int)(_videoReader.height * _frameScale)));
+					textContent.AppendLine(String.Format("  Video FPS: {0}", _videoFps));
+					textContent.AppendLine(String.Format("  Spatial frequencies: {0}", String.Join(", ", SpatialFrequencies)));
+					textContent.AppendLine(String.Format("  Temporal frequencies: {0}", String.Join(", ", TemporalFrequencies)));
+					textContent.AppendLine(String.Format("  Directions: {0}", String.Join(", ", Directions)));
+					textContent.AppendLine(String.Format("  Start frame: {0}", _startFrame));
+
+					System.Text.StringBuilder csvContent = new System.Text.StringBuilder();
+					csvContent.AppendLine("Y center,X center,Direction (degrees),Spatial Frequency,Spatial Envelope,Temporal Frequency,Temporal Envelope,Temporal width,Spatial phase offset");
+					foreach (MotionEnergyFilterParameters filter in motionEnergyFeatures.FilterParameters)
+						csvContent.AppendLine(String.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8}",
+							filter.CenterVertical * motionEnergyFeatures.FrameHeight, 
+							filter.CenterHorizontal * motionEnergyFeatures.FrameHeight, filter.Direction,
+							filter.SpatialFrequency, filter.SpatialEnvelope * motionEnergyFeatures.FrameHeight,
+							filter.TemporalFrequency, filter.TemporalEnvelope,
+							filter.FilterTemporalWidth, filter.SpatialPhaseOffset));
+
+					string textFilePath = System.IO.Path.Combine(saveDirectory, saveBaseName + " info.txt");
+					string csvFilePath = System.IO.Path.Combine(saveDirectory, saveBaseName + " motion-energy filters.csv");
+					await Task.Run(() =>
+					{
+						File.WriteAllText(textFilePath, textContent.ToString());
+						File.WriteAllText(csvFilePath, csvContent.ToString());
+					});
+				}
 
 				StatusText = String.Format("Motion energy computed: {0} frames x {1} features",
 					features.Shape[0], features.Shape[1]);

@@ -144,6 +144,7 @@ namespace SharpEyes.ViewModels
 
 		// Gaze overlay info
 		private NDArray? gazeLocations = null;
+		private string? gazeFileName = null;
 		private int? dataStartFrame = null;
 		public int DataStartFrame
 		{
@@ -690,6 +691,7 @@ namespace SharpEyes.ViewModels
 			}
 
 			gazeLocations = loadedGazeLocations;
+			gazeFileName = fileName[0];
 			if (parsedSampleRate > 0)
 				EyetrackingFPS = parsedSampleRate;
 
@@ -712,6 +714,7 @@ namespace SharpEyes.ViewModels
 			MotionEnergyViewModel.LoadFromRecentering(
 				videoReader,
 				gazeLocations,
+				gazeFileName,
 				dataStartFrame.Value,
 				EyetrackingFPS,
 				GazeSpaceWidth,
