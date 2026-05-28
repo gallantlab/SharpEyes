@@ -34,23 +34,7 @@
 
             <!--Video display-->
             <Panel Grid.Row="1">
-                <!--Plain video (opened directly)-->
-                <Viewbox Stretch="Uniform" IsVisible="{Binding !IsLoadedFromRecentering}">
-                    <Panel Width="{Binding ModelFrameWidth}" Height="{Binding ModelFrameHeight}">
-                        <Viewbox Stretch="Uniform">
-                            <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}"
-                                   Height="{Binding VideoHeight}" />
-                        </Viewbox>
-                        <views:MotionEnergyOverlayControl
-                            Circles="{Binding PyramidCircles}"
-                            Arrows="{Binding PyramidArrows}"
-                            Width="{Binding ModelFrameWidth}"
-                            Height="{Binding ModelFrameHeight}"
-                            IsHitTestVisible="False" />
-                    </Panel>
-                </Viewbox>
-                <!--Recentered video (passed from recentering tab): padded canvas, image offset by gaze-->
-                <Viewbox Stretch="Uniform" IsVisible="{Binding IsLoadedFromRecentering}">
+                <Viewbox Stretch="Uniform">
                     <Canvas Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}"
                             Background="{Binding PadValueBrush}">
                         <Canvas Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
@@ -58,7 +42,6 @@
                                 Canvas.Top="{Binding RecenteringImageTop}">
                             <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}"
                                    Height="{Binding VideoHeight}" />
-
                         </Canvas>
                         <views:MotionEnergyOverlayControl
                             Circles="{Binding PyramidCircles}"

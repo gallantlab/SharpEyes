@@ -601,14 +601,26 @@ namespace SharpEyes.ViewModels
 
 			_videoReader = new VideoReader(fileName[0]);
 			_videoReader.ReadFrame();
-			VideoFrame = _videoReader.GetFrameForDisplay();
 			_videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)_videoReader.fps);
 			TotalVideoFrames = _videoReader.frameCount;
 			VideoWidth = _videoReader.width;
 			VideoHeight = _videoReader.height;
 			VideoFps = _videoReader.fps;
+			_gazeSpaceWidth = _videoReader.width;
+			_gazeSpaceHeight = _videoReader.height;
+			_dataStartFrame = 0;
+			_eyetrackingFPS = (int)_videoReader.fps;
+			NDArray centeredGaze = new NDArray(NPTypeCode.Double, Shape.Matrix(_videoReader.frameCount, 2));
+			for (int frameIndex = 0; frameIndex < _videoReader.frameCount; frameIndex++)
+			{
+				centeredGaze[frameIndex, 0] = (double)_videoReader.width / 2.0;
+				centeredGaze[frameIndex, 1] = (double)_videoReader.height / 2.0;
+			}
+			_gazeLocations = centeredGaze;
+			IsLoadedFromRecentering = true;
 			this.RaisePropertyChanged("CanPlayVideo");
 			UpdateTimecodeDisplay();
+			UpdateDisplay();
 		}
 
 		public void PlayPause()
