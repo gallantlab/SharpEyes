@@ -23,6 +23,18 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _selectedTabIndex, value);
 				if (value == 4) motionEnergyViewModel.InitializePython();
+				UpdateCurrentTabTimecodeDisplays();
+			}
+		}
+
+		public void UpdateCurrentTabTimecodeDisplays()
+		{
+			switch (_selectedTabIndex)
+			{
+				case 0: pupilFindingUserControlViewModel.UpdateTimecodeDisplay(); break;
+				case 2: stimulusGazeViewModel.UpdateTimecodeDisplay(); break;
+				case 3: recenteringViewModel.UpdateTimecodeDisplay(); break;
+				case 4: motionEnergyViewModel.UpdateTimecodeDisplay(); break;
 			}
 		}
 
@@ -41,7 +53,7 @@ namespace SharpEyes.ViewModels
 
 			OpenSettingsCommand = ReactiveCommand.Create(() =>
 			{
-				SettingsWindow settingsWindow = new SettingsWindow();
+				SettingsWindow settingsWindow = new SettingsWindow(UpdateCurrentTabTimecodeDisplays);
 				settingsWindow.ShowDialog(MainWindow);
 			});
 

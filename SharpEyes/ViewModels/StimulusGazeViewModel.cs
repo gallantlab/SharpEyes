@@ -86,6 +86,7 @@ namespace SharpEyes.ViewModels
 		// == video stuff ==
 		private VideoReader? videoReader = null;
 		private DispatcherTimer videoPlaybackTimer;
+		private Func<int, string> _timeFormatter;
 
 		private int _videoWidth = 1024;
 		public int VideoWidth
@@ -460,7 +461,7 @@ namespace SharpEyes.ViewModels
 			VideoFrame = videoReader.GetFrameForDisplay();
 			videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)videoReader.fps);
 			TotalVideoFrames = videoReader.frameCount;
-			TotalVideoTime = videoReader.FramesToTimecode(videoReader.frameCount - 1);
+			UpdateTimecodeDisplay();
 			SaveGazeCommand = null;
 		}
 
@@ -539,11 +540,23 @@ namespace SharpEyes.ViewModels
 			return dataStartFrame.Value + dataElapsedFrames;
 		}
 
+		public void UpdateTimecodeDisplay()
+		{
+			if (videoReader == null)
+				return;
+			if (Settings.Current.ShowFrameNumber)
+				_timeFormatter = frame => String.Format("Frame {0}", frame);
+			else
+				_timeFormatter = videoReader.FramesToTimecode;
+			CurrentVideoTime = _timeFormatter(videoReader.CurrentFrameNumber);
+			TotalVideoTime = _timeFormatter(videoReader.frameCount - 1);
+		}
+
 		public void UpdateDisplay()
 		{
 			VideoFrame = videoReader.GetFrameForDisplay();
 			CurrentVideoFrame = videoReader.CurrentFrameNumber;
-			CurrentVideoTime = videoReader.FramesToTimecode(videoReader.CurrentFrameNumber);
+			CurrentVideoTime = _timeFormatter(videoReader.CurrentFrameNumber);
 			// TODO: set gaze circle location
 			if (dataStartFrame != null)
 			{

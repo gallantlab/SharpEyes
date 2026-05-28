@@ -187,7 +187,10 @@ namespace Eyetracking
 			}
 
 			ViewModel.TotalVideoFrames = frameCount;
-			ViewModel.TotalVideoTime = FramesToTimecode(frameCount);
+			ViewModel.TimeFormatter = Settings.Current.ShowFrameNumber
+				? (Func<int, string>)(frame => String.Format("Frame {0}", frame))
+				: (Func<int, string>)FramesToTimecode;
+			ViewModel.TotalVideoTime = ViewModel.TimeFormatter(frameCount);
 			ViewModel.PupilWindowTop = 0;
 			ViewModel.PupilWindowLeft = 0;
 			ViewModel.PupilWindowWidth = width;
@@ -331,7 +334,7 @@ namespace Eyetracking
 		public void UpdateDisplays()
 		{
 			ViewModel.CurrentVideoFrame = CurrentFrameNumber;
-			ViewModel.CurrentVideoTime = FramesToTimecode(CurrentFrameNumber);
+			ViewModel.CurrentVideoTime = ViewModel.TimeFormatter(CurrentFrameNumber);
 			ViewModel.VideoFrame = GetFrameForDisplay(ViewModel.ShowFilteredImage);
 			ViewModel.PupilX = pupilLocations[CurrentFrameNumber, 0];
 			ViewModel.PupilY = pupilLocations[CurrentFrameNumber, 1];
@@ -479,7 +482,7 @@ namespace Eyetracking
 			try
 			{
 				ViewModel.CurrentVideoFrame = CurrentFrameNumber;
-				ViewModel.CurrentVideoTime = FramesToTimecode(CurrentFrameNumber);
+				ViewModel.CurrentVideoTime = ViewModel.TimeFormatter(CurrentFrameNumber);
 				ViewModel.VideoFrame = GetFrameForDisplay(ViewModel.ShowFilteredImage);
 
 				ViewModel.PupilX = pupilLocations[CurrentFrameNumber, 0];

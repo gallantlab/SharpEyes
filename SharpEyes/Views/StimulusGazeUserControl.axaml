@@ -106,7 +106,7 @@
                 Maximum="{Binding TotalVideoFrames}" Value="{Binding CurrentVideoFrame}"
           />
         <Panel>
-          <TextBlock Name="CurrentVideoTimeTextBlock" HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding CurrentVideoTime}"/>
+          <TextBlock Name="CurrentVideoTimeTextBlock" HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding CurrentVideoTime}" DoubleTapped="ChangeTimecodeDisplay"/>
           <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
             <Button Name="PreviousFrameButton" ToolTip.Tip="Previous Frame" Height="32" VerticalContentAlignment="Center"
                     Command="{Binding PreviousFrameCommand}" HotKey="Q">

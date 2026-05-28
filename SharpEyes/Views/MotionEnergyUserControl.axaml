@@ -75,7 +75,7 @@
                 <Slider Name="VideoTimeSlider" Margin="0 0 4 4" Minimum="0" IsEnabled="{Binding CanPlayVideo}"
                         Maximum="{Binding TotalVideoFrames}" Value="{Binding CurrentVideoFrame}" />
                 <Panel>
-                    <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding CurrentVideoTime}" />
+                    <TextBlock Name="CurrentVideoTimeTextBlock" HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding CurrentVideoTime}" DoubleTapped="ChangeTimecodeDisplay"/>
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
                         <Button ToolTip.Tip="Previous Frame" Height="32" VerticalContentAlignment="Center"
                                 Command="{Binding PreviousFrameCommand}">

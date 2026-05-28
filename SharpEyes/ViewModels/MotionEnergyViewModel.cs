@@ -77,6 +77,7 @@ namespace SharpEyes.ViewModels
 		private Settings settings = Settings.Load();
 
 		private VideoReader? _videoReader = null;
+		private Func<int, string> _timeFormatter;
 		private DispatcherTimer _videoPlaybackTimer;
 
 		private int _videoWidth = 1024;
@@ -577,10 +578,10 @@ namespace SharpEyes.ViewModels
 			VideoHeight = videoReader.height;
 			_videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)videoReader.fps);
 			TotalVideoFrames = videoReader.frameCount;
-			TotalVideoTime = videoReader.FramesToTimecode(videoReader.frameCount - 1);
 			VideoFps = videoReader.fps;
 			IsLoadedFromRecentering = true;
 			this.RaisePropertyChanged("CanPlayVideo");
+			UpdateTimecodeDisplay();
 			UpdateDisplay();
 		}
 
@@ -603,11 +604,11 @@ namespace SharpEyes.ViewModels
 			VideoFrame = _videoReader.GetFrameForDisplay();
 			_videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)_videoReader.fps);
 			TotalVideoFrames = _videoReader.frameCount;
-			TotalVideoTime = _videoReader.FramesToTimecode(_videoReader.frameCount - 1);
 			VideoWidth = _videoReader.width;
 			VideoHeight = _videoReader.height;
 			VideoFps = _videoReader.fps;
 			this.RaisePropertyChanged("CanPlayVideo");
+			UpdateTimecodeDisplay();
 		}
 
 		public void PlayPause()
@@ -967,11 +968,23 @@ namespace SharpEyes.ViewModels
 			return (int)(videoElapsedTime * _eyetrackingFPS);
 		}
 
+		public void UpdateTimecodeDisplay()
+		{
+			if (_videoReader == null)
+				return;
+			if (Settings.Current.ShowFrameNumber)
+				_timeFormatter = frame => String.Format("Frame {0}", frame);
+			else
+				_timeFormatter = _videoReader.FramesToTimecode;
+			CurrentVideoTime = _timeFormatter(_videoReader.CurrentFrameNumber);
+			TotalVideoTime = _timeFormatter(_videoReader.frameCount - 1);
+		}
+
 		public void UpdateDisplay()
 		{
 			VideoFrame = _videoReader.GetFrameForDisplay();
 			CurrentVideoFrame = _videoReader.CurrentFrameNumber;
-			CurrentVideoTime = _videoReader.FramesToTimecode(_videoReader.CurrentFrameNumber);
+			CurrentVideoTime = _timeFormatter(_videoReader.CurrentFrameNumber);
 			if ((object)_gazeLocations != null && _dataStartFrame != null)
 			{
 				int dataIndex = Math.Clamp(VideoTimeToDataIndex(CurrentVideoFrame), 0, _gazeLocations.Shape[0] - 1);

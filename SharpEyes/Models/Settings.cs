@@ -14,6 +14,8 @@ namespace SharpEyes.Models
 		public string SystemPythonExecutablePath { get; set; } = String.Empty;
 		public string CondaEnvironmentPath { get; set; } = String.Empty;
 
+		public bool ShowFrameNumber { get; set; } = false;
+
 		public int MotionEnergyFrameHeight { get; set; } = 270;
 		public int MotionEnergyFrameWidth { get; set; } = 480;
 
@@ -32,6 +34,8 @@ namespace SharpEyes.Models
 		[XmlArray("MotionEnergyDirections")]
 		[XmlArrayItem("double")]
 		public List<double> MotionEnergyDirections { get; set; } = null;
+
+		public static Settings Current { get; private set; }
 
 		public static string SettingsFilePath =>
 			Path.Combine(
@@ -63,6 +67,7 @@ namespace SharpEyes.Models
 				result.MotionEnergyTemporalFrequencies = new List<double> { 0, 2, 4, 8, 16 };
 			if (result.MotionEnergyDirections == null)
 				result.MotionEnergyDirections = new List<double> { 0, 45, 90, 135, 180, 225, 270, 315 };
+			Current = result;
 			return result;
 		}
 

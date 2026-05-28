@@ -10,6 +10,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Eyetracking;
 using ReactiveUI;
+using SharpEyes.Models;
 
 namespace SharpEyes.ViewModels
 {
@@ -549,6 +550,20 @@ namespace SharpEyes.ViewModels
 
 			pupilFinder.CancelPupilFindingDelegate?.Invoke();
 			ShowFrame(CurrentVideoFrame + 1);
+		}
+
+		public Func<int, string> TimeFormatter { get; set; }
+
+		public void UpdateTimecodeDisplay()
+		{
+			if (pupilFinder == null)
+				return;
+			if (Settings.Current.ShowFrameNumber)
+				TimeFormatter = frame => String.Format("Frame {0}", frame);
+			else
+				TimeFormatter = pupilFinder.FramesToTimecode;
+			CurrentVideoTime = TimeFormatter(CurrentVideoFrame);
+			TotalVideoTime = TimeFormatter(pupilFinder.frameCount);
 		}
 
 		public void ShowFrame()

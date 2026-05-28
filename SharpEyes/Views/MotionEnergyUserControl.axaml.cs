@@ -2,7 +2,9 @@ using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using SharpEyes.Models;
 using SharpEyes.ViewModels;
 
 namespace SharpEyes.Views
@@ -89,6 +91,13 @@ namespace SharpEyes.Views
 					selectedIndices.Add(index);
 			}
 			viewModel.SelectedDirectionIndices = selectedIndices;
+		}
+
+		private void ChangeTimecodeDisplay(object sender, RoutedEventArgs e)
+		{
+			Settings.Current.ShowFrameNumber = !Settings.Current.ShowFrameNumber;
+			Settings.Current.Save();
+			viewModel?.UpdateTimecodeDisplay();
 		}
 	}
 }

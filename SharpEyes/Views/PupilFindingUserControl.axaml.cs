@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using System;
 using SharpEyes.ViewModels;
+using SharpEyes.Models;
 using Avalonia.Input;
 using Avalonia;
 using Avalonia.Controls.Primitives;
@@ -184,6 +185,13 @@ namespace SharpEyes.Views
 		public void OnClosing()
 		{
 			viewModel?.OnClosing();
+		}
+
+		private void ChangeTimecodeDisplay(object sender, RoutedEventArgs e)
+		{
+			Settings.Current.ShowFrameNumber = !Settings.Current.ShowFrameNumber;
+			Settings.Current.Save();
+			viewModel?.UpdateTimecodeDisplay();
 		}
 	}
 }

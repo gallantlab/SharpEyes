@@ -26,9 +26,7 @@
              SelectedIndex="{Binding SelectedCategoryIndex}"/>
 
     <!--Right content area-->
-    <Border Grid.Column="1" Margin="4">
-      <uc:PythonSettingsUserControl/>
-    </Border>
+    <Border Grid.Column="1" Margin="4" Name="ContentArea"/>
 
   </Grid>
 </Window>
