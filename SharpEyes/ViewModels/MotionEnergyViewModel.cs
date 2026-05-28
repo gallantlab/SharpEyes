@@ -694,31 +694,14 @@ namespace SharpEyes.ViewModels
 					Point arrowStart = new Point(centerX + radius * dx,        centerY + radius * dy);
 					Point arrowTip   = new Point(centerX + 1.25 * radius * dx, centerY + 1.25 * radius * dy);
 
-					double wingLength = 0.25 * radius;
-					double wingAngle  = Math.PI / 6.0;
-					Point wing1 = new Point(
-						arrowTip.X + wingLength * Math.Cos(directionRadians + Math.PI + wingAngle),
-						arrowTip.Y - wingLength * Math.Sin(directionRadians + Math.PI + wingAngle));
-					Point wing2 = new Point(
-						arrowTip.X + wingLength * Math.Cos(directionRadians + Math.PI - wingAngle),
-						arrowTip.Y - wingLength * Math.Sin(directionRadians + Math.PI - wingAngle));
-
-					double canvasLeft = Math.Min(arrowStart.X, Math.Min(arrowTip.X, Math.Min(wing1.X, wing2.X)));
-					double canvasTop  = Math.Min(arrowStart.Y, Math.Min(arrowTip.Y, Math.Min(wing1.Y, wing2.Y)));
+					double canvasLeft = Math.Min(arrowStart.X, arrowTip.X);
+					double canvasTop  = Math.Min(arrowStart.Y, arrowTip.Y);
 
 					StreamGeometry arrowGeometry = new StreamGeometry();
 					using (StreamGeometryContext streamContext = arrowGeometry.Open())
 					{
 						streamContext.BeginFigure(new Point(arrowStart.X - canvasLeft, arrowStart.Y - canvasTop), false);
 						streamContext.LineTo(new Point(arrowTip.X - canvasLeft, arrowTip.Y - canvasTop));
-						streamContext.EndFigure(false);
-
-						streamContext.BeginFigure(new Point(arrowTip.X - canvasLeft, arrowTip.Y - canvasTop), false);
-						streamContext.LineTo(new Point(wing1.X - canvasLeft, wing1.Y - canvasTop));
-						streamContext.EndFigure(false);
-
-						streamContext.BeginFigure(new Point(arrowTip.X - canvasLeft, arrowTip.Y - canvasTop), false);
-						streamContext.LineTo(new Point(wing2.X - canvasLeft, wing2.Y - canvasTop));
 						streamContext.EndFigure(false);
 					}
 
