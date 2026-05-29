@@ -8,6 +8,8 @@ The Motion-Energy tab computes motion-energy features from a video using [PyMote
 
 These control how the input video frames are prepared before being passed to PyMoten.
 
+By default the video is shown as a preview by sliding the original video around on the drawing canvas. Toggle the "preview" button on to preview the actual pixel values that the motion-energy code will see.
+
 | Control | Description |
 |---|---|
 | Pad percent | Amount of padding added around each frame as a percentage of the frame size. Must be at least 100 (i.e. the padded frame is at least the original size). Recentered/retinotopic videos must be padded, but a raw video can do without padding. |
