@@ -220,7 +220,7 @@ namespace SharpEyes.ViewModels
 			if (IsCondaAvailable)
 				RefreshCondaEnvironments();
 
-			// Pre-select the saved conda environment if present
+			// Preselect the saved conda environment if present
 			if (!String.IsNullOrEmpty(settings.CondaEnvironmentPath))
 			{
 				for (int index = 0; index < CondaEnvironments.Count; index++)

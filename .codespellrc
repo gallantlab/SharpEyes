@@ -1,0 +1,5 @@
+[codespell]
+skip = .git,.gitignore,.gitattributes,*.pdf,*.svg,*.png,*.ico,*.db,*.css,*.min.*,*-lock.json,*.lock,bin,obj,packages,*.DotSettings
+check-hidden = true
+# ignore-regex =
+# ignore-words-list =

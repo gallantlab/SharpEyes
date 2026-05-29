@@ -6,7 +6,7 @@ using Avalonia;
 using Num = NumSharp.np;
 
 // Note: try not to use NumSharp data structures in these classes
-// Because they're interally contained
+// Because they're internally contained
 
 namespace Eyetracking
 {
