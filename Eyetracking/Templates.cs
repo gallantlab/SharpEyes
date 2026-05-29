@@ -155,7 +155,7 @@ namespace Eyetracking
 		/// Gets the best digit that matches the image
 		/// </summary>
 		/// <param name="image">8x12 single channel image matrix from eyetracking video</param>
-		/// <returns>best matchine digit</returns>
+		/// <returns>best matching digit</returns>
 		public static int MatchDigit(Mat image)
 		{
 			int bestMatch = -1;
