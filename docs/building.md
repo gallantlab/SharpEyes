@@ -43,7 +43,7 @@ dotnet publish SharpEyes/SharpEyes.csproj \
   -p:PublishSingleFile=true
 ```
 
-The exectuable will be in `SharpEyes/bin/Release/net10.0/<your arch>/publish/`.
+The executable will be in `SharpEyes/bin/Release/net10.0/<your arch>/publish/`.
 
 ## macOS notes
 
