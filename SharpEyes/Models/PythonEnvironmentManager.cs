@@ -76,6 +76,13 @@ namespace SharpEyes.Models
 			Settings.Save();
 		}
 
+		public void Shutdown()
+		{
+			if (!IsInitialized) return;
+			PythonEngine.Shutdown();
+			IsInitialized = false;
+		}
+
 		// Attempts to initialize pythonnet. Can only be called once per process.
 		public void Initialize()
 		{

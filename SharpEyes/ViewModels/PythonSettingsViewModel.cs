@@ -45,6 +45,7 @@ namespace SharpEyes.ViewModels
 				this.RaisePropertyChanged("IsCondaModeSelected");
 				this.RaisePropertyChanged("IsBundledModeSelected");
 				_manager.Settings.PythonSourceMode = (PythonSourceMode)value;
+				_manager.SaveSettings();
 				CheckRestartRequired();
 				_ = Task.Run(CheckDependencies);
 			}
@@ -93,6 +94,7 @@ namespace SharpEyes.ViewModels
 				if (value >= 0 && value < CondaEnvironments.Count)
 				{
 					_manager.Settings.CondaEnvironmentPath = CondaEnvironments[value].Path;
+					_manager.SaveSettings();
 					CheckRestartRequired();
 					_ = Task.Run(CheckDependencies);
 				}

@@ -175,12 +175,23 @@ namespace SharpEyes.Models
 					byte[] resultBytes = (byte[])result.tobytes();
 					resultData = new float[nFrames * nFeatures];
 					Buffer.BlockCopy(resultBytes, 0, resultData, 0, resultBytes.Length);
+
 				}
+
+				PythonEnvironmentManager.Instance.Shutdown();
+				_pyramidObject = null;
+				RebuildRequired = true;
 
 				NDArray output = new NDArray(resultData).reshape(nFrames, nFeatures);
 				progress.Report(1.0);
 				return output;
 			});
+		}
+
+		public void ResetPyramid()
+		{
+			_pyramidObject = null;
+			RebuildRequired = true;
 		}
 
 		// Copies parameter values from Settings into this model.
