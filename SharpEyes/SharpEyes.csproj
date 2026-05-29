@@ -25,7 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="alglib.net" Version="3.18.2" />
-    <PackageReference Include="pythonnet" Version="3.0.4" />
+    <PackageReference Include="pythonnet" Version="3.1.0" />
     <PackageReference Include="OpenCvSharp4.official.runtime.ubuntu.24.04-x64" Version="4.13.0.20260308" />
       <!-- TODO: Whenever the OpenCVSharp4 official osx runtime is updated to 4.13, switch to that -->
     <PackageReference Include="OneWare.OpenCvSharp4.runtime.osx-arm64" Version="4.13.0.18" />
