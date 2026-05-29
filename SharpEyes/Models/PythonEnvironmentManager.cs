@@ -281,7 +281,7 @@ namespace SharpEyes.Models
 					throw new InvalidOperationException("conda executable not found.");
 				statusProgress?.Report("Installing numpy, Pillow, and pytorch via conda...");
 				await RunProcessAsync(condaExe, String.Format(
-					"install -p \"{0}\" numpy pillow pytorch -c pytorch -y",
+					"install -p \"{0}\" numpy pillow pytorch pytorch-cuda -c pytorch -c nvidia -y",
 					Settings.CondaEnvironmentPath));
 				statusProgress?.Report("Installing pymoten...");
 				string pipExe = GetPipExecutable(Settings);
@@ -317,12 +317,14 @@ namespace SharpEyes.Models
 				if (checkResult.Moten == PackageStatus.Missing)
 				{
 					condaPackages.Add("pytorch");
+					condaPackages.Add("pytorch-cuda");
 					installTorchViaConda = true;
 					installPymoten = true;
 				}
 				else if (checkResult.Torch == PackageStatus.Missing)
 				{
 					condaPackages.Add("pytorch");
+					condaPackages.Add("pytorch-cuda");
 					installTorchViaConda = true;
 				}
 
@@ -335,7 +337,7 @@ namespace SharpEyes.Models
 				if (condaPackages.Count > 0)
 				{
 					statusProgress?.Report("Installing missing packages via conda...");
-					string channelArg = installTorchViaConda ? " -c pytorch" : "";
+					string channelArg = installTorchViaConda ? " -c pytorch -c nvidia" : "";
 					await RunProcessAsync(condaExe, String.Format(
 						"install -p \"{0}\" {1}{2} -y", envPath, String.Join(" ", condaPackages), channelArg));
 				}
@@ -494,7 +496,7 @@ namespace SharpEyes.Models
 
 			statusProgress?.Report("Installing numpy, Pillow, and pytorch via conda...");
 			await RunProcessAsync(condaExe, String.Format(
-				"install -n {0} numpy pillow pytorch -c pytorch -y", environmentName));
+				"install -n {0} numpy pillow pytorch pytorch-cuda -c pytorch -c nvidia -y", environmentName));
 			statusProgress?.Report("Installing pymoten...");
 			string pipExe = GetPipExecutable(Settings);
 			await RunProcessAsync(pipExe, String.Format("install {0}", PymotenGitURL));
