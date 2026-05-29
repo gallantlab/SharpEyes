@@ -19,7 +19,7 @@
                   Command="{Binding ResetTemplatesCommand}">Reset templates</Button>
       </StackPanel>
       <!--Templates section-->
-    <Expander Header="Templates" IsExpanded="False">
+    <Expander Header="Templates" IsExpanded="{Binding IsTemplatesExpanded}">
       <StackPanel Orientation="Horizontal">
         <StackPanel>
             <Image Width="175" Height="175" Source="{Binding TemplatePreviewImage}"
@@ -63,7 +63,7 @@
     </Expander>
 
     <!--Anti templates-->
-    <Expander Header="Anti-templates" IsExpanded="False">
+    <Expander Header="Anti-templates" IsExpanded="{Binding IsAntiTemplatesExpanded}">
       <StackPanel Orientation="Horizontal">
         <StackPanel>
             <Image Width="175" Height="175" Source="{Binding AntiTemplatePreviewImage}"
@@ -99,7 +99,7 @@
     </Expander>
 
     <!--Match options-->
-    <Expander Header="Matching options" IsExpanded="False">
+    <Expander Header="Matching options" IsExpanded="{Binding IsMatchingOptionsExpanded}">
       <StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0 8">
           <TextBlock VerticalAlignment="Center">Metric</TextBlock>

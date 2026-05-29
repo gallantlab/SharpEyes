@@ -409,6 +409,54 @@ namespace SharpEyes.ViewModels
 			? "gaze locations"
 			: System.IO.Path.GetFileNameWithoutExtension(gazeFileName) + " corrected.npy";
 
+		private bool _isTemporalAlignmentExpanded = Settings.Current.StimulusTemporalAlignmentExpanded;
+		public bool IsTemporalAlignmentExpanded
+		{
+			get => _isTemporalAlignmentExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isTemporalAlignmentExpanded, value);
+				Settings.Current.StimulusTemporalAlignmentExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isGazeInfoExpanded = Settings.Current.StimulusGazeInfoExpanded;
+		public bool IsGazeInfoExpanded
+		{
+			get => _isGazeInfoExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isGazeInfoExpanded, value);
+				Settings.Current.StimulusGazeInfoExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isGazeFilteringExpanded = Settings.Current.StimulusGazeFilteringExpanded;
+		public bool IsGazeFilteringExpanded
+		{
+			get => _isGazeFilteringExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isGazeFilteringExpanded, value);
+				Settings.Current.StimulusGazeFilteringExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isKeyframesExpanded = Settings.Current.StimulusKeyframesExpanded;
+		public bool IsKeyframesExpanded
+		{
+			get => _isKeyframesExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isKeyframesExpanded, value);
+				Settings.Current.StimulusKeyframesExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
 		public StimulusGazeViewModel()
 		{
 			LoadVideoCommand = ReactiveCommand.Create(LoadVideo);

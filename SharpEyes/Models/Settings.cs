@@ -41,6 +41,40 @@ namespace SharpEyes.Models
 		[XmlArrayItem("double")]
 		public List<double> MotionEnergyDirections { get; set; } = null;
 
+		// Expander open/close states - CalibrationUserControl
+		public bool CalibrationParametersExpanded { get; set; } = true;
+		public bool CalibrationPointsExpanded { get; set; } = true;
+
+		// Expander open/close states - MotionEnergyUserControl
+		public bool MotionEnergyFrameParametersExpanded { get; set; } = true;
+		public bool MotionEnergyPyramidExpanded { get; set; } = true;
+		public bool MotionEnergySpatialFrequenciesExpanded { get; set; } = false;
+		public bool MotionEnergyTemporalFrequenciesExpanded { get; set; } = false;
+		public bool MotionEnergyDirectionsExpanded { get; set; } = false;
+		public bool MotionEnergyComputeFeaturesExpanded { get; set; } = true;
+
+		// Expander open/close states - PupilFindingUserControl
+		public bool PupilSizeExpanded { get; set; } = false;
+		public bool ConfidenceOptionsExpanded { get; set; } = false;
+		public bool TimestampParsingExpanded { get; set; } = false;
+		public bool ImagePreFilteringExpanded { get; set; } = false;
+		public bool ManualAdjustOptionsExpanded { get; set; } = false;
+
+		// Expander open/close states - RecenteringUserControl
+		public bool RecenteringGazeInfoExpanded { get; set; } = true;
+		public bool RecenteringExportExpanded { get; set; } = true;
+
+		// Expander open/close states - TemplatePupilFinderConfigUserControl
+		public bool TemplatesExpanded { get; set; } = false;
+		public bool AntiTemplatesExpanded { get; set; } = false;
+		public bool MatchingOptionsExpanded { get; set; } = false;
+
+		// Expander open/close states - StimulusGazeUserControl
+		public bool StimulusTemporalAlignmentExpanded { get; set; } = true;
+		public bool StimulusGazeInfoExpanded { get; set; } = true;
+		public bool StimulusGazeFilteringExpanded { get; set; } = true;
+		public bool StimulusKeyframesExpanded { get; set; } = true;
+
 		public static Settings Current { get; private set; }
 
 		public static string SettingsFilePath =>

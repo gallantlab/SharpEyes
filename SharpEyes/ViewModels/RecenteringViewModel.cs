@@ -378,6 +378,30 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _selectedExportContentIndex, value);
 		}
 
+		private bool _isGazeInfoExpanded = Settings.Current.RecenteringGazeInfoExpanded;
+		public bool IsGazeInfoExpanded
+		{
+			get => _isGazeInfoExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isGazeInfoExpanded, value);
+				Settings.Current.RecenteringGazeInfoExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isExportExpanded = Settings.Current.RecenteringExportExpanded;
+		public bool IsExportExpanded
+		{
+			get => _isExportExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isExportExpanded, value);
+				Settings.Current.RecenteringExportExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
 		public RecenteringViewModel()
 		{
 			LoadVideoCommand = ReactiveCommand.Create(LoadVideo);

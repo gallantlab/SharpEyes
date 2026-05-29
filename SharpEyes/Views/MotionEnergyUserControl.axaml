@@ -90,7 +90,7 @@
             <ScrollViewer DockPanel.Dock="Top" Margin="2">
                 <StackPanel>
 
-                    <Expander Margin="4 2" IsExpanded="True" Header="Motion-energy frame parameters"
+                    <Expander Margin="4 2" IsExpanded="{Binding IsFrameParametersExpanded}" Header="Motion-energy frame parameters"
                               HorizontalContentAlignment="Center">
                         <StackPanel>
                             <ToggleSwitch OffContent="Frame preview" OnContent="Frame preview"></ToggleSwitch>
@@ -128,7 +128,7 @@
                         </StackPanel>
                     </Expander>
 
-                    <Expander Margin="4 2" IsExpanded="True" Header="Motion-energy pyramid"
+                    <Expander Margin="4 2" IsExpanded="{Binding IsPyramidExpanded}" Header="Motion-energy pyramid"
                               HorizontalContentAlignment="Center">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
@@ -246,7 +246,7 @@
                         </StackPanel>
                     </Expander>
 
-                    <Expander Margin="4 2" IsExpanded="True" Header="Compute features"
+                    <Expander Margin="4 2" IsExpanded="{Binding IsComputeFeaturesExpanded}" Header="Compute features"
                               HorizontalContentAlignment="Center">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">

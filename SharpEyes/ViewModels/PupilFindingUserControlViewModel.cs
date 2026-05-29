@@ -338,13 +338,67 @@ namespace SharpEyes.ViewModels
 		public double BlinkRejectionBlinkSigma { get; set; } = 2.0;
 		public double BlinkRejectionPupilSigma { get; set; } = 2.0;
 
+		// Expander states
+		private bool _isPupilSizeExpanded = Settings.Current.PupilSizeExpanded;
+		public bool IsPupilSizeExpanded
+		{
+			get => _isPupilSizeExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isPupilSizeExpanded, value);
+				Settings.Current.PupilSizeExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isConfidenceOptionsExpanded = Settings.Current.ConfidenceOptionsExpanded;
+		public bool IsConfidenceOptionsExpanded
+		{
+			get => _isConfidenceOptionsExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isConfidenceOptionsExpanded, value);
+				Settings.Current.ConfidenceOptionsExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
 		// Timestamps
-		private bool _showTimestampParsing = false;
+		private bool _showTimestampParsing = Settings.Current.TimestampParsingExpanded;
 
 		public bool ShowTimestampParsing
 		{
 			get => _showTimestampParsing;
-			set => this.RaiseAndSetIfChanged(ref _showTimestampParsing, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _showTimestampParsing, value);
+				Settings.Current.TimestampParsingExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isImagePreFilteringExpanded = Settings.Current.ImagePreFilteringExpanded;
+		public bool IsImagePreFilteringExpanded
+		{
+			get => _isImagePreFilteringExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isImagePreFilteringExpanded, value);
+				Settings.Current.ImagePreFilteringExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isManualAdjustOptionsExpanded = Settings.Current.ManualAdjustOptionsExpanded;
+		public bool IsManualAdjustOptionsExpanded
+		{
+			get => _isManualAdjustOptionsExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isManualAdjustOptionsExpanded, value);
+				Settings.Current.ManualAdjustOptionsExpanded = value;
+				Settings.Current.Save();
+			}
 		}
 		public bool AutoReadTimestamps => true;
 

@@ -284,7 +284,29 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> AddDirectionCommand { get; }
 		public ReactiveCommand<Unit, Unit> RemoveDirectionCommand { get; }
 
-		private bool _isSpatialFrequenciesExpanded = false;
+		private bool _isFrameParametersExpanded;
+		public bool IsFrameParametersExpanded
+		{
+			get => _isFrameParametersExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isFrameParametersExpanded, value);
+				SaveSettings();
+			}
+		}
+
+		private bool _isPyramidExpanded;
+		public bool IsPyramidExpanded
+		{
+			get => _isPyramidExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isPyramidExpanded, value);
+				SaveSettings();
+			}
+		}
+
+		private bool _isSpatialFrequenciesExpanded;
 		public bool IsSpatialFrequenciesExpanded
 		{
 			get => _isSpatialFrequenciesExpanded;
@@ -292,10 +314,11 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _isSpatialFrequenciesExpanded, value);
 				this.RaisePropertyChanged("SpatialFrequenciesHeaderText");
+				SaveSettings();
 			}
 		}
 
-		private bool _isTemporalFrequenciesExpanded = false;
+		private bool _isTemporalFrequenciesExpanded;
 		public bool IsTemporalFrequenciesExpanded
 		{
 			get => _isTemporalFrequenciesExpanded;
@@ -303,10 +326,11 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _isTemporalFrequenciesExpanded, value);
 				this.RaisePropertyChanged("TemporalFrequenciesHeaderText");
+				SaveSettings();
 			}
 		}
 
-		private bool _isDirectionsExpanded = false;
+		private bool _isDirectionsExpanded;
 		public bool IsDirectionsExpanded
 		{
 			get => _isDirectionsExpanded;
@@ -314,6 +338,18 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _isDirectionsExpanded, value);
 				this.RaisePropertyChanged("DirectionsHeaderText");
+				SaveSettings();
+			}
+		}
+
+		private bool _isComputeFeaturesExpanded;
+		public bool IsComputeFeaturesExpanded
+		{
+			get => _isComputeFeaturesExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isComputeFeaturesExpanded, value);
+				SaveSettings();
 			}
 		}
 
@@ -437,6 +473,12 @@ namespace SharpEyes.ViewModels
 			_padPercent = settings.MotionEnergyPadPercent;
 			_padValue = settings.MotionEnergyPadValue;
 			_frameScale = settings.MotionEnergyFrameScale;
+			_isFrameParametersExpanded = settings.MotionEnergyFrameParametersExpanded;
+			_isPyramidExpanded = settings.MotionEnergyPyramidExpanded;
+			_isSpatialFrequenciesExpanded = settings.MotionEnergySpatialFrequenciesExpanded;
+			_isTemporalFrequenciesExpanded = settings.MotionEnergyTemporalFrequenciesExpanded;
+			_isDirectionsExpanded = settings.MotionEnergyDirectionsExpanded;
+			_isComputeFeaturesExpanded = settings.MotionEnergyComputeFeaturesExpanded;
 			foreach (string backendKey in settings.BackendPreference)
 				AvailableBackends.Add(new PymotenBackend(backendKey));
 			foreach (double value in settings.MotionEnergySpatialFrequencies)
@@ -570,6 +612,12 @@ namespace SharpEyes.ViewModels
 			settings.MotionEnergySpatialFrequencies = new List<double>(SpatialFrequencies);
 			settings.MotionEnergyTemporalFrequencies = new List<double>(TemporalFrequencies);
 			settings.MotionEnergyDirections = new List<double>(Directions);
+			settings.MotionEnergyFrameParametersExpanded = _isFrameParametersExpanded;
+			settings.MotionEnergyPyramidExpanded = _isPyramidExpanded;
+			settings.MotionEnergySpatialFrequenciesExpanded = _isSpatialFrequenciesExpanded;
+			settings.MotionEnergyTemporalFrequenciesExpanded = _isTemporalFrequenciesExpanded;
+			settings.MotionEnergyDirectionsExpanded = _isDirectionsExpanded;
+			settings.MotionEnergyComputeFeaturesExpanded = _isComputeFeaturesExpanded;
 			settings.Save();
 		}
 

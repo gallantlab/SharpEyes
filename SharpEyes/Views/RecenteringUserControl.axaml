@@ -127,7 +127,7 @@
       <ScrollViewer DockPanel.Dock="Top" Margin="2">
         <StackPanel>
 
-          <Expander Margin="4 2" IsExpanded="True" Header="Gaze info" HorizontalContentAlignment="Center"
+          <Expander Margin="4 2" IsExpanded="{Binding IsGazeInfoExpanded}" Header="Gaze info" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">
             <StackPanel>
               <StackPanel Orientation="Horizontal">
@@ -149,7 +149,7 @@
             </StackPanel>
           </Expander>
 
-          <Expander Margin="4 2" IsExpanded="True" Header="Export" HorizontalContentAlignment="Center"
+          <Expander Margin="4 2" IsExpanded="{Binding IsExportExpanded}" Header="Export" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">
             <StackPanel>
               <Button Margin="4 4 4 2" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"

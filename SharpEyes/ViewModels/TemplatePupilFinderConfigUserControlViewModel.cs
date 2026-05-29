@@ -90,6 +90,42 @@ namespace SharpEyes.ViewModels
 		// view model hierarchy
 		public PupilFindingUserControlViewModel? Parent { get; private set; } = null;
 		
+		private bool _isTemplatesExpanded = SharpEyes.Models.Settings.Current.TemplatesExpanded;
+		public bool IsTemplatesExpanded
+		{
+			get => _isTemplatesExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isTemplatesExpanded, value);
+				SharpEyes.Models.Settings.Current.TemplatesExpanded = value;
+				SharpEyes.Models.Settings.Current.Save();
+			}
+		}
+
+		private bool _isAntiTemplatesExpanded = SharpEyes.Models.Settings.Current.AntiTemplatesExpanded;
+		public bool IsAntiTemplatesExpanded
+		{
+			get => _isAntiTemplatesExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isAntiTemplatesExpanded, value);
+				SharpEyes.Models.Settings.Current.AntiTemplatesExpanded = value;
+				SharpEyes.Models.Settings.Current.Save();
+			}
+		}
+
+		private bool _isMatchingOptionsExpanded = SharpEyes.Models.Settings.Current.MatchingOptionsExpanded;
+		public bool IsMatchingOptionsExpanded
+		{
+			get => _isMatchingOptionsExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isMatchingOptionsExpanded, value);
+				SharpEyes.Models.Settings.Current.MatchingOptionsExpanded = value;
+				SharpEyes.Models.Settings.Current.Save();
+			}
+		}
+
 		public TemplatePupilFinderConfigUserControlViewModel()
 			:this(null)
 		{
