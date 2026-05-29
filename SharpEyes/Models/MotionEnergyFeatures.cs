@@ -59,6 +59,10 @@ namespace SharpEyes.Models
 			set { _directions = value; RebuildRequired = true; }
 		}
 
+		// == Compute backend ==
+
+		public string Backend { get; set; } = "numpy";
+
 		// == Pyramid state (runtime, not persisted) ==
 
 		private PyObject? _pyramidObject = null;
@@ -139,6 +143,9 @@ namespace SharpEyes.Models
 
 				using (Py.GIL())
 				{
+					dynamic motenBackend = Py.Import("moten.backend");
+					motenBackend.set_backend(Backend);
+
 					dynamic np = Py.Import("numpy");
 					dynamic ctypes = Py.Import("ctypes");
 					dynamic npCtypeslib = Py.Import("numpy.ctypeslib");
@@ -155,7 +162,7 @@ namespace SharpEyes.Models
 						dynamic cArray = cArrayType.from_address(ptr);
 						npArray = npCtypeslib.as_array(cArray).copy()
 							.reshape(nFrames, height, width)
-							.astype(np.float32).__truediv__(255.0f);
+							.astype(np.float32).__truediv__(255.0f).astype(np.float32);
 					}
 					finally
 					{

@@ -935,6 +935,7 @@ namespace SharpEyes.ViewModels
 				cancellationToken.ThrowIfCancellationRequested();
 
 				// Phase 3: extract features (indeterminate progress)
+				motionEnergyFeatures.Backend = SelectedBackendKey;
 				StatusText = "Computing motion energy...";
 				IsProgressBarIndeterminate = true;
 				NDArray features;
