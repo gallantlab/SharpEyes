@@ -25,6 +25,7 @@
     <PackageReference Include="alglib.net" Version="3.18.2" />
     <PackageReference Include="pythonnet" Version="3.0.4" />
     <PackageReference Include="OpenCvSharp4.official.runtime.ubuntu.24.04-x64" Version="4.13.0.20260308" />
+    <PackageReference Include="OneWare.OpenCvSharp4.runtime.osx-arm64" Version="4.13.0.18" />
     <PackageReference Include="SkiaSharp" Version="2.88.9" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.2" />
     <PackageReference Include="System.Formats.Nrbf" Version="10.0.8" />

@@ -14,7 +14,7 @@ A standalone executable is available. Linux may require additional system librar
 
 ### macOS
 
-I have no macOS development environment, so it's not supported. But because all the packages here are cross-platform, I see no reason why it can't be compiled from source on a mac. However, I can't provide any support for that.
+macOS on Apple Silicon (arm64) is supported and built from source — see [Building from source](building.md). Prebuilt executables are not currently published for macOS, so you compile it yourself with the .NET SDK. Note that Eyelink `.edf` import is unavailable on macOS (SR Research does not ship the `edfapi` library for macOS); NumPy and CSV gaze import work normally.
 
 ## Python interop setup
 

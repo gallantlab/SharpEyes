@@ -47,9 +47,15 @@ namespace SharpEyes.Models
 		{
 			get
 			{
-				string platform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-					? "x86_64-pc-windows-msvc"
-					: "x86_64-unknown-linux-gnu";
+				string platform;
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+					platform = "x86_64-pc-windows-msvc";
+				else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+					platform = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+						? "aarch64-apple-darwin"
+						: "x86_64-apple-darwin";
+				else
+					platform = "x86_64-unknown-linux-gnu";
 				return String.Format(
 					"https://github.com/indygreg/python-build-standalone/releases/download/{0}/cpython-{1}+{0}-{2}-install_only_stripped.tar.gz",
 					BundledPythonTag, BundledPythonVersion, platform);
@@ -136,6 +142,15 @@ namespace SharpEyes.Models
 				{
 					if (!Directory.Exists(dir)) continue;
 					string[] candidates = Directory.GetFiles(dir, "libpython3.*.so.1.0");
+					if (candidates.Length > 0) return candidates[0];
+				}
+			}
+			else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+			{
+				string libDir = Path.Combine(pythonHome, "lib");
+				if (Directory.Exists(libDir))
+				{
+					string[] candidates = Directory.GetFiles(libDir, "libpython3.*.dylib");
 					if (candidates.Length > 0) return candidates[0];
 				}
 			}

@@ -28,11 +28,13 @@ SharpEyes is organized into five tabs, each corresponding to a stage of processi
 
 ## Installation
 
-Executables and installers are available on the [Releases page](https://github.com/gallantlab/SharpEyes/releases). Windows has both a standalone `.exe` and an installer. Linux has a standalone `.exe`; additional system libraries may be required and SharpEyes will report any that are missing. macOS is not supported.
+Executables and installers are available on the [Releases page](https://github.com/gallantlab/SharpEyes/releases). Windows has both a standalone `.exe` and an installer. Linux has a standalone `.exe`; additional system libraries may be required and SharpEyes will report any that are missing. macOS (Apple Silicon / arm64) is supported and builds from source; see below.
 
 ## Requirements
 
-This is targeted at .NET 10 on Window 10/11 (though I see no reason why it shouldn't work down to Windows 7) and Ubuntu 24 (some fudging might be needed to get OpenCVSharp working on other versions)
+This is targeted at .NET 10 on Window 10/11 (though I see no reason why it shouldn't work down to Windows 7) and Ubuntu 24 (some fudging might be needed to get OpenCVSharp working on other versions).
+
+macOS support targets Apple Silicon (arm64) on .NET 10. The OpenCvSharp native runtime is bundled via NuGet, so no separate OpenCV install is needed. Note that Eyelink `.edf` import is unavailable on macOS (SR Research does not ship the `edfapi` library for macOS); NumPy and CSV gaze import work as normal.
 
 If you would like to do things to the code, this is written using Visual Studio (not code) and Jetbrains Rider.
 

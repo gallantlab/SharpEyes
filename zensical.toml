@@ -28,6 +28,7 @@ extra_css = ["stylesheets/extra.css"]
 nav = [
   {"Home" = "index.md"},
   {"Getting Started" = "getting started.md"},
+  {"Building from source" = "building.md"},
   {"Workflow" = [
     "workflow/index.md",
     "workflow/pupil finding.md",
