@@ -33,7 +33,7 @@ namespace Eyetracking
 		public List<Point> calibrationPoints { get; set; }
 
 		/// <summary>
-		/// List of the points in the order that they are presented. Indentified by index in <see cref="calibrationPoints"/>
+		/// List of the points in the order that they are presented. Identified by index in <see cref="calibrationPoints"/>
 		/// </summary>
 		public List<CalibrationIndex> calibrationSequence { get; set; }
 

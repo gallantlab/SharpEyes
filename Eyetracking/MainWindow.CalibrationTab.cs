@@ -116,7 +116,7 @@ namespace Eyetracking
 		}
 
 		/// <summary>
-		/// Set tge current frame as the end of the calibration sequence
+		/// Set the current frame as the end of the calibration sequence
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>

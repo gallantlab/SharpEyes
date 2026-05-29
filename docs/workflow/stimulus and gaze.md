@@ -25,7 +25,7 @@ Note: if you read a numpy or CSV file, you'll need to manually set the Eyetracki
 
 ## Temporal alignment
 
-The eyetracking data and the stimulus video are recorded separately and must be aligned. When you load a file, SharpEyes assums that the eyetracking data starts with the video. The Temporal alignment section in the right panel provides several ways to modify this alignment.
+The eyetracking data and the stimulus video are recorded separately and must be aligned. When you load a file, SharpEyes assumes that the eyetracking data starts with the video. The Temporal alignment section in the right panel provides several ways to modify this alignment.
 
 - **Set current as eyetracking start** — marks the current video frame as the frame where eyetracking began.
 - **Auto find eyetracking start** — attempts to detect the start automatically - this is specific to the driving project, where we burn a TTL marker into the bottom right.

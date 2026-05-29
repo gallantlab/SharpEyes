@@ -75,7 +75,7 @@ namespace Eyetracking
 		private bool isPupilManuallySetOnThisFrame = false;
 
 		// Pupil X and Y set the _center_ of the ellipse
-		// The outward-facing values, both returned and in the text lables,
+		// The outward-facing values, both returned and in the text labels,
 		// Reflect the position in video frame space
 		// PupilEllipse's values reflect values in screen space
 		private double PupilX
