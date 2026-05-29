@@ -640,7 +640,7 @@ namespace SharpEyes.ViewModels
 			FileDialogFilter allFilesFilter = new FileDialogFilter()
 			{
 				Name = "All supported files",
-				Extensions = { "npy", "csv", "txt" }
+				Extensions = { "npy", "csv", "txt", "asc" }
 			};
 			if (EyelinkParser.IsEDFSupported)
 				allFilesFilter.Extensions.Add("edf");

@@ -782,7 +782,7 @@ namespace SharpEyes.ViewModels
 			FileDialogFilter allFilesFilter = new FileDialogFilter()
 			{
 				Name = "All supported files",
-				Extensions = { "npy", "csv", "txt" }
+				Extensions = { "npy", "csv", "txt", "asc" }
 			};
 			if (GazeLoader.IsEDFSupported)
 				allFilesFilter.Extensions.Add("edf");
