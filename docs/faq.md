@@ -20,6 +20,10 @@ It depends on how far through the workflow you go. The [Pupil Finding](workflow/
 
 The [Stimulus & Gaze](workflow/stimulus%20and%20gaze.md) tab can load gaze positions in numpy, CSV, or Eyelink formats for viewing and editing. The [Recentering](workflow/recentering.md) tab exports retinotopic frames as PNG files or a numpy array. The [Motion-Energy](workflow/motion%20energy.md) tab saves a numpy array of features, a plain-text info file recording all parameters, and a CSV describing each filter in the pyramid.
 
+**There's no option to read .edf files from Eyelink**
+
+You need to provide your own copy of the edfapi.dll/so library from the SR Research Eyelink SDK. Putting that in your path or next to the SharpEyes executable should enable EDF reading. There is no EDF support for macOS
+
 **What do I need to build SharpEyes from source?**
 
 SharpEyes was built with Visual Studio and JetBrains Rider.

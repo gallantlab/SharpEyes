@@ -2,7 +2,7 @@
 
 ## Installation
 
-Executables and installers are available on the [Releases page](https://github.com/gallantlab/SharpEyes/releases). Unzip the zip file and run `SharpEyes`
+Executables for Windows and Ubuntu are available on the [Releases page](https://github.com/gallantlab/SharpEyes/releases). Unzip the zip file and run `SharpEyes`
 
 ### Windows
 
@@ -14,7 +14,7 @@ A standalone executable is available. Linux may require additional system librar
 
 ### macOS
 
-macOS on Apple Silicon (arm64) is supported and built from source — see [Building from source](building.md). Prebuilt executables are not currently published for macOS, so you compile it yourself with the .NET SDK. Note that Eyelink `.edf` import is unavailable on macOS (SR Research does not ship the `edfapi` library for macOS); NumPy and CSV gaze import work normally.
+There are no prebuilt executable for macOS. To run on macOS, [build the project from source](./building.md).
 
 ## Python interop setup
 
