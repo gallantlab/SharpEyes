@@ -88,8 +88,8 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _videoWidth, value);
-				this.RaisePropertyChanged("RecenteringCanvasWidth");
-				this.RaisePropertyChanged("RecenteringImageLeft");
+				this.RaisePropertyChanged("CanvasWidth");
+				this.RaisePropertyChanged("ImageLeft");
 			}
 		}
 
@@ -100,8 +100,8 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _videoHeight, value);
-				this.RaisePropertyChanged("RecenteringCanvasHeight");
-				this.RaisePropertyChanged("RecenteringImageTop");
+				this.RaisePropertyChanged("CanvasHeight");
+				this.RaisePropertyChanged("ImageTop");
 			}
 		}
 
@@ -217,7 +217,7 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _gazeX, value);
 				this.RaisePropertyChanged("GazeCircleLeft");
-				this.RaisePropertyChanged("RecenteringImageLeft");
+				this.RaisePropertyChanged("ImageLeft");
 			}
 		}
 		public double GazeY
@@ -227,7 +227,7 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _gazeY, value);
 				this.RaisePropertyChanged("GazeCircleTop");
-				this.RaisePropertyChanged("RecenteringImageTop");
+				this.RaisePropertyChanged("ImageTop");
 			}
 		}
 		public double GazeCircleLeft => _gazeX - GazeRadius;
@@ -312,7 +312,7 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _gazeSpaceWidth, value);
-				this.RaisePropertyChanged("RecenteringImageLeft");
+				this.RaisePropertyChanged("ImageLeft");
 			}
 		}
 
@@ -323,7 +323,7 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _gazeSpaceHeight, value);
-				this.RaisePropertyChanged("RecenteringImageTop");
+				this.RaisePropertyChanged("ImageTop");
 			}
 		}
 

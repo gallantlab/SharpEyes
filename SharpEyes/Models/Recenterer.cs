@@ -22,17 +22,8 @@ namespace SharpEyes.Models
 		private readonly double padValue;
 		private readonly bool flipBGR;
 
-		public Recenterer(
-			VideoReader videoReader,
-			NDArray gazeLocations,
-			int dataStartFrame,
-			bool startFromFirstTTL,
-			int eyetrackingFPS,
-			int gazeSpaceWidth,
-			int gazeSpaceHeight,
-			double frameScale,
-			double padValue,
-			bool flipBgr)
+		public Recenterer(VideoReader videoReader, NDArray gazeLocations, int dataStartFrame, bool startFromFirstTTL,
+			int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight, double frameScale, double padValue, bool flipBgr)
 		{
 			this.videoReader = videoReader;
 			this.gazeLocations = gazeLocations;
@@ -54,6 +45,83 @@ namespace SharpEyes.Models
 				if ((double)gazeLocations[i, 3] != 0.0)
 					return i;
 			return null;
+		}
+		
+		/// <summary>
+		/// Creates a translation matrix for the gaze location to recenter the frame
+		/// </summary>
+		/// <param name="gazeX"></param>
+		/// <param name="gazeY"></param>
+		/// <param name="inFrameWidth"></param>
+		/// <param name="inFrameHeight"></param>
+		/// <param name="frameScale"></param>
+		/// <param name="scaledWidth"></param>
+		/// <param name="scaledHeight"></param>
+		/// <returns></returns>
+		public static Mat GetTranslationMatrix(double gazeX, double gazeY,
+			int inFrameWidth, int inFrameHeight, double frameScale)
+		{
+			Mat translationMatrix = new Mat(2, 3, MatType.CV_64F, Scalar.All(0.0));
+			translationMatrix.At<double>(0, 0) = 1.0;
+			translationMatrix.At<double>(1, 1) = 1.0;
+			return GetTranslationMatrix(translationMatrix, gazeX, gazeY, inFrameWidth, inFrameHeight, frameScale);
+		}
+
+		/// <summary>
+		/// Get the delta value in a translateion matrix for one dimension in the video frame
+		/// </summary>
+		/// <param name="val">gaze value on this dimension</param>
+		/// <param name="inSize">input frame size on this dimension</param>
+		/// <param name="scale">scale for output translation</param>
+		/// <returns></returns>
+		public static double GetTranslateDelta(double val, double inSize, double scale)
+		{
+			return (inSize / 2 - val) * scale + scale * inSize / 2;
+		}
+
+		/// <summary>
+		/// Fills an existing translation matrix for the gaze lation to recenter the frame
+		/// </summary>
+		/// <param name="translationMatrix"></param>
+		/// <param name="gazeX"></param>
+		/// <param name="gazeY"></param>
+		/// <param name="inFrameWidth"></param>
+		/// <param name="inFrameHeight"></param>
+		/// <param name="frameScale"></param>
+		/// <returns></returns>
+		public static Mat GetTranslationMatrix(Mat translationMatrix, double gazeX, double gazeY,
+			int inFrameWidth, int inFrameHeight, double frameScale)
+		{
+			double tx = GetTranslateDelta(gazeX, inFrameWidth, frameScale);
+			double ty = GetTranslateDelta(gazeY, inFrameHeight, frameScale);
+			translationMatrix.At<double>(0, 2) = tx;
+			translationMatrix.At<double>(1, 2) = ty;
+			return translationMatrix;
+		}
+
+		// Scales videoFrame and applies the warp already encoded in translationMatrix. Caller must dispose the returned Mat.
+		public static Mat ProcessFrame(Mat videoFrame, int scaledWidth, int scaledHeight,
+			int outputWidth, int outputHeight, double padValue, Mat translationMatrix)
+		{
+			Mat scaledFrame = new Mat();
+			Cv2.Resize(videoFrame, scaledFrame, new OpenCvSharp.Size(scaledWidth, scaledHeight));
+			Mat warpedFrame = new Mat();
+			Cv2.WarpAffine(scaledFrame, warpedFrame, translationMatrix,
+				new OpenCvSharp.Size(outputWidth, outputHeight),
+				borderMode: BorderTypes.Constant,
+				borderValue: new Scalar(padValue, padValue, padValue));
+			scaledFrame.Dispose();
+			return warpedFrame;
+		}
+
+		// Scales videoFrame and applies an affine warp with the given (tx, ty). Caller must dispose the returned Mat.
+		public static Mat ProcessFrame(Mat videoFrame, double tx, double ty, int scaledWidth, int scaledHeight,
+			int outputWidth, int outputHeight, double padValue, Mat translationMatrix)
+		{
+			translationMatrix.At<double>(0, 2) = tx;
+			translationMatrix.At<double>(1, 2) = ty;
+			return ProcessFrame(videoFrame, scaledWidth, scaledHeight, outputWidth, outputHeight, padValue,
+				translationMatrix);
 		}
 
 		public async Task ExportAsync(string destinationPath, bool isPng, bool includeRaw, IProgress<double> progress)
@@ -126,24 +194,6 @@ namespace SharpEyes.Models
 			}
 		}
 
-		// Scales videoFrame and applies an affine warp with the given (tx, ty). Caller must dispose the returned Mat.
-		private Mat ProcessFrame(Mat videoFrame, double tx, double ty, int scaledWidth, int scaledHeight, 
-								 int outputWidth, int outputHeight, double padValue, Mat translationMatrix)
-		{
-			Mat scaledFrame = new Mat();
-			Cv2.Resize(videoFrame, scaledFrame, new OpenCvSharp.Size(scaledWidth, scaledHeight));
-
-			translationMatrix.At<double>(0, 2) = tx;
-			translationMatrix.At<double>(1, 2) = ty;
-			Mat warpedFrame = new Mat();
-			Cv2.WarpAffine(scaledFrame, warpedFrame, translationMatrix,
-				new OpenCvSharp.Size(outputWidth, outputHeight),
-				borderMode: BorderTypes.Constant,
-				borderValue: new Scalar(padValue, padValue, padValue));
-
-			scaledFrame.Dispose();
-			return warpedFrame;
-		}
 
 		// Iterates all frames, calling processRecenteredFrame and (if includeRaw) processRawFrame for each.
 		// The Mat passed to each callback is disposed by this method after the callback returns.

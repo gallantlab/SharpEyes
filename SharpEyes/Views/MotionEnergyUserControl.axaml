@@ -35,19 +35,19 @@
             <!--Video display-->
             <Panel Grid.Row="1">
                 <Viewbox Stretch="Uniform">
-                    <Canvas Width="{Binding RecenteringCanvasWidth}" Height="{Binding RecenteringCanvasHeight}"
+                    <Canvas Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}"
                             Background="{Binding PadValueBrush}">
-                        <Canvas Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
-                                Canvas.Left="{Binding RecenteringImageLeft}"
-                                Canvas.Top="{Binding RecenteringImageTop}">
-                            <Image Source="{Binding VideoFrame}" Width="{Binding VideoWidth}"
-                                   Height="{Binding VideoHeight}" />
+                        <Canvas Width="{Binding ImageWidth}" Height="{Binding ImageHeight}"
+                                Canvas.Left="{Binding ImageLeft}"
+                                Canvas.Top="{Binding ImageTop}">
+                            <Image Source="{Binding VideoFrame}" Width="{Binding ImageWidth}"
+                                   Height="{Binding ImageHeight}" />
                         </Canvas>
                         <views:MotionEnergyOverlayControl
                             Circles="{Binding PyramidCircles}"
                             Arrows="{Binding PyramidArrows}"
-                            Width="{Binding RecenteringCanvasWidth}"
-                            Height="{Binding RecenteringCanvasHeight}"
+                            Width="{Binding CanvasWidth}"
+                            Height="{Binding CanvasHeight}"
                             IsHitTestVisible="False" />
                     </Canvas>
                 </Viewbox>
@@ -93,7 +93,7 @@
                     <Expander Margin="4 2" IsExpanded="{Binding IsFrameParametersExpanded}" Header="Motion-energy frame parameters"
                               HorizontalContentAlignment="Center">
                         <StackPanel>
-                            <ToggleSwitch OffContent="Frame preview" OnContent="Frame preview"></ToggleSwitch>
+                            <ToggleSwitch OffContent="Frame preview" OnContent="Frame preview" IsChecked="{Binding IsPreview}"></ToggleSwitch>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Pad percent</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding PadPercent}" Increment="10"
