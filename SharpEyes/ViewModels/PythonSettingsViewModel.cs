@@ -46,7 +46,6 @@ namespace SharpEyes.ViewModels
 				this.RaisePropertyChanged("IsBundledModeSelected");
 				_manager.Settings.PythonSourceMode = (PythonSourceMode)value;
 				_manager.SaveSettings();
-				CheckRestartRequired();
 				_ = Task.Run(CheckDependencies);
 			}
 		}
@@ -65,7 +64,6 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _systemPythonExecutablePath, value);
 				_manager.Settings.SystemPythonExecutablePath = value;
-				CheckRestartRequired();
 			}
 		}
 
@@ -95,7 +93,6 @@ namespace SharpEyes.ViewModels
 				{
 					_manager.Settings.CondaEnvironmentPath = CondaEnvironments[value].Path;
 					_manager.SaveSettings();
-					CheckRestartRequired();
 					_ = Task.Run(CheckDependencies);
 				}
 			}
@@ -188,15 +185,6 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> ProbeBackendsCommand { get; }
 		public ReactiveCommand<Unit, Unit> MoveBackendUpCommand { get; }
 		public ReactiveCommand<Unit, Unit> MoveBackendDownCommand { get; }
-
-		// == Restart warning ==
-
-		private bool _restartRequiredVisible = false;
-		public bool RestartRequiredVisible
-		{
-			get => _restartRequiredVisible;
-			set => this.RaiseAndSetIfChanged(ref _restartRequiredVisible, value);
-		}
 
 		public PythonSettingsViewModel()
 		{
@@ -302,7 +290,6 @@ namespace SharpEyes.ViewModels
 			await _manager.DownloadBundledPython(downloadProgress, statusProgress);
 			IsDownloadProgressVisible = false;
 			CheckDependencies();
-			CheckRestartRequired();
 			_manager.SaveSettings();
 		}
 
@@ -371,10 +358,5 @@ namespace SharpEyes.ViewModels
 			CheckDependencies();
 		}
 
-		private void CheckRestartRequired()
-		{
-			if (_manager.IsInitialized)
-				RestartRequiredVisible = true;
-		}
 	}
 }
