@@ -345,6 +345,20 @@ namespace SharpEyes.ViewModels
 
 		// == Feature computation ==
 
+		public ObservableCollection<PymotenBackend> AvailableBackends { get; } = new ObservableCollection<PymotenBackend>();
+
+		private int _selectedBackendIndex = 0;
+		public int SelectedBackendIndex
+		{
+			get => _selectedBackendIndex;
+			set => this.RaiseAndSetIfChanged(ref _selectedBackendIndex, value);
+		}
+
+		public string SelectedBackendKey =>
+			_selectedBackendIndex >= 0 && _selectedBackendIndex < AvailableBackends.Count
+				? AvailableBackends[_selectedBackendIndex].Key
+				: "numpy";
+
 		private int _startFrame = 0;
 		public int StartFrame
 		{
@@ -423,6 +437,8 @@ namespace SharpEyes.ViewModels
 			_padPercent = settings.MotionEnergyPadPercent;
 			_padValue = settings.MotionEnergyPadValue;
 			_frameScale = settings.MotionEnergyFrameScale;
+			foreach (string backendKey in settings.BackendPreference)
+				AvailableBackends.Add(new PymotenBackend(backendKey));
 			foreach (double value in settings.MotionEnergySpatialFrequencies)
 				SpatialFrequencies.Add(value);
 			foreach (double value in settings.MotionEnergyTemporalFrequencies)

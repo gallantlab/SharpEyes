@@ -10,6 +10,24 @@ using SharpEyes.Models;
 
 namespace SharpEyes.ViewModels
 {
+	public class PymotenBackend
+	{
+		public string Key { get; }
+		public string DisplayName { get; }
+
+		public PymotenBackend(string key)
+		{
+			Key = key;
+			DisplayName = key switch
+			{
+				"torch"      => "torch (CPU)",
+				"torch_cuda" => "torch (CUDA)",
+				"torch_mps"  => "torch (MPS)",
+				_            => key
+			};
+		}
+	}
+
 	public class PythonSettingsViewModel : ViewModelBase
 	{
 		private readonly PythonEnvironmentManager _manager = PythonEnvironmentManager.Instance;
@@ -156,7 +174,7 @@ namespace SharpEyes.ViewModels
 
 		private DependencyCheckResult _lastCheckResult = new DependencyCheckResult();
 
-		public ObservableCollection<string> AvailableBackends { get; } = new ObservableCollection<string>();
+		public ObservableCollection<PymotenBackend> AvailableBackends { get; } = new ObservableCollection<PymotenBackend>();
 
 		private int _selectedBackendIndex = -1;
 		public int SelectedBackendIndex
@@ -314,7 +332,7 @@ namespace SharpEyes.ViewModels
 			{
 				AvailableBackends.Clear();
 				foreach (string backend in orderedResult)
-					AvailableBackends.Add(backend);
+					AvailableBackends.Add(new PymotenBackend(backend));
 			});
 		}
 
@@ -324,7 +342,10 @@ namespace SharpEyes.ViewModels
 			if (index <= 0 || index >= AvailableBackends.Count) return;
 			AvailableBackends.Move(index, index - 1);
 			SelectedBackendIndex = index - 1;
-			_manager.Settings.BackendPreference = new List<string>(AvailableBackends);
+			List<string> keyList = new List<string>();
+			foreach (PymotenBackend item in AvailableBackends)
+				keyList.Add(item.Key);
+			_manager.Settings.BackendPreference = keyList;
 			_manager.SaveSettings();
 		}
 
@@ -334,7 +355,10 @@ namespace SharpEyes.ViewModels
 			if (index < 0 || index >= AvailableBackends.Count - 1) return;
 			AvailableBackends.Move(index, index + 1);
 			SelectedBackendIndex = index + 1;
-			_manager.Settings.BackendPreference = new List<string>(AvailableBackends);
+			List<string> keyList = new List<string>();
+			foreach (PymotenBackend item in AvailableBackends)
+				keyList.Add(item.Key);
+			_manager.Settings.BackendPreference = keyList;
 			_manager.SaveSettings();
 		}
 
