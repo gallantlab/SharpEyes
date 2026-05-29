@@ -889,8 +889,8 @@ namespace SharpEyes.ViewModels
 
 			try
 			{
-				// Phase 1: build recentered frames (determinate progress)
-				StatusText = "Processing frames...";
+				// Phase 1+2: build recentered frames and pyramid in parallel
+				StatusText = "Processing frames and building pyramid...";
 				IsProgressBarIndeterminate = false;
 				ProgressBarValue = 0;
 				Recenterer recenterer = new Recenterer(
@@ -898,36 +898,26 @@ namespace SharpEyes.ViewModels
 					false, _eyetrackingFPS, _gazeSpaceWidth, _gazeSpaceHeight,
 					_frameScale, _padValue, false);
 				IProgress<double> frameProgress = new Progress<double>(value => ProgressBarValue = value);
-				NDArray frames;
+				Task<NDArray> framesTask = recenterer.BuildRecenteredFramesAsync(_startFrame, frameProgress, cancellationToken);
+				Task pyramidTask = Task.Run(() =>
+				{
+					PythonEnvironmentManager.Instance.Initialize();
+					motionEnergyFeatures.BuildPyramid(_videoFps);
+				}, cancellationToken);
 				try
 				{
-					frames = await recenterer.BuildRecenteredFramesAsync(_startFrame, frameProgress, cancellationToken);
+					await Task.WhenAll(framesTask, pyramidTask);
 				}
 				catch (OperationCanceledException) { throw; }
-				catch (Exception exception)
+				catch (Exception)
 				{
-					StatusText = String.Format("Error processing frames: {0}", exception.Message);
+					if (framesTask.IsFaulted)
+						StatusText = String.Format("Error processing frames: {0}", framesTask.Exception!.InnerException!.Message);
+					else
+						StatusText = String.Format("Error building pyramid: {0}", pyramidTask.Exception!.InnerException!.Message);
 					return;
 				}
-
-				cancellationToken.ThrowIfCancellationRequested();
-
-				// Phase 2: build pyramid (always, regardless of prior state)
-				StatusText = "Building pyramid...";
-				try
-				{
-					await Task.Run(() =>
-					{
-						PythonEnvironmentManager.Instance.Initialize();
-						motionEnergyFeatures.BuildPyramid(_videoFps);
-					}, cancellationToken);
-				}
-				catch (OperationCanceledException) { throw; }
-				catch (Exception exception)
-				{
-					StatusText = String.Format("Error building pyramid: {0}", exception.Message);
-					return;
-				}
+				NDArray frames = framesTask.Result;
 				this.RaisePropertyChanged("ModelFrameWidth");
 				this.RaisePropertyChanged("ModelFrameHeight");
 				UpdatePyramidOverlay();
