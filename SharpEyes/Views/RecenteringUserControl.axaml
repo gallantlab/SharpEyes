@@ -30,7 +30,8 @@
       <StackPanel Orientation="Horizontal" Grid.Row="0">
         <Button Name="LoadVideoButton" Margin="4" Command="{Binding LoadVideoCommand}">Open Video</Button>
         <TextBlock VerticalAlignment="Center" Margin="4">|</TextBlock>
-        <Button Name="LoadGazeButton" Margin="4" Command="{Binding LoadGazeCommand}">Load Gaze</Button>
+        <Button Name="LoadGazeButton" Margin="4" Command="{Binding LoadGazeCommand}"
+                IsEnabled="{Binding !IsLoadingGaze}">Load Gaze</Button>
         <TextBlock VerticalAlignment="Center" Margin="4">|</TextBlock>
         <Button Margin="4 2 4 4" HorizontalAlignment="Center" Width="180" HorizontalContentAlignment="Center"
                 Command="{Binding SendToMotionEnergyCommand}" IsEnabled="{Binding ExportEnabled}">Send to Motion-energy</Button>
@@ -125,7 +126,7 @@
     <!--Side pane-->
     <DockPanel Margin="0" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
       <ScrollViewer DockPanel.Dock="Top" Margin="2">
-        <StackPanel>
+        <StackPanel IsEnabled="{Binding !IsLoadingGaze}">
 
           <Expander Margin="4 2" IsExpanded="{Binding IsGazeInfoExpanded}" Header="Gaze info" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">

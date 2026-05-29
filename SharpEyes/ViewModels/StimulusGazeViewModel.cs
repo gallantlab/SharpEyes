@@ -76,6 +76,12 @@ namespace SharpEyes.ViewModels
 			get => _isProgressBarIndeterminate;
 			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
 		}
+		private bool _isLoadingGaze = false;
+		public bool IsLoadingGaze
+		{
+			get => _isLoadingGaze;
+			set => this.RaiseAndSetIfChanged(ref _isLoadingGaze, value);
+		}
 		private double _progressBarValue = 0;
 		public double ProgressBarValue
 		{
@@ -806,15 +812,24 @@ namespace SharpEyes.ViewModels
 
 			if (fileName == null || fileName.Length == 0)
 				return;
-			int parsedSampleRate;
-			RawGazeLocations = GazeLoader.Load(fileName[0], out parsedSampleRate);
-			if (parsedSampleRate > 0)
-				EyetrackingFPS = parsedSampleRate;
+			IsLoadingGaze = true;
+			int capturedSampleRate = 0;
+			NDArray? loadedGaze = null;
+			await Task.Run(() =>
+			{
+				int sampleRate;
+				loadedGaze = GazeLoader.Load(fileName[0], out sampleRate);
+				capturedSampleRate = sampleRate;
+			});
+			RawGazeLocations = loadedGaze;
+			if (capturedSampleRate > 0)
+				EyetrackingFPS = capturedSampleRate;
 			IsGazeLoaded = true;
 			gazeFileName = fileName[0];
 			ReapplyFilterIfEnabled();
 			if (videoReader != null)
 				SetCurrentAsDataStart();
+			IsLoadingGaze = false;
 		}
 
 		public async void SaveGaze()

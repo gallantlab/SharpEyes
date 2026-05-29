@@ -63,6 +63,12 @@ namespace SharpEyes.ViewModels
 			get => _isProgressBarIndeterminate;
 			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
 		}
+		private bool _isLoadingGaze = false;
+		public bool IsLoadingGaze
+		{
+			get => _isLoadingGaze;
+			set => this.RaiseAndSetIfChanged(ref _isLoadingGaze, value);
+		}
 		private double _progressBarValue = 0;
 		public double ProgressBarValue
 		{
@@ -667,6 +673,7 @@ namespace SharpEyes.ViewModels
 
 			IsProgressBarVisible = true;
 			IsProgressBarIndeterminate = true;
+			IsLoadingGaze = true;
 			StatusText = "Loading gaze...";
 
 			string extension = System.IO.Path.GetExtension(fileName[0]);
@@ -725,6 +732,7 @@ namespace SharpEyes.ViewModels
 			{
 				IsProgressBarVisible = false;
 				IsProgressBarIndeterminate = false;
+				IsLoadingGaze = false;
 				StatusText = "Gaze file is malformed.";
 				return;
 			}
@@ -736,6 +744,7 @@ namespace SharpEyes.ViewModels
 
 			IsProgressBarVisible = false;
 			IsProgressBarIndeterminate = false;
+			IsLoadingGaze = false;
 			StatusText = "Idle";
 			IsGazeLoaded = true;
 			if (videoReader != null)
