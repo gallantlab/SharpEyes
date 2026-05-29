@@ -40,4 +40,8 @@ SharpEyes will manage a self-contained Python environment with no additional set
 
 <img src="assets/python%20settings%20standalone.png" width="600" />
 
+You can change the Python environment at any time while the program is running. If Python was already initialized during the session, a warning strip will appear indicating that a restart is required for the change to take effect.
+
+The Python Settings page also shows the available PyMoten compute backends (numpy, torch CPU, CUDA, MPS) detected in your environment and lets you set their preference order. The preferred order is used by the Motion-Energy tab when selecting a backend.
+
 Once Python is configured, head to the [Workflow](workflow/index.md) section to get started processing data.

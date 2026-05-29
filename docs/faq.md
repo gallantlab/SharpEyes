@@ -22,7 +22,7 @@ The [Stimulus & Gaze](workflow/stimulus%20and%20gaze.md) tab can load gaze posit
 
 **There's no option to read .edf files from Eyelink**
 
-You need to provide your own copy of the edfapi.dll/so library from the SR Research Eyelink SDK. Putting that in your path or next to the SharpEyes executable should enable EDF reading. There is no EDF support for macOS
+You need to provide your own copy of the edfapi.dll/so library from the SR Research Eyelink SDK. SharpEyes will find it automatically if it is on your system path, or you can specify its location explicitly in General Settings. There is no EDF support for macOS.
 
 **What do I need to build SharpEyes from source?**
 
@@ -30,7 +30,7 @@ SharpEyes was built with Visual Studio and JetBrains Rider.
 
 **What about GPU support?**
 
-Everything runs on CPU. The code uses multithreading where possible, but the bottleneck is generally the human reviewing the output, so GPU support is not a priority.
+Motion-energy feature extraction can run on an NVIDIA GPU via CUDA or on Apple Silicon via MPS, if PyTorch is installed and the hardware is available. The available backends are listed in Python Settings, where you can also set your preferred order. All other processing runs on CPU.
 
 **There's a bug. What do I do?**
 

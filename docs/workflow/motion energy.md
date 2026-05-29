@@ -32,9 +32,22 @@ These control the filter bank that PyMoten uses to decompose the video into moti
 
 Click **Compute pyramid** to compute and display the pyramid for the current frame. Click **Restore defaults** to reset the pyramid parameters to their defaults.
 
+## Compute backend
+
+The **Backend** dropdown selects which compute backend PyMoten uses for the current run. The available options depend on what is installed in your Python environment:
+
+| Backend | Description |
+|---|---|
+| numpy | CPU-based computation using NumPy. Always available. |
+| torch (CPU) | PyTorch running on CPU. |
+| torch (CUDA) | PyTorch using an NVIDIA GPU via CUDA. Shown only if a compatible GPU is detected. |
+| torch (MPS) | PyTorch using Apple Silicon GPU via MPS. Shown only on macOS with MPS support. |
+
+The preferred backend order is configured in Python Settings. After a compute run completes, any GPU memory used by the CUDA backend is released automatically.
+
 ## Compute features
 
-Once the frame parameters and pyramid are configured, click **Compute features** to run the full feature extraction over the video. Set **Start frame** to begin extraction from a specific frame rather than the beginning. While computing, the button changes to **Cancel** to interrupt the run.
+Once the frame parameters, pyramid, and backend are configured, click **Compute features** to run the full feature extraction over the video. Set **Start frame** to begin extraction from a specific frame rather than the beginning. While computing, the button changes to **Cancel** to interrupt the run.
 
 After extraction completes, a save dialog prompts for the output path. Three files are saved, all sharing the same base name:
 

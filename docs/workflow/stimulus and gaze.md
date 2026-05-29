@@ -8,7 +8,7 @@ Sharpeyes can read the following file formats for the gaze locations:
 
 - numpy arrays with at least two columns, where column 0 is X and column 2 is Y. Additional columns will be ignored but kept.
 - CSV files following the same format.
-- Eyelink EDF files, if you have the Eyelink SDK in your system path (this functionality depends on the EDFAPI shared library they provide. This will not be an option if the library is not found)
+- Eyelink EDF files, if the Eyelink EDFAPI shared library is available. SharpEyes will look for it in your system path by default, or you can specify its location in General Settings. This will not be an option if the library is not found.
 - Converted Eyelink files - the text file outputs from converted EDFs, either with a `.txt` or `.asc` extension.
 
 Note: if you read a numpy or CSV file, you'll need to manually set the Eyetracking FPS. The FPS will be set automatically if you read an Eyelink data file.
