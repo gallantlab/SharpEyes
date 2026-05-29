@@ -28,35 +28,35 @@ namespace SharpEyes.Models
 		public int FrameHeight
 		{
 			get => _frameHeight;
-			set { _frameHeight = value; RebuildRequired = true; }
+			set => _frameHeight = value;
 		}
 
 		private int _frameWidth = 480;
 		public int FrameWidth
 		{
 			get => _frameWidth;
-			set { _frameWidth = value; RebuildRequired = true; }
+			set => _frameWidth = value;
 		}
 
 		private List<double> _spatialFrequencies = new List<double> { 0, 2, 4, 8, 16, 32 };
 		public List<double> SpatialFrequencies
 		{
 			get => _spatialFrequencies;
-			set { _spatialFrequencies = value; RebuildRequired = true; }
+			set => _spatialFrequencies = value;
 		}
 
 		private List<double> _temporalFrequencies = new List<double> { 0, 2, 4, 8, 16 };
 		public List<double> TemporalFrequencies
 		{
 			get => _temporalFrequencies;
-			set { _temporalFrequencies = value; RebuildRequired = true; }
+			set => _temporalFrequencies = value;
 		}
 
 		private List<double> _directions = new List<double> { 0, 45, 90, 135, 180, 225, 270, 315 };
 		public List<double> Directions
 		{
 			get => _directions;
-			set { _directions = value; RebuildRequired = true; }
+			set => _directions = value;
 		}
 
 		// == Compute backend ==
@@ -70,7 +70,6 @@ namespace SharpEyes.Models
 		public int FilterCount { get; private set; } = 0;
 		public List<MotionEnergyFilterParameters> FilterParameters { get; private set; } = new List<MotionEnergyFilterParameters>();
 		public bool IsPyramidBuilt => _pyramidObject != null;
-		public bool RebuildRequired { get; private set; } = true;
 
 		// Constructs the moten.MotionEnergyPyramid from current parameters.
 		// Must be called after PythonEnvironmentManager.Initialize().
@@ -124,7 +123,6 @@ namespace SharpEyes.Models
 				}
 			}
 
-			RebuildRequired = false;
 		}
 
 		// Converts frames (nFrames x height x width, uint8) to motion-energy features
@@ -180,18 +178,11 @@ namespace SharpEyes.Models
 
 				PythonEnvironmentManager.Instance.Shutdown();
 				_pyramidObject = null;
-				RebuildRequired = true;
 
 				NDArray output = new NDArray(resultData).reshape(nFrames, nFeatures);
 				progress.Report(1.0);
 				return output;
 			});
-		}
-
-		public void ResetPyramid()
-		{
-			_pyramidObject = null;
-			RebuildRequired = true;
 		}
 
 		// Copies parameter values from Settings into this model.

@@ -865,7 +865,6 @@ namespace SharpEyes.ViewModels
 					PythonEnvironmentManager.Instance.Initialize();
 					motionEnergyFeatures.BuildPyramid(fps);
 					PythonEnvironmentManager.Instance.Shutdown();
-					motionEnergyFeatures.ResetPyramid();
 				});
 				StatusText = String.Format("Pyramid built: {0} filters",
 					motionEnergyFeatures.FilterCount);
