@@ -1,4 +1,4 @@
-# SharpEyes
+   # SharpEyes
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20401807.svg)](https://doi.org/10.5281/zenodo.20401807)
 
 A program for doing eyetracking and making motion-energy features out of stimulus videos.
@@ -16,19 +16,21 @@ See the [Documentation](https://gallantlab.org/SharpEyes) for full details.
 
 SharpEyes is organized into five tabs, each corresponding to a stage of processing:
 
-**Pupil Finding** — Takes a raw eyetracking video and finds the pupil location in each frame using template matching. Supports manual correction and accumulation of templates to improve accuracy over time.
+**Pupil Finding** — Takes a raw eyetracking video and finds the pupil location in every frame. Uses a semi-automatic model-free template matching algorithm, and results are hand-editable.
 
-**Calibration** — Maps from pupil video space to stimulus display space, producing gaze positions that can be overlaid on the stimulus.
+**Calibration** — (Yet to be implemented) Maps from pupil position in video space to gaze in stimulus display space.
 
-**Stimulus & Gaze** — Overlays the gaze location on the stimulus video. Supports temporal alignment of the eyetracking data to the video, gaze filtering (median filter and outlier removal), and manual editing of individual gaze positions. Reads numpy arrays, CSV, and Eyelink EDF files.
+**Stimulus & Gaze** — (Start here if you already have gaze location in screen space) Check gaze location overlaid on the stimulus. Allows filtering of the gaze traces and and manual editing of individual gaze positions. Reads numpy arrays, CSV, and Eyelink EDF files / converted text files.
 
-**Recentering** — Shifts each frame of the stimulus video so that the gaze position is always at the center of the output, producing a retinotopic video. Exports as PNG frames or a numpy array.
+**Recentering** — Shifts each frame of the stimulus video so that the gaze position is always at the center of the output, producing a retinotopic video that matches (theoretically) what visual cortex sees. This can either export the recentered frams as a numpy array or PNGs, or send it to the motion-energy computations.
 
-**Motion-Energy** — Computes motion-energy features from the recentered or raw stimulus video using [PyMoten](https://github.com/gallantlab/pymoten). SharpEyes manages the Python environment setup. Saves a numpy feature array, a plain-text parameter log, and a CSV describing each filter in the pyramid.
+**Motion-Energy** — Computes motion-energy features from the stimulus video using [PyMoten](https://github.com/gallantlab/pymoten), and allows you to visualize the filters in stimulus space. It will save the filter responses out as a numpy array, along with a plain-text parameter log and a CSV describing each filter in the pyramid. In future versions, it will also visualize the fiter responses as you play the stimulus video.
 
 ## Installation
 
-Executables and installers are available on the [Releases page](https://github.com/gallantlab/SharpEyes/releases). Windows has both a standalone `.exe` and an installer. Linux has a standalone `.exe`; additional system libraries may be required and SharpEyes will report any that are missing. macOS (Apple Silicon / arm64) is supported and builds from source; see below.
+Precompiled executables are available on the [Releases page](https://github.com/gallantlab/SharpEyes/releases) for both Windows and Linux (Ubuntu 24.04). The Windows exe is fully self-contained, but the Linux version may require additional system libraries, and SharpEyes will report any that are missing. 
+
+Becuase .Net is cross-platform, this will also run on macOS (and any other .Net desktop environment, provided there are OpenCV and Avalonia package for them). However, you will need to buil from source for non-Windows/Linux environments.
 
 ## Requirements
 
