@@ -6,7 +6,7 @@ namespace SharpEyes.ViewModels
 	public class SettingsWindowViewModel : ViewModelBase
 	{
 		public ObservableCollection<string> Categories { get; } =
-			new ObservableCollection<string> { "Python", "Video playback" };
+			new ObservableCollection<string> { "General", "Python" };
 
 		private int _selectedCategoryIndex = 0;
 		public int SelectedCategoryIndex

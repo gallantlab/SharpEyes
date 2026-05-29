@@ -18,6 +18,8 @@ namespace SharpEyes.Models
 		[XmlArrayItem("string")]
 		public List<string> BackendPreference { get; set; } = null;
 
+		public string EyelinkLibraryPath { get; set; } = String.Empty;
+
 		public bool ShowFrameNumber { get; set; } = false;
 
 		public int LastOpenTabIndex { get; set; } = 2;
