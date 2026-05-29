@@ -120,6 +120,30 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _pupilInfo, value);
 		}
 
+		private bool _isCalibrationParametersExpanded = SharpEyes.Models.Settings.Current.CalibrationParametersExpanded;
+		public bool IsCalibrationParametersExpanded
+		{
+			get => _isCalibrationParametersExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isCalibrationParametersExpanded, value);
+				SharpEyes.Models.Settings.Current.CalibrationParametersExpanded = value;
+				SharpEyes.Models.Settings.Current.Save();
+			}
+		}
+
+		private bool _isCalibrationPointsExpanded = SharpEyes.Models.Settings.Current.CalibrationPointsExpanded;
+		public bool IsCalibrationPointsExpanded
+		{
+			get => _isCalibrationPointsExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isCalibrationPointsExpanded, value);
+				SharpEyes.Models.Settings.Current.CalibrationPointsExpanded = value;
+				SharpEyes.Models.Settings.Current.Save();
+			}
+		}
+
 		public CalibrationViewModel()
 		{
 			LoadCalibrationPupilsCommand = ReactiveCommand.Create(LoadCalibrationPupils);

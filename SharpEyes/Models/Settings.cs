@@ -14,6 +14,12 @@ namespace SharpEyes.Models
 		public string SystemPythonExecutablePath { get; set; } = String.Empty;
 		public string CondaEnvironmentPath { get; set; } = String.Empty;
 
+		[XmlArray("BackendPreference")]
+		[XmlArrayItem("string")]
+		public List<string> BackendPreference { get; set; } = null;
+
+		public string EyelinkLibraryPath { get; set; } = String.Empty;
+
 		public bool ShowFrameNumber { get; set; } = false;
 
 		public int LastOpenTabIndex { get; set; } = 2;
@@ -36,6 +42,40 @@ namespace SharpEyes.Models
 		[XmlArray("MotionEnergyDirections")]
 		[XmlArrayItem("double")]
 		public List<double> MotionEnergyDirections { get; set; } = null;
+
+		// Expander open/close states - CalibrationUserControl
+		public bool CalibrationParametersExpanded { get; set; } = true;
+		public bool CalibrationPointsExpanded { get; set; } = true;
+
+		// Expander open/close states - MotionEnergyUserControl
+		public bool MotionEnergyFrameParametersExpanded { get; set; } = true;
+		public bool MotionEnergyPyramidExpanded { get; set; } = true;
+		public bool MotionEnergySpatialFrequenciesExpanded { get; set; } = false;
+		public bool MotionEnergyTemporalFrequenciesExpanded { get; set; } = false;
+		public bool MotionEnergyDirectionsExpanded { get; set; } = false;
+		public bool MotionEnergyComputeFeaturesExpanded { get; set; } = true;
+
+		// Expander open/close states - PupilFindingUserControl
+		public bool PupilSizeExpanded { get; set; } = false;
+		public bool ConfidenceOptionsExpanded { get; set; } = false;
+		public bool TimestampParsingExpanded { get; set; } = false;
+		public bool ImagePreFilteringExpanded { get; set; } = false;
+		public bool ManualAdjustOptionsExpanded { get; set; } = false;
+
+		// Expander open/close states - RecenteringUserControl
+		public bool RecenteringGazeInfoExpanded { get; set; } = true;
+		public bool RecenteringExportExpanded { get; set; } = true;
+
+		// Expander open/close states - TemplatePupilFinderConfigUserControl
+		public bool TemplatesExpanded { get; set; } = false;
+		public bool AntiTemplatesExpanded { get; set; } = false;
+		public bool MatchingOptionsExpanded { get; set; } = false;
+
+		// Expander open/close states - StimulusGazeUserControl
+		public bool StimulusTemporalAlignmentExpanded { get; set; } = true;
+		public bool StimulusGazeInfoExpanded { get; set; } = true;
+		public bool StimulusGazeFilteringExpanded { get; set; } = true;
+		public bool StimulusKeyframesExpanded { get; set; } = true;
 
 		public static Settings Current { get; private set; }
 
@@ -69,6 +109,8 @@ namespace SharpEyes.Models
 				result.MotionEnergyTemporalFrequencies = new List<double> { 0, 2, 4, 8, 16 };
 			if (result.MotionEnergyDirections == null)
 				result.MotionEnergyDirections = new List<double> { 0, 45, 90, 135, 180, 225, 270, 315 };
+			if (result.BackendPreference == null)
+				result.BackendPreference = new List<string> { "torch_cuda", "torch_mps", "torch", "numpy" };
 			Current = result;
 			return result;
 		}

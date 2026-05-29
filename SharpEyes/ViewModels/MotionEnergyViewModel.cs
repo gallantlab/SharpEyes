@@ -11,6 +11,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Num = NumSharp.np;
+using Mat = OpenCvSharp.Mat;
 using NumSharp;
 using ReactiveUI;
 using SharpEyes.Models;
@@ -87,8 +88,9 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _videoWidth, value);
-				this.RaisePropertyChanged("RecenteringCanvasWidth");
-				this.RaisePropertyChanged("RecenteringImageLeft");
+				this.RaisePropertyChanged("CanvasWidth");
+				this.RaisePropertyChanged("ImageLeft");
+				this.RaisePropertyChanged("ImageWidth");
 				this.RaisePropertyChanged("OutputFrameSizeText");
 				this.RaisePropertyChanged("VideoFrameSizeText");
 				SyncFrameSizeToModel();
@@ -102,8 +104,9 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _videoHeight, value);
-				this.RaisePropertyChanged("RecenteringCanvasHeight");
-				this.RaisePropertyChanged("RecenteringImageTop");
+				this.RaisePropertyChanged("CanvasHeight");
+				this.RaisePropertyChanged("ImageTop");
+				this.RaisePropertyChanged("ImageHeight");
 				this.RaisePropertyChanged("OutputFrameSizeText");
 				this.RaisePropertyChanged("VideoFrameSizeText");
 				SyncFrameSizeToModel();
@@ -128,6 +131,22 @@ namespace SharpEyes.ViewModels
 			private set => this.RaiseAndSetIfChanged(ref _isLoadedFromRecentering, value);
 		}
 
+		private bool _isPreview = false;
+		public bool IsPreview
+		{
+			get => _isPreview;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isPreview, value);
+				_updateDisplayDelegate = value ? UpdateDisplayRecenteredPreview : UpdateDisplayRecentered;
+				this.RaisePropertyChanged("ImageLeft");
+				this.RaisePropertyChanged("ImageTop");
+				this.RaisePropertyChanged("ImageWidth");
+				this.RaisePropertyChanged("ImageHeight");
+				if (_videoReader != null) UpdateDisplay();
+			}
+		}
+
 		private double _gazeX = 0;
 		public double GazeX
 		{
@@ -135,7 +154,7 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _gazeX, value);
-				this.RaisePropertyChanged("RecenteringImageLeft");
+				this.RaisePropertyChanged("ImageLeft");
 			}
 		}
 
@@ -146,14 +165,16 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _gazeY, value);
-				this.RaisePropertyChanged("RecenteringImageTop");
+				this.RaisePropertyChanged("ImageTop");
 			}
 		}
 
-		public int RecenteringCanvasWidth => (int)(VideoWidth * _padPercent / 100.0);
-		public int RecenteringCanvasHeight => (int)(VideoHeight * _padPercent / 100.0);
-		public double RecenteringImageLeft => VideoWidth * _padPercent / 100.0 / 2.0 - GazeX * (double)VideoWidth / _gazeSpaceWidth;
-		public double RecenteringImageTop  => VideoHeight * _padPercent / 100.0 / 2.0 - GazeY * (double)VideoHeight / _gazeSpaceHeight;
+		public int CanvasWidth => (int)(VideoWidth * _padPercent / 100.0);
+		public int CanvasHeight => (int)(VideoHeight * _padPercent / 100.0);
+		public double ImageLeft   => _isPreview ? 0.0 : VideoWidth * _padPercent / 100.0 / 2.0 - GazeX * (double)VideoWidth / _gazeSpaceWidth;
+		public double ImageTop    => _isPreview ? 0.0 : VideoHeight * _padPercent / 100.0 / 2.0 - GazeY * (double)VideoHeight / _gazeSpaceHeight;
+		public int    ImageWidth  => _isPreview ? CanvasWidth  : VideoWidth;
+		public int    ImageHeight => _isPreview ? CanvasHeight : VideoHeight;
 
 		// == Video output parameters ==
 
@@ -164,10 +185,10 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _padPercent, value);
-				this.RaisePropertyChanged("RecenteringCanvasWidth");
-				this.RaisePropertyChanged("RecenteringCanvasHeight");
-				this.RaisePropertyChanged("RecenteringImageLeft");
-				this.RaisePropertyChanged("RecenteringImageTop");
+				this.RaisePropertyChanged("CanvasWidth");
+				this.RaisePropertyChanged("CanvasHeight");
+				this.RaisePropertyChanged("ImageLeft");
+				this.RaisePropertyChanged("ImageTop");
 				this.RaisePropertyChanged("OutputFrameSizeText");
 				SaveSettings();
 			}
@@ -284,7 +305,29 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> AddDirectionCommand { get; }
 		public ReactiveCommand<Unit, Unit> RemoveDirectionCommand { get; }
 
-		private bool _isSpatialFrequenciesExpanded = false;
+		private bool _isFrameParametersExpanded;
+		public bool IsFrameParametersExpanded
+		{
+			get => _isFrameParametersExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isFrameParametersExpanded, value);
+				SaveSettings();
+			}
+		}
+
+		private bool _isPyramidExpanded;
+		public bool IsPyramidExpanded
+		{
+			get => _isPyramidExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isPyramidExpanded, value);
+				SaveSettings();
+			}
+		}
+
+		private bool _isSpatialFrequenciesExpanded;
 		public bool IsSpatialFrequenciesExpanded
 		{
 			get => _isSpatialFrequenciesExpanded;
@@ -292,10 +335,11 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _isSpatialFrequenciesExpanded, value);
 				this.RaisePropertyChanged("SpatialFrequenciesHeaderText");
+				SaveSettings();
 			}
 		}
 
-		private bool _isTemporalFrequenciesExpanded = false;
+		private bool _isTemporalFrequenciesExpanded;
 		public bool IsTemporalFrequenciesExpanded
 		{
 			get => _isTemporalFrequenciesExpanded;
@@ -303,10 +347,11 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _isTemporalFrequenciesExpanded, value);
 				this.RaisePropertyChanged("TemporalFrequenciesHeaderText");
+				SaveSettings();
 			}
 		}
 
-		private bool _isDirectionsExpanded = false;
+		private bool _isDirectionsExpanded;
 		public bool IsDirectionsExpanded
 		{
 			get => _isDirectionsExpanded;
@@ -314,6 +359,18 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _isDirectionsExpanded, value);
 				this.RaisePropertyChanged("DirectionsHeaderText");
+				SaveSettings();
+			}
+		}
+
+		private bool _isComputeFeaturesExpanded;
+		public bool IsComputeFeaturesExpanded
+		{
+			get => _isComputeFeaturesExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isComputeFeaturesExpanded, value);
+				SaveSettings();
 			}
 		}
 
@@ -344,6 +401,20 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> ComputePyramidCommand { get; }
 
 		// == Feature computation ==
+
+		public ObservableCollection<PymotenBackend> AvailableBackends { get; } = new ObservableCollection<PymotenBackend>();
+
+		private int _selectedBackendIndex = 0;
+		public int SelectedBackendIndex
+		{
+			get => _selectedBackendIndex;
+			set => this.RaiseAndSetIfChanged(ref _selectedBackendIndex, value);
+		}
+
+		public string SelectedBackendKey =>
+			_selectedBackendIndex >= 0 && _selectedBackendIndex < AvailableBackends.Count
+				? AvailableBackends[_selectedBackendIndex].Key
+				: "numpy";
 
 		private int _startFrame = 0;
 		public int StartFrame
@@ -423,6 +494,14 @@ namespace SharpEyes.ViewModels
 			_padPercent = settings.MotionEnergyPadPercent;
 			_padValue = settings.MotionEnergyPadValue;
 			_frameScale = settings.MotionEnergyFrameScale;
+			_isFrameParametersExpanded = settings.MotionEnergyFrameParametersExpanded;
+			_isPyramidExpanded = settings.MotionEnergyPyramidExpanded;
+			_isSpatialFrequenciesExpanded = settings.MotionEnergySpatialFrequenciesExpanded;
+			_isTemporalFrequenciesExpanded = settings.MotionEnergyTemporalFrequenciesExpanded;
+			_isDirectionsExpanded = settings.MotionEnergyDirectionsExpanded;
+			_isComputeFeaturesExpanded = settings.MotionEnergyComputeFeaturesExpanded;
+			foreach (string backendKey in settings.BackendPreference)
+				AvailableBackends.Add(new PymotenBackend(backendKey));
 			foreach (double value in settings.MotionEnergySpatialFrequencies)
 				SpatialFrequencies.Add(value);
 			foreach (double value in settings.MotionEnergyTemporalFrequencies)
@@ -439,6 +518,7 @@ namespace SharpEyes.ViewModels
 			PlayPauseCommand = ReactiveCommand.Create(PlayPause);
 			PreviousFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(-1); });
 			NextFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(1); });
+			_updateDisplayDelegate = UpdateDisplayRecentered;
 			_videoPlaybackTimer = new DispatcherTimer();
 			_videoPlaybackTimer.Tick += VideoTimerTick;
 			AddSpatialFrequencyCommand = ReactiveCommand.Create(() =>
@@ -554,6 +634,12 @@ namespace SharpEyes.ViewModels
 			settings.MotionEnergySpatialFrequencies = new List<double>(SpatialFrequencies);
 			settings.MotionEnergyTemporalFrequencies = new List<double>(TemporalFrequencies);
 			settings.MotionEnergyDirections = new List<double>(Directions);
+			settings.MotionEnergyFrameParametersExpanded = _isFrameParametersExpanded;
+			settings.MotionEnergyPyramidExpanded = _isPyramidExpanded;
+			settings.MotionEnergySpatialFrequenciesExpanded = _isSpatialFrequenciesExpanded;
+			settings.MotionEnergyTemporalFrequenciesExpanded = _isTemporalFrequenciesExpanded;
+			settings.MotionEnergyDirectionsExpanded = _isDirectionsExpanded;
+			settings.MotionEnergyComputeFeaturesExpanded = _isComputeFeaturesExpanded;
 			settings.Save();
 		}
 
@@ -581,6 +667,7 @@ namespace SharpEyes.ViewModels
 			VideoFps = videoReader.fps;
 			IsLoadedFromRecentering = true;
 			this.RaisePropertyChanged("CanPlayVideo");
+			_updateDisplayDelegate = _isPreview ? UpdateDisplayRecenteredPreview : UpdateDisplayRecentered;
 			UpdateTimecodeDisplay();
 			UpdateDisplay();
 		}
@@ -619,6 +706,7 @@ namespace SharpEyes.ViewModels
 			_gazeLocations = centeredGaze;
 			IsLoadedFromRecentering = true;
 			this.RaisePropertyChanged("CanPlayVideo");
+			_updateDisplayDelegate = _isPreview ? UpdateDisplayRecenteredPreview : UpdateDisplayRecentered;
 			UpdateTimecodeDisplay();
 			UpdateDisplay();
 		}
@@ -735,7 +823,7 @@ namespace SharpEyes.ViewModels
 			for (int index = 0; index < uniqueSpatialEnvelopes.Count; index++)
 				strokeThicknessBySize[uniqueSpatialEnvelopes[index]] = index + 1;
 
-			int frameHeight = RecenteringCanvasHeight;
+			int frameHeight = CanvasHeight;
 			foreach (KeyValuePair<(double, double, double), HashSet<double>> circleEntry in filterDirectionsByCircle)
 			{
 				double centerX = circleEntry.Key.Item1 * frameHeight;
@@ -825,8 +913,8 @@ namespace SharpEyes.ViewModels
 
 			try
 			{
-				// Phase 1: build recentered frames (determinate progress)
-				StatusText = "Processing frames...";
+				// Phase 1+2: build recentered frames and pyramid in parallel
+				StatusText = "Processing frames and building pyramid...";
 				IsProgressBarIndeterminate = false;
 				ProgressBarValue = 0;
 				Recenterer recenterer = new Recenterer(
@@ -834,36 +922,26 @@ namespace SharpEyes.ViewModels
 					false, _eyetrackingFPS, _gazeSpaceWidth, _gazeSpaceHeight,
 					_frameScale, _padValue, false);
 				IProgress<double> frameProgress = new Progress<double>(value => ProgressBarValue = value);
-				NDArray frames;
+				Task<NDArray> framesTask = recenterer.BuildRecenteredFramesAsync(_startFrame, frameProgress, cancellationToken);
+				Task pyramidTask = Task.Run(() =>
+				{
+					PythonEnvironmentManager.Instance.Initialize();
+					motionEnergyFeatures.BuildPyramid(_videoFps);
+				}, cancellationToken);
 				try
 				{
-					frames = await recenterer.BuildRecenteredFramesAsync(_startFrame, frameProgress, cancellationToken);
+					await Task.WhenAll(framesTask, pyramidTask);
 				}
 				catch (OperationCanceledException) { throw; }
-				catch (Exception exception)
+				catch (Exception)
 				{
-					StatusText = String.Format("Error processing frames: {0}", exception.Message);
+					if (framesTask.IsFaulted)
+						StatusText = String.Format("Error processing frames: {0}", framesTask.Exception!.InnerException!.Message);
+					else
+						StatusText = String.Format("Error building pyramid: {0}", pyramidTask.Exception!.InnerException!.Message);
 					return;
 				}
-
-				cancellationToken.ThrowIfCancellationRequested();
-
-				// Phase 2: build pyramid (always, regardless of prior state)
-				StatusText = "Building pyramid...";
-				try
-				{
-					await Task.Run(() =>
-					{
-						PythonEnvironmentManager.Instance.Initialize();
-						motionEnergyFeatures.BuildPyramid(_videoFps);
-					}, cancellationToken);
-				}
-				catch (OperationCanceledException) { throw; }
-				catch (Exception exception)
-				{
-					StatusText = String.Format("Error building pyramid: {0}", exception.Message);
-					return;
-				}
+				NDArray frames = framesTask.Result;
 				this.RaisePropertyChanged("ModelFrameWidth");
 				this.RaisePropertyChanged("ModelFrameHeight");
 				UpdatePyramidOverlay();
@@ -871,6 +949,7 @@ namespace SharpEyes.ViewModels
 				cancellationToken.ThrowIfCancellationRequested();
 
 				// Phase 3: extract features (indeterminate progress)
+				motionEnergyFeatures.Backend = SelectedBackendKey;
 				StatusText = "Computing motion energy...";
 				IsProgressBarIndeterminate = true;
 				NDArray features;
@@ -1006,22 +1085,52 @@ namespace SharpEyes.ViewModels
 			TotalVideoTime = _timeFormatter(_videoReader.frameCount - 1);
 		}
 
-		public void UpdateDisplay()
+		private Action _updateDisplayDelegate;
+
+		// draws recentered image with UI controls
+		private void UpdateDisplayRecentered()
 		{
 			VideoFrame = _videoReader.GetFrameForDisplay();
+			int dataIndex = Math.Clamp(VideoTimeToDataIndex(CurrentVideoFrame), 0, _gazeLocations.Shape[0] - 1);
+			double gazeXValue = (double)_gazeLocations[dataIndex, 0];
+			double gazeYValue = (double)_gazeLocations[dataIndex, 1];
+			if (!Double.IsNaN(gazeXValue) && !Double.IsNaN(gazeYValue))
+			{
+				GazeX = gazeXValue;
+				GazeY = gazeYValue;
+			}
+		}
+		
+		// draws the actual frame pixels that would be sent to motion-energy
+		private void UpdateDisplayRecenteredPreview()
+		{
+			int dataIndex = Math.Clamp(VideoTimeToDataIndex(CurrentVideoFrame), 0, _gazeLocations.Shape[0] - 1);
+			double gazeXValue = (double)_gazeLocations[dataIndex, 0];
+			double gazeYValue = (double)_gazeLocations[dataIndex, 1];
+			if (Double.IsNaN(gazeXValue)) gazeXValue = _gazeSpaceWidth  / 2.0;
+			if (Double.IsNaN(gazeYValue)) gazeYValue = _gazeSpaceHeight / 2.0;
+
+			int scaledWidth  = Math.Max(1, (int)(_videoWidth  * _frameScale));
+			int scaledHeight = Math.Max(1, (int)(_videoHeight * _frameScale));
+			using Mat translationMatrix = Recenterer.GetTranslationMatrix(gazeXValue, gazeYValue, _gazeSpaceWidth, _gazeSpaceHeight, _frameScale);
+			using Mat processedFrame = Recenterer.ProcessFrame(_videoReader.cvFrame,
+				scaledWidth, scaledHeight, scaledWidth * 2, scaledHeight * 2, _padValue * 255.0, translationMatrix);
+			MemoryStream imageStream = processedFrame.ToMemoryStream(".bmp");
+			imageStream.Seek(0, SeekOrigin.Begin);
+			VideoFrame = new Bitmap(imageStream);
+		}
+		
+		// displays raw video that fills the canvas
+		private void UpdateDisplayRaw()
+		{
+			VideoFrame = _videoReader.GetFrameForDisplay();
+		}
+
+		public void UpdateDisplay()
+		{
+			_updateDisplayDelegate?.Invoke();
 			CurrentVideoFrame = _videoReader.CurrentFrameNumber;
 			CurrentVideoTime = _timeFormatter(_videoReader.CurrentFrameNumber);
-			if ((object)_gazeLocations != null && _dataStartFrame != null)
-			{
-				int dataIndex = Math.Clamp(VideoTimeToDataIndex(CurrentVideoFrame), 0, _gazeLocations.Shape[0] - 1);
-				double gazeXValue = (double)_gazeLocations[dataIndex, 0];
-				double gazeYValue = (double)_gazeLocations[dataIndex, 1];
-				if (!Double.IsNaN(gazeXValue) && !Double.IsNaN(gazeYValue))
-				{
-					GazeX = gazeXValue;
-					GazeY = gazeYValue;
-				}
-			}
 		}
 	}
 }

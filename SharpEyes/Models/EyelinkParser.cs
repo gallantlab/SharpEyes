@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using NumSharp;
+using SharpEyes.Models;
 
 namespace Eyetracking
 {
@@ -19,18 +20,40 @@ namespace Eyetracking
 		private const string EDF_API_DLL = "edfapi";
 		private const float EyelinkNaN = 1e8f;
 
-		public static bool IsEDFSupported { get; } = CheckEDFLibraryAvailable();
+		public static bool IsEDFSupported { get; private set; }
+
+		static EyelinkParser()
+		{
+			NativeLibrary.SetDllImportResolver(
+				typeof(EyelinkParser).Assembly,
+				(libraryName, assembly, searchPath) =>
+				{
+					if (libraryName != EDF_API_DLL)
+						return IntPtr.Zero;
+					string settingsPath = Settings.Current?.EyelinkLibraryPath ?? String.Empty;
+					if (!String.IsNullOrEmpty(settingsPath))
+					{
+						IntPtr handle;
+						if (NativeLibrary.TryLoad(settingsPath, out handle))
+							return handle;
+					}
+					IntPtr defaultHandle;
+					NativeLibrary.TryLoad(libraryName, assembly, searchPath, out defaultHandle);
+					return defaultHandle;
+				});
+			IsEDFSupported = CheckEDFLibraryAvailable();
+		}
 
 		private static bool CheckEDFLibraryAvailable()
 		{
-			try
+			string settingsPath = Settings.Current?.EyelinkLibraryPath ?? String.Empty;
+			if (!String.IsNullOrEmpty(settingsPath))
 			{
-				return NativeLibrary.TryLoad(EDF_API_DLL, out IntPtr _);
+				try { return NativeLibrary.TryLoad(settingsPath, out IntPtr _); }
+				catch { return false; }
 			}
-			catch
-			{
-				return false;
-			}
+			try { return NativeLibrary.TryLoad(EDF_API_DLL, out IntPtr _); }
+			catch { return false; }
 		}
 
 		private const int ENDSACC = 6;

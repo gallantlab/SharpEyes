@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="400"
-             x:Class="SharpEyes.Views.VideoPlaybackSettingsUserControl">
+             x:Class="SharpEyes.Views.GeneralSettingsUserControl">
 
     <ScrollViewer>
         <StackPanel Margin="8">
@@ -11,6 +11,14 @@
             <ToggleSwitch OnContent="Frame number" OffContent="Timecode"
                           IsThreeState="False"
                           IsChecked="{Binding ShowFrameNumber}"/>
+
+            <TextBlock FontWeight="SemiBold" Margin="0 16 0 4" IsVisible="{Binding IsEyelinkSectionVisible}">Eyelink</TextBlock>
+            <TextBlock Margin="0 0 0 4" IsVisible="{Binding IsEyelinkSectionVisible}">Library path</TextBlock>
+            <StackPanel Orientation="Horizontal" Margin="0 0 0 4" IsVisible="{Binding IsEyelinkSectionVisible}">
+                <TextBox Width="320" Text="{Binding EyelinkLibraryPath}"
+                         Watermark="Path to edfapi library" />
+                <Button Margin="4 0 0 0" Command="{Binding BrowseEyelinkLibraryCommand}">Browse</Button>
+            </StackPanel>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

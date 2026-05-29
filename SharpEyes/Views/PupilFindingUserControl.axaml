@@ -146,7 +146,7 @@
       <!--Pupil finding options-->
       <ScrollViewer DockPanel.Dock="Top" Margin="2">
         <StackPanel>
-          <Expander Margin="0 8 0 0 " Header="Pupil Size"  HorizontalContentAlignment="Center" IsExpanded="False"
+          <Expander Margin="0 8 0 0 " Header="Pupil Size"  HorizontalContentAlignment="Center" IsExpanded="{Binding IsPupilSizeExpanded}"
                     IsEnabled="{Binding CanFindPupils}">
             <StackPanel>
               <StackPanel Orientation="Horizontal">
@@ -172,7 +172,7 @@
           <uc:TemplatePupilFinderConfigUserControl Name="TemplateFinderConfigPanel" IsEnabled="{Binding Parent.CanFindPupils}"
                                                    DataContext="{Binding TemplatePupilFinderConfigUserControlViewModel}"/>
           <!--Confidence options-->
-          <Expander Header="Confidence options" IsExpanded="False" IsEnabled="{Binding CanFindPupils}">
+          <Expander Header="Confidence options" IsExpanded="{Binding IsConfidenceOptionsExpanded}" IsEnabled="{Binding CanFindPupils}">
             <StackPanel>
               <ToggleSwitch Name="PauseOnLowConfidenceToggleSwitch" OffContent="Stop on low confidence" OnContent="Stop on low confidence"
                             IsChecked="{Binding StopOnLowConfidence}"/>
@@ -221,7 +221,7 @@
             </StackPanel>
           </Expander>
           <!--Image filtering options-->
-          <Expander Header="Image Pre-filtering" IsExpanded="False" IsEnabled="{Binding CanPlayVideo}">
+          <Expander Header="Image Pre-filtering" IsExpanded="{Binding IsImagePreFilteringExpanded}" IsEnabled="{Binding CanPlayVideo}">
             <StackPanel>
               <ToggleSwitch Name="ShowFilteredImageToggleSwitch" OnContent="Show filtered image" OffContent="Show filtered image"
                             IsChecked="{Binding ShowFilteredImage}"/>
@@ -254,7 +254,7 @@
             </StackPanel>
           </Expander>
           <!--Manual adjustment options-->
-          <Expander Header="Manual adjust options" IsExpanded="False" IsEnabled="{Binding CanFindPupils}">
+          <Expander Header="Manual adjust options" IsExpanded="{Binding IsManualAdjustOptionsExpanded}" IsEnabled="{Binding CanFindPupils}">
             <StackPanel>
               <ToggleSwitch Name="AutoEnterPupilEditModeToggleSwitch" OffContent="Auto enter pupil edit mode on pause"
                             OnContent="Auto enter pupil edit mode on pause" IsChecked="{Binding AutoEnterPupilEditMode}"/>

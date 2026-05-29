@@ -63,6 +63,12 @@ namespace SharpEyes.ViewModels
 			get => _isProgressBarIndeterminate;
 			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
 		}
+		private bool _isLoadingGaze = false;
+		public bool IsLoadingGaze
+		{
+			get => _isLoadingGaze;
+			set => this.RaiseAndSetIfChanged(ref _isLoadingGaze, value);
+		}
 		private double _progressBarValue = 0;
 		public double ProgressBarValue
 		{
@@ -82,8 +88,8 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _videoWidth, value);
-				this.RaisePropertyChanged("RecenteringCanvasWidth");
-				this.RaisePropertyChanged("RecenteringImageLeft");
+				this.RaisePropertyChanged("CanvasWidth");
+				this.RaisePropertyChanged("ImageLeft");
 			}
 		}
 
@@ -94,8 +100,8 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _videoHeight, value);
-				this.RaisePropertyChanged("RecenteringCanvasHeight");
-				this.RaisePropertyChanged("RecenteringImageTop");
+				this.RaisePropertyChanged("CanvasHeight");
+				this.RaisePropertyChanged("ImageTop");
 			}
 		}
 
@@ -211,7 +217,7 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _gazeX, value);
 				this.RaisePropertyChanged("GazeCircleLeft");
-				this.RaisePropertyChanged("RecenteringImageLeft");
+				this.RaisePropertyChanged("ImageLeft");
 			}
 		}
 		public double GazeY
@@ -221,7 +227,7 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref _gazeY, value);
 				this.RaisePropertyChanged("GazeCircleTop");
-				this.RaisePropertyChanged("RecenteringImageTop");
+				this.RaisePropertyChanged("ImageTop");
 			}
 		}
 		public double GazeCircleLeft => _gazeX - GazeRadius;
@@ -306,7 +312,7 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _gazeSpaceWidth, value);
-				this.RaisePropertyChanged("RecenteringImageLeft");
+				this.RaisePropertyChanged("ImageLeft");
 			}
 		}
 
@@ -317,7 +323,7 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _gazeSpaceHeight, value);
-				this.RaisePropertyChanged("RecenteringImageTop");
+				this.RaisePropertyChanged("ImageTop");
 			}
 		}
 
@@ -376,6 +382,30 @@ namespace SharpEyes.ViewModels
 		{
 			get => _selectedExportContentIndex;
 			set => this.RaiseAndSetIfChanged(ref _selectedExportContentIndex, value);
+		}
+
+		private bool _isGazeInfoExpanded = Settings.Current.RecenteringGazeInfoExpanded;
+		public bool IsGazeInfoExpanded
+		{
+			get => _isGazeInfoExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isGazeInfoExpanded, value);
+				Settings.Current.RecenteringGazeInfoExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isExportExpanded = Settings.Current.RecenteringExportExpanded;
+		public bool IsExportExpanded
+		{
+			get => _isExportExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isExportExpanded, value);
+				Settings.Current.RecenteringExportExpanded = value;
+				Settings.Current.Save();
+			}
 		}
 
 		public RecenteringViewModel()
@@ -643,6 +673,7 @@ namespace SharpEyes.ViewModels
 
 			IsProgressBarVisible = true;
 			IsProgressBarIndeterminate = true;
+			IsLoadingGaze = true;
 			StatusText = "Loading gaze...";
 
 			string extension = System.IO.Path.GetExtension(fileName[0]);
@@ -701,6 +732,7 @@ namespace SharpEyes.ViewModels
 			{
 				IsProgressBarVisible = false;
 				IsProgressBarIndeterminate = false;
+				IsLoadingGaze = false;
 				StatusText = "Gaze file is malformed.";
 				return;
 			}
@@ -712,6 +744,7 @@ namespace SharpEyes.ViewModels
 
 			IsProgressBarVisible = false;
 			IsProgressBarIndeterminate = false;
+			IsLoadingGaze = false;
 			StatusText = "Idle";
 			IsGazeLoaded = true;
 			if (videoReader != null)

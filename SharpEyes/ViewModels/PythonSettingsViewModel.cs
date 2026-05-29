@@ -1,13 +1,33 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using ReactiveUI;
 using SharpEyes.Models;
 
 namespace SharpEyes.ViewModels
 {
+	public class PymotenBackend
+	{
+		public string Key { get; }
+		public string DisplayName { get; }
+
+		public PymotenBackend(string key)
+		{
+			Key = key;
+			DisplayName = key switch
+			{
+				"torch"      => "torch (CPU)",
+				"torch_cuda" => "torch (CUDA)",
+				"torch_mps"  => "torch (MPS)",
+				_            => key
+			};
+		}
+	}
+
 	public class PythonSettingsViewModel : ViewModelBase
 	{
 		private readonly PythonEnvironmentManager _manager = PythonEnvironmentManager.Instance;
@@ -25,6 +45,7 @@ namespace SharpEyes.ViewModels
 				this.RaisePropertyChanged("IsCondaModeSelected");
 				this.RaisePropertyChanged("IsBundledModeSelected");
 				_manager.Settings.PythonSourceMode = (PythonSourceMode)value;
+				_manager.SaveSettings();
 				CheckRestartRequired();
 				_ = Task.Run(CheckDependencies);
 			}
@@ -73,6 +94,7 @@ namespace SharpEyes.ViewModels
 				if (value >= 0 && value < CondaEnvironments.Count)
 				{
 					_manager.Settings.CondaEnvironmentPath = CondaEnvironments[value].Path;
+					_manager.SaveSettings();
 					CheckRestartRequired();
 					_ = Task.Run(CheckDependencies);
 				}
@@ -140,7 +162,32 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _motenStatusText, value);
 		}
 
+		private string _torchStatusText = "unknown";
+		public string TorchStatusText
+		{
+			get => _torchStatusText;
+			set => this.RaiseAndSetIfChanged(ref _torchStatusText, value);
+		}
+
 		public ReactiveCommand<Unit, Unit> CheckDependenciesCommand { get; }
+		public ReactiveCommand<Unit, Unit> InstallMissingPackagesCommand { get; }
+
+		// == Backend preference ==
+
+		private DependencyCheckResult _lastCheckResult = new DependencyCheckResult();
+
+		public ObservableCollection<PymotenBackend> AvailableBackends { get; } = new ObservableCollection<PymotenBackend>();
+
+		private int _selectedBackendIndex = -1;
+		public int SelectedBackendIndex
+		{
+			get => _selectedBackendIndex;
+			set => this.RaiseAndSetIfChanged(ref _selectedBackendIndex, value);
+		}
+
+		public ReactiveCommand<Unit, Unit> ProbeBackendsCommand { get; }
+		public ReactiveCommand<Unit, Unit> MoveBackendUpCommand { get; }
+		public ReactiveCommand<Unit, Unit> MoveBackendDownCommand { get; }
 
 		// == Restart warning ==
 
@@ -164,6 +211,10 @@ namespace SharpEyes.ViewModels
 			InstallPymotenIntoCondaCommand = ReactiveCommand.CreateFromTask(InstallPymotenIntoConda);
 			DownloadBundledPythonCommand = ReactiveCommand.CreateFromTask(DownloadBundledPython);
 			CheckDependenciesCommand = ReactiveCommand.Create(CheckDependencies);
+			InstallMissingPackagesCommand = ReactiveCommand.CreateFromTask(InstallMissingPackages);
+			ProbeBackendsCommand = ReactiveCommand.Create(ProbeBackends);
+			MoveBackendUpCommand = ReactiveCommand.Create(MoveBackendUp);
+			MoveBackendDownCommand = ReactiveCommand.Create(MoveBackendDown);
 
 			IsCondaAvailable = PythonEnvironmentManager.DetectConda() != null;
 			if (IsCondaAvailable)
@@ -258,9 +309,66 @@ namespace SharpEyes.ViewModels
 		private void CheckDependencies()
 		{
 			DependencyCheckResult result = _manager.CheckDependencies();
+			_lastCheckResult = result;
 			NumPyStatusText = result.NumPy == PackageStatus.Installed ? "installed" : "missing";
 			PillowStatusText = result.Pillow == PackageStatus.Installed ? "installed" : "missing";
 			MotenStatusText = result.Moten == PackageStatus.Installed ? "installed" : "missing";
+			TorchStatusText = result.Torch == PackageStatus.Installed ? "installed" : "missing";
+			ProbeBackends();
+		}
+
+		private void ProbeBackends()
+		{
+			List<string> probeResult = _manager.ProbeAvailableBackends();
+			List<string> savedPreference = _manager.Settings.BackendPreference;
+
+			List<string> orderedResult = new List<string>();
+			foreach (string backend in savedPreference)
+				if (probeResult.Contains(backend))
+					orderedResult.Add(backend);
+			foreach (string backend in probeResult)
+				if (!orderedResult.Contains(backend))
+					orderedResult.Add(backend);
+
+			Dispatcher.UIThread.Post(() =>
+			{
+				AvailableBackends.Clear();
+				foreach (string backend in orderedResult)
+					AvailableBackends.Add(new PymotenBackend(backend));
+			});
+		}
+
+		private void MoveBackendUp()
+		{
+			int index = SelectedBackendIndex;
+			if (index <= 0 || index >= AvailableBackends.Count) return;
+			AvailableBackends.Move(index, index - 1);
+			SelectedBackendIndex = index - 1;
+			List<string> keyList = new List<string>();
+			foreach (PymotenBackend item in AvailableBackends)
+				keyList.Add(item.Key);
+			_manager.Settings.BackendPreference = keyList;
+			_manager.SaveSettings();
+		}
+
+		private void MoveBackendDown()
+		{
+			int index = SelectedBackendIndex;
+			if (index < 0 || index >= AvailableBackends.Count - 1) return;
+			AvailableBackends.Move(index, index + 1);
+			SelectedBackendIndex = index + 1;
+			List<string> keyList = new List<string>();
+			foreach (PymotenBackend item in AvailableBackends)
+				keyList.Add(item.Key);
+			_manager.Settings.BackendPreference = keyList;
+			_manager.SaveSettings();
+		}
+
+		private async Task InstallMissingPackages()
+		{
+			IProgress<string> statusProgress = new Progress<string>(text => StatusText = text);
+			await _manager.InstallMissingPackages(_lastCheckResult, statusProgress);
+			CheckDependencies();
 		}
 
 		private void CheckRestartRequired()

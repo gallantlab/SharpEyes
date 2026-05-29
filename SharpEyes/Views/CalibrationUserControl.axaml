@@ -71,7 +71,7 @@
       <ScrollViewer DockPanel.Dock="Top" Margin="2">
         <StackPanel>
           <!--Gaze marker info-->
-          <Expander Margin="4 2" IsExpanded="True" Header="Calibration Parameters"
+          <Expander Margin="4 2" IsExpanded="{Binding IsCalibrationParametersExpanded}" Header="Calibration Parameters"
                     VerticalAlignment="Top">
             <StackPanel DockPanel.Dock="Top">
               <ToggleSwitch OnContent="Use timestamp for start time" OffContent="Use timestamp for start time"
@@ -114,7 +114,7 @@
               </StackPanel>
             </StackPanel>
           </Expander>
-          <Expander Margin="4 2" IsExpanded="True" Header="Calibration points"
+          <Expander Margin="4 2" IsExpanded="{Binding IsCalibrationPointsExpanded}" Header="Calibration points"
                     VerticalAlignment="Top">
               <StackPanel>
                   <Button Margin="4" Name="ForceRedrawButton" Click="ForceRedrawButton_OnClick">Force redraw points</Button>

@@ -39,9 +39,34 @@
                     <TextBlock Width="80">Pillow</TextBlock>
                     <TextBlock Text="{Binding PillowStatusText}" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
-                    <TextBlock Width="80">moten</TextBlock>
+                <StackPanel Orientation="Horizontal" Margin="0 0 0 2">
+                    <TextBlock Width="80">PyMoten</TextBlock>
                     <TextBlock Text="{Binding MotenStatusText}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+                    <TextBlock Width="80">pyTorch</TextBlock>
+                    <TextBlock Text="{Binding TorchStatusText}" />
+                </StackPanel>
+                <Button Margin="0 0 0 8" Command="{Binding InstallMissingPackagesCommand}">
+                    Install missing packages
+                </Button>
+
+                <!--Backend preference-->
+                <TextBlock FontWeight="SemiBold" Margin="0 4 0 4">Backend preference</TextBlock>
+                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0 0 0 8">
+                    <ListBox Width="200" Height="120" Items="{Binding AvailableBackends}"
+                             SelectedIndex="{Binding SelectedBackendIndex}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayName}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                        <Button Command="{Binding MoveBackendUpCommand}">Up</Button>
+                        <Button Command="{Binding MoveBackendDownCommand}">Down</Button>
+                        <Button Command="{Binding ProbeBackendsCommand}">Probe</Button>
+                    </StackPanel>
                 </StackPanel>
 
                 <!-- ── System Python section ── -->

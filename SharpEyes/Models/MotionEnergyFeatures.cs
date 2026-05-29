@@ -28,36 +28,40 @@ namespace SharpEyes.Models
 		public int FrameHeight
 		{
 			get => _frameHeight;
-			set { _frameHeight = value; RebuildRequired = true; }
+			set => _frameHeight = value;
 		}
 
 		private int _frameWidth = 480;
 		public int FrameWidth
 		{
 			get => _frameWidth;
-			set { _frameWidth = value; RebuildRequired = true; }
+			set => _frameWidth = value;
 		}
 
 		private List<double> _spatialFrequencies = new List<double> { 0, 2, 4, 8, 16, 32 };
 		public List<double> SpatialFrequencies
 		{
 			get => _spatialFrequencies;
-			set { _spatialFrequencies = value; RebuildRequired = true; }
+			set => _spatialFrequencies = value;
 		}
 
 		private List<double> _temporalFrequencies = new List<double> { 0, 2, 4, 8, 16 };
 		public List<double> TemporalFrequencies
 		{
 			get => _temporalFrequencies;
-			set { _temporalFrequencies = value; RebuildRequired = true; }
+			set => _temporalFrequencies = value;
 		}
 
 		private List<double> _directions = new List<double> { 0, 45, 90, 135, 180, 225, 270, 315 };
 		public List<double> Directions
 		{
 			get => _directions;
-			set { _directions = value; RebuildRequired = true; }
+			set => _directions = value;
 		}
+
+		// == Compute backend ==
+
+		public string Backend { get; set; } = "numpy";
 
 		// == Pyramid state (runtime, not persisted) ==
 
@@ -66,7 +70,6 @@ namespace SharpEyes.Models
 		public int FilterCount { get; private set; } = 0;
 		public List<MotionEnergyFilterParameters> FilterParameters { get; private set; } = new List<MotionEnergyFilterParameters>();
 		public bool IsPyramidBuilt => _pyramidObject != null;
-		public bool RebuildRequired { get; private set; } = true;
 
 		// Constructs the moten.MotionEnergyPyramid from current parameters.
 		// Must be called after PythonEnvironmentManager.Initialize().
@@ -120,7 +123,6 @@ namespace SharpEyes.Models
 				}
 			}
 
-			RebuildRequired = false;
 		}
 
 		// Converts frames (nFrames x height x width, uint8) to motion-energy features
@@ -139,6 +141,9 @@ namespace SharpEyes.Models
 
 				using (Py.GIL())
 				{
+					dynamic motenBackend = Py.Import("moten.backend");
+					motenBackend.set_backend(Backend);
+
 					dynamic np = Py.Import("numpy");
 					dynamic ctypes = Py.Import("ctypes");
 					dynamic npCtypeslib = Py.Import("numpy.ctypeslib");
@@ -154,21 +159,28 @@ namespace SharpEyes.Models
 						dynamic cArrayType = ctypes.c_uint8 * rawData.Length;
 						dynamic cArray = cArrayType.from_address(ptr);
 						npArray = npCtypeslib.as_array(cArray).copy()
-							.reshape(nFrames, height, width)
-							.astype(np.float32).__truediv__(255.0f);
+							.reshape(nFrames, height, width).__truediv__(255.0f);
 					}
 					finally
 					{
 						handle.Free();
 					}
 
-					dynamic result = ((dynamic)_pyramidObject).project_stimulus(npArray);
+					dynamic result = ((dynamic)_pyramidObject).project_stimulus(npArray).cpu().numpy(); // this is a float32
 					nFeatures = (int)result.shape[1];
 
-					// Convert float32 numpy result back to C# float[]
-					byte[] resultBytes = (byte[])result.astype(np.float32).tobytes();
+					// Convert numpy result back to C#
+					byte[] resultBytes = (byte[])result.tobytes();
 					resultData = new float[nFrames * nFeatures];
 					Buffer.BlockCopy(resultBytes, 0, resultData, 0, resultBytes.Length);
+
+					dynamic gc = Py.Import("gc");
+					gc.collect();
+					if (Backend == "torch_cuda")
+					{
+						dynamic torch = Py.Import("torch");
+						torch.cuda.empty_cache();
+					}
 				}
 
 				NDArray output = new NDArray(resultData).reshape(nFrames, nFeatures);

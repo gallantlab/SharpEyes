@@ -33,6 +33,7 @@
         <TextBlock VerticalAlignment="Center" Margin="4">|</TextBlock>
         <Button Name="LoadGazeButton" Margin="4"
                       Command="{Binding LoadGazeCommand}"
+                      IsEnabled="{Binding !IsLoadingGaze}"
                       HotKey="Ctrl+L">Load Gaze</Button>
         <ToggleButton Name="MoveGazeButton" Margin="4" IsChecked="{Binding IsMovingGaze}"
                       IsEnabled="{Binding IsGazeLoaded}"
@@ -136,10 +137,10 @@
     <DockPanel Margin="0" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" >
 
       <ScrollViewer DockPanel.Dock="Top" Margin="2">
-        <StackPanel>
+        <StackPanel IsEnabled="{Binding !IsLoadingGaze}">
           <!-- Data start finding-->
           <!--Gaze marker info-->
-          <Expander Margin="4 2" IsExpanded="True" Header="Temporal alignment" HorizontalContentAlignment="Center"
+          <Expander Margin="4 2" IsExpanded="{Binding IsTemporalAlignmentExpanded}" Header="Temporal alignment" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">
             <StackPanel HorizontalAlignment="Center" DockPanel.Dock="Top">
                 <Button Margin="4 " Width="240" HorizontalContentAlignment="Center"
@@ -172,7 +173,7 @@
               </StackPanel>
             </StackPanel>
           </Expander>
-          <Expander Margin="4 2" IsExpanded="True" Header="Gaze info" HorizontalContentAlignment="Center"
+          <Expander Margin="4 2" IsExpanded="{Binding IsGazeInfoExpanded}" Header="Gaze info" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">
             <StackPanel>
               <StackPanel Orientation="Horizontal">
@@ -190,7 +191,7 @@
             </StackPanel>
           </Expander>
 
-          <Expander Margin="4 2" IsExpanded="True" Header="Gaze filtering" HorizontalContentAlignment="Center"
+          <Expander Margin="4 2" IsExpanded="{Binding IsGazeFilteringExpanded}" Header="Gaze filtering" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">
             <StackPanel>
               <ToggleSwitch OnContent="Filtering enabled" OffContent="Filtering disabled" HorizontalAlignment="Center"
@@ -229,7 +230,7 @@
             </StackPanel>
           </Expander>
 
-          <Expander Margin="4 2" IsExpanded="True" Header="Keyframes" HorizontalContentAlignment="Center"
+          <Expander Margin="4 2" IsExpanded="{Binding IsKeyframesExpanded}" Header="Keyframes" HorizontalContentAlignment="Center"
                     VerticalAlignment="Top">
             <StackPanel>
               <Button Margin="4">Add keyframe</Button>

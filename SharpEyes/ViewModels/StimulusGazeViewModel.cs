@@ -76,6 +76,12 @@ namespace SharpEyes.ViewModels
 			get => _isProgressBarIndeterminate;
 			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
 		}
+		private bool _isLoadingGaze = false;
+		public bool IsLoadingGaze
+		{
+			get => _isLoadingGaze;
+			set => this.RaiseAndSetIfChanged(ref _isLoadingGaze, value);
+		}
 		private double _progressBarValue = 0;
 		public double ProgressBarValue
 		{
@@ -408,6 +414,54 @@ namespace SharpEyes.ViewModels
 		private string defaultSaveName => gazeFileName == null
 			? "gaze locations"
 			: System.IO.Path.GetFileNameWithoutExtension(gazeFileName) + " corrected.npy";
+
+		private bool _isTemporalAlignmentExpanded = Settings.Current.StimulusTemporalAlignmentExpanded;
+		public bool IsTemporalAlignmentExpanded
+		{
+			get => _isTemporalAlignmentExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isTemporalAlignmentExpanded, value);
+				Settings.Current.StimulusTemporalAlignmentExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isGazeInfoExpanded = Settings.Current.StimulusGazeInfoExpanded;
+		public bool IsGazeInfoExpanded
+		{
+			get => _isGazeInfoExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isGazeInfoExpanded, value);
+				Settings.Current.StimulusGazeInfoExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isGazeFilteringExpanded = Settings.Current.StimulusGazeFilteringExpanded;
+		public bool IsGazeFilteringExpanded
+		{
+			get => _isGazeFilteringExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isGazeFilteringExpanded, value);
+				Settings.Current.StimulusGazeFilteringExpanded = value;
+				Settings.Current.Save();
+			}
+		}
+
+		private bool _isKeyframesExpanded = Settings.Current.StimulusKeyframesExpanded;
+		public bool IsKeyframesExpanded
+		{
+			get => _isKeyframesExpanded;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _isKeyframesExpanded, value);
+				Settings.Current.StimulusKeyframesExpanded = value;
+				Settings.Current.Save();
+			}
+		}
 
 		public StimulusGazeViewModel()
 		{
@@ -758,15 +812,24 @@ namespace SharpEyes.ViewModels
 
 			if (fileName == null || fileName.Length == 0)
 				return;
-			int parsedSampleRate;
-			RawGazeLocations = GazeLoader.Load(fileName[0], out parsedSampleRate);
-			if (parsedSampleRate > 0)
-				EyetrackingFPS = parsedSampleRate;
+			IsLoadingGaze = true;
+			int capturedSampleRate = 0;
+			NDArray? loadedGaze = null;
+			await Task.Run(() =>
+			{
+				int sampleRate;
+				loadedGaze = GazeLoader.Load(fileName[0], out sampleRate);
+				capturedSampleRate = sampleRate;
+			});
+			RawGazeLocations = loadedGaze;
+			if (capturedSampleRate > 0)
+				EyetrackingFPS = capturedSampleRate;
 			IsGazeLoaded = true;
 			gazeFileName = fileName[0];
 			ReapplyFilterIfEnabled();
 			if (videoReader != null)
 				SetCurrentAsDataStart();
+			IsLoadingGaze = false;
 		}
 
 		public async void SaveGaze()

@@ -17,6 +17,7 @@ namespace SharpEyes.Models
 		public PackageStatus NumPy { get; set; } = PackageStatus.Missing;
 		public PackageStatus Pillow { get; set; } = PackageStatus.Missing;
 		public PackageStatus Moten { get; set; } = PackageStatus.Missing;
+		public PackageStatus Torch { get; set; } = PackageStatus.Missing;
 	}
 
 	public class CondaEnvironmentInfo
@@ -41,7 +42,8 @@ namespace SharpEyes.Models
 
 		private const string BundledPythonVersion = "3.12.13";
 		private const string BundledPythonTag = "20260510";
-		private const string PymotenInstallSpec = "git+https://github.com/gallantlab/pymoten.git";
+		private const string PymotenGitURL = "git+https://github.com/gallantlab/pymoten.git";
+		private const string PymotenInstallSpec = PymotenGitURL + "[torch]";
 
 		private static string BundledPythonDownloadURL
 		{
@@ -233,7 +235,7 @@ namespace SharpEyes.Models
 
 			string checkScript =
 				"import sys\n" +
-				"for pkg, label in [('numpy','numpy'),('PIL','pillow'),('moten','moten')]:\n" +
+				"for pkg, label in [('numpy','numpy'),('PIL','pillow'),('moten','moten'),('torch','torch')]:\n" +
 				"    try:\n" +
 				"        __import__(pkg)\n" +
 				"        print(label + ':installed')\n" +
@@ -250,6 +252,8 @@ namespace SharpEyes.Models
 					result.Pillow = trimmed.EndsWith("installed") ? PackageStatus.Installed : PackageStatus.Missing;
 				else if (trimmed.StartsWith("moten:"))
 					result.Moten = trimmed.EndsWith("installed") ? PackageStatus.Installed : PackageStatus.Missing;
+				else if (trimmed.StartsWith("torch:"))
+					result.Torch = trimmed.EndsWith("installed") ? PackageStatus.Installed : PackageStatus.Missing;
 			}
 			return result;
 		}
@@ -270,10 +274,148 @@ namespace SharpEyes.Models
 		// Installs pymoten into the currently configured environment.
 		public async Task InstallPymoten(IProgress<string>? statusProgress = null)
 		{
-			statusProgress?.Report("Installing pymoten...");
-			string pipExe = GetPipExecutable(Settings);
-			await RunProcessAsync(pipExe, String.Format("install numpy Pillow {0}", PymotenInstallSpec));
+			if (Settings.PythonSourceMode == PythonSourceMode.Conda)
+			{
+				string? condaExe = DetectConda();
+				if (condaExe == null)
+					throw new InvalidOperationException("conda executable not found.");
+				statusProgress?.Report("Installing numpy and Pillow via conda...");
+				await RunProcessAsync(condaExe, String.Format(
+					"install -p \"{0}\" numpy blas=*=mkl pillow -y",
+					Settings.CondaEnvironmentPath));
+				statusProgress?.Report("Installing pytorch via conda...");
+				await RunProcessAsync(condaExe, String.Format(
+					"install -p \"{0}\" pytorch pytorch-cuda -c pytorch -c nvidia -y",
+					Settings.CondaEnvironmentPath));
+				statusProgress?.Report("Installing pymoten...");
+				string pipExe = GetPipExecutable(Settings);
+				await RunProcessAsync(pipExe, String.Format("install {0}", PymotenGitURL));
+			}
+			else
+			{
+				statusProgress?.Report("Installing pymoten...");
+				string pipExe = GetPipExecutable(Settings);
+				await RunProcessAsync(pipExe, String.Format("install numpy Pillow {0}", PymotenInstallSpec));
+			}
 			statusProgress?.Report("Done.");
+		}
+
+		// Installs only the packages flagged as missing in checkResult into the current environment.
+		public async Task InstallMissingPackages(DependencyCheckResult checkResult, IProgress<string>? statusProgress = null)
+		{
+			if (Settings.PythonSourceMode == PythonSourceMode.Conda)
+			{
+				string? condaExe = DetectConda();
+				if (condaExe == null)
+					throw new InvalidOperationException("conda executable not found.");
+				string envPath = Settings.CondaEnvironmentPath;
+
+				List<string> defaultsPackages = new List<string>();
+				List<string> torchPackages = new List<string>();
+				bool installPymoten = false;
+
+				if (checkResult.NumPy == PackageStatus.Missing)
+				{
+					defaultsPackages.Add("numpy");
+					defaultsPackages.Add("blas=*=mkl");
+				}
+				if (checkResult.Pillow == PackageStatus.Missing)
+					defaultsPackages.Add("pillow");
+				if (checkResult.Moten == PackageStatus.Missing)
+				{
+					torchPackages.Add("pytorch");
+					torchPackages.Add("pytorch-cuda");
+					installPymoten = true;
+				}
+				else if (checkResult.Torch == PackageStatus.Missing)
+				{
+					torchPackages.Add("pytorch");
+					torchPackages.Add("pytorch-cuda");
+				}
+
+				if (defaultsPackages.Count == 0 && torchPackages.Count == 0 && !installPymoten)
+				{
+					statusProgress?.Report("All packages already installed.");
+					return;
+				}
+
+				if (defaultsPackages.Count > 0)
+				{
+					statusProgress?.Report("Installing missing packages via conda...");
+					await RunProcessAsync(condaExe, String.Format(
+						"install -p \"{0}\" {1} -y", envPath, String.Join(" ", defaultsPackages)));
+				}
+				if (torchPackages.Count > 0)
+				{
+					statusProgress?.Report("Installing pytorch via conda...");
+					await RunProcessAsync(condaExe, String.Format(
+						"install -p \"{0}\" {1} -c pytorch -c nvidia -y", envPath, String.Join(" ", torchPackages)));
+				}
+				if (installPymoten)
+				{
+					statusProgress?.Report("Installing pymoten...");
+					string pipExe = GetPipExecutable(Settings);
+					await RunProcessAsync(pipExe, String.Format("install {0}", PymotenGitURL));
+				}
+			}
+			else
+			{
+				string pipExe = GetPipExecutable(Settings);
+				List<string> packagesToInstall = new List<string>();
+
+				if (checkResult.NumPy == PackageStatus.Missing)
+					packagesToInstall.Add("numpy");
+				if (checkResult.Pillow == PackageStatus.Missing)
+					packagesToInstall.Add("Pillow");
+				if (checkResult.Moten == PackageStatus.Missing)
+					packagesToInstall.Add(PymotenInstallSpec);  // also pulls in torch via [torch] extra
+				else if (checkResult.Torch == PackageStatus.Missing)
+					packagesToInstall.Add("torch");  // moten present but torch missing
+
+				if (packagesToInstall.Count == 0)
+				{
+					statusProgress?.Report("All packages already installed.");
+					return;
+				}
+
+				statusProgress?.Report("Installing missing packages...");
+				await RunProcessAsync(pipExe, String.Format("install {0}", String.Join(" ", packagesToInstall)));
+			}
+			statusProgress?.Report("Done.");
+		}
+
+		// Probes the configured Python environment for which pymoten backends are usable.
+		// Returns a subset of: "numpy", "torch", "torch_cuda", "torch_mps"
+		public List<string> ProbeAvailableBackends()
+		{
+			List<string> availableBackends = new List<string>();
+			string pythonExe = GetPythonExecutableForMode(Settings);
+			if (!File.Exists(pythonExe)) return availableBackends;
+
+			string probeScript =
+				"try:\n" +
+				"    import numpy\n" +
+				"    print('numpy')\n" +
+				"except ImportError:\n" +
+				"    pass\n" +
+				"try:\n" +
+				"    import torch\n" +
+				"    print('torch')\n" +
+				"    if torch.cuda.is_available():\n" +
+				"        print('torch_cuda')\n" +
+				"    if torch.backends.mps.is_available():\n" +
+				"        print('torch_mps')\n" +
+				"except ImportError:\n" +
+				"    pass\n";
+
+			string output = RunPythonScript(pythonExe, probeScript);
+			foreach (string line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+			{
+				string trimmed = line.Trim();
+				if (trimmed == "numpy" || trimmed == "torch" || trimmed == "torch_cuda" || trimmed == "torch_mps")
+					availableBackends.Add(trimmed);
+			}
+			return availableBackends;
 		}
 
 		// Returns the path to the conda executable, or null if not found.
@@ -362,9 +504,15 @@ namespace SharpEyes.Models
 			if (newEnv != null)
 				Settings.CondaEnvironmentPath = newEnv.Path;
 
+			statusProgress?.Report("Installing numpy and Pillow via conda...");
+			await RunProcessAsync(condaExe, String.Format(
+				"install -n {0} numpy blas=*=mkl pillow -y", environmentName));
+			statusProgress?.Report("Installing pytorch via conda...");
+			await RunProcessAsync(condaExe, String.Format(
+				"install -n {0} pytorch pytorch-cuda -c pytorch -c nvidia -y", environmentName));
 			statusProgress?.Report("Installing pymoten...");
 			string pipExe = GetPipExecutable(Settings);
-			await RunProcessAsync(pipExe, String.Format("install numpy Pillow {0}", PymotenInstallSpec));
+			await RunProcessAsync(pipExe, String.Format("install {0}", PymotenGitURL));
 			statusProgress?.Report("Done.");
 		}
 
