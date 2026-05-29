@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using ReactiveUI;
 using SharpEyes.Models;
 
@@ -140,7 +142,32 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _motenStatusText, value);
 		}
 
+		private string _torchStatusText = "unknown";
+		public string TorchStatusText
+		{
+			get => _torchStatusText;
+			set => this.RaiseAndSetIfChanged(ref _torchStatusText, value);
+		}
+
 		public ReactiveCommand<Unit, Unit> CheckDependenciesCommand { get; }
+		public ReactiveCommand<Unit, Unit> InstallMissingPackagesCommand { get; }
+
+		// == Backend preference ==
+
+		private DependencyCheckResult _lastCheckResult = new DependencyCheckResult();
+
+		public ObservableCollection<string> AvailableBackends { get; } = new ObservableCollection<string>();
+
+		private int _selectedBackendIndex = -1;
+		public int SelectedBackendIndex
+		{
+			get => _selectedBackendIndex;
+			set => this.RaiseAndSetIfChanged(ref _selectedBackendIndex, value);
+		}
+
+		public ReactiveCommand<Unit, Unit> ProbeBackendsCommand { get; }
+		public ReactiveCommand<Unit, Unit> MoveBackendUpCommand { get; }
+		public ReactiveCommand<Unit, Unit> MoveBackendDownCommand { get; }
 
 		// == Restart warning ==
 
@@ -164,6 +191,10 @@ namespace SharpEyes.ViewModels
 			InstallPymotenIntoCondaCommand = ReactiveCommand.CreateFromTask(InstallPymotenIntoConda);
 			DownloadBundledPythonCommand = ReactiveCommand.CreateFromTask(DownloadBundledPython);
 			CheckDependenciesCommand = ReactiveCommand.Create(CheckDependencies);
+			InstallMissingPackagesCommand = ReactiveCommand.CreateFromTask(InstallMissingPackages);
+			ProbeBackendsCommand = ReactiveCommand.Create(ProbeBackends);
+			MoveBackendUpCommand = ReactiveCommand.Create(MoveBackendUp);
+			MoveBackendDownCommand = ReactiveCommand.Create(MoveBackendDown);
 
 			IsCondaAvailable = PythonEnvironmentManager.DetectConda() != null;
 			if (IsCondaAvailable)
@@ -258,9 +289,60 @@ namespace SharpEyes.ViewModels
 		private void CheckDependencies()
 		{
 			DependencyCheckResult result = _manager.CheckDependencies();
+			_lastCheckResult = result;
 			NumPyStatusText = result.NumPy == PackageStatus.Installed ? "installed" : "missing";
 			PillowStatusText = result.Pillow == PackageStatus.Installed ? "installed" : "missing";
 			MotenStatusText = result.Moten == PackageStatus.Installed ? "installed" : "missing";
+			TorchStatusText = result.Torch == PackageStatus.Installed ? "installed" : "missing";
+			ProbeBackends();
+		}
+
+		private void ProbeBackends()
+		{
+			List<string> probeResult = _manager.ProbeAvailableBackends();
+			List<string> savedPreference = _manager.Settings.BackendPreference;
+
+			List<string> orderedResult = new List<string>();
+			foreach (string backend in savedPreference)
+				if (probeResult.Contains(backend))
+					orderedResult.Add(backend);
+			foreach (string backend in probeResult)
+				if (!orderedResult.Contains(backend))
+					orderedResult.Add(backend);
+
+			Dispatcher.UIThread.Post(() =>
+			{
+				AvailableBackends.Clear();
+				foreach (string backend in orderedResult)
+					AvailableBackends.Add(backend);
+			});
+		}
+
+		private void MoveBackendUp()
+		{
+			int index = SelectedBackendIndex;
+			if (index <= 0 || index >= AvailableBackends.Count) return;
+			AvailableBackends.Move(index, index - 1);
+			SelectedBackendIndex = index - 1;
+			_manager.Settings.BackendPreference = new List<string>(AvailableBackends);
+			_manager.SaveSettings();
+		}
+
+		private void MoveBackendDown()
+		{
+			int index = SelectedBackendIndex;
+			if (index < 0 || index >= AvailableBackends.Count - 1) return;
+			AvailableBackends.Move(index, index + 1);
+			SelectedBackendIndex = index + 1;
+			_manager.Settings.BackendPreference = new List<string>(AvailableBackends);
+			_manager.SaveSettings();
+		}
+
+		private async Task InstallMissingPackages()
+		{
+			IProgress<string> statusProgress = new Progress<string>(text => StatusText = text);
+			await _manager.InstallMissingPackages(_lastCheckResult, statusProgress);
+			CheckDependencies();
 		}
 
 		private void CheckRestartRequired()

@@ -14,6 +14,10 @@ namespace SharpEyes.Models
 		public string SystemPythonExecutablePath { get; set; } = String.Empty;
 		public string CondaEnvironmentPath { get; set; } = String.Empty;
 
+		[XmlArray("BackendPreference")]
+		[XmlArrayItem("string")]
+		public List<string> BackendPreference { get; set; } = null;
+
 		public bool ShowFrameNumber { get; set; } = false;
 
 		public int LastOpenTabIndex { get; set; } = 2;
@@ -69,6 +73,8 @@ namespace SharpEyes.Models
 				result.MotionEnergyTemporalFrequencies = new List<double> { 0, 2, 4, 8, 16 };
 			if (result.MotionEnergyDirections == null)
 				result.MotionEnergyDirections = new List<double> { 0, 45, 90, 135, 180, 225, 270, 315 };
+			if (result.BackendPreference == null)
+				result.BackendPreference = new List<string> { "torch_cuda", "torch_mps", "torch", "numpy" };
 			Current = result;
 			return result;
 		}
