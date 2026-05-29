@@ -174,10 +174,14 @@ namespace SharpEyes.Models
 					resultData = new float[nFrames * nFeatures];
 					Buffer.BlockCopy(resultBytes, 0, resultData, 0, resultBytes.Length);
 
+					dynamic gc = Py.Import("gc");
+					gc.collect();
+					if (Backend == "torch_cuda")
+					{
+						dynamic torch = Py.Import("torch");
+						torch.cuda.empty_cache();
+					}
 				}
-
-				PythonEnvironmentManager.Instance.Shutdown();
-				_pyramidObject = null;
 
 				NDArray output = new NDArray(resultData).reshape(nFrames, nFeatures);
 				progress.Report(1.0);

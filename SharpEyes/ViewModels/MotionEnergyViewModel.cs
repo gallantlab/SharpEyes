@@ -753,11 +753,7 @@ namespace SharpEyes.ViewModels
 			IsProgressBarVisible = true;
 			try
 			{
-				await Task.Run(() =>
-				{
-					PythonEnvironmentManager.Instance.Initialize();
-					PythonEnvironmentManager.Instance.Shutdown();
-				});
+				await Task.Run(() => PythonEnvironmentManager.Instance.Initialize());
 				StatusText = "Python initialized.";
 			}
 			catch (Exception exception)
@@ -864,7 +860,6 @@ namespace SharpEyes.ViewModels
 				{
 					PythonEnvironmentManager.Instance.Initialize();
 					motionEnergyFeatures.BuildPyramid(fps);
-					PythonEnvironmentManager.Instance.Shutdown();
 				});
 				StatusText = String.Format("Pyramid built: {0} filters",
 					motionEnergyFeatures.FilterCount);

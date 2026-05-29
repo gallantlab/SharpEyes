@@ -11,7 +11,13 @@
 
     <DockPanel LastChildFill="True">
 
-<ScrollViewer DockPanel.Dock="Top">
+        <!--Restart warning strip-->
+        <Border DockPanel.Dock="Bottom" Background="#805500" Padding="8 6"
+                IsVisible="{Binding RestartRequiredVisible}">
+            <TextBlock Text="Restart SharpEyes to apply Python changes." Foreground="White" />
+        </Border>
+
+        <ScrollViewer DockPanel.Dock="Top">
             <StackPanel Margin="8">
 
                 <!--Source mode drop-down-->
