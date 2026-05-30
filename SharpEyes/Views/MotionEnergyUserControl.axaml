@@ -82,7 +82,7 @@
 
         <!--Status bar-->
         <DockPanel Grid.Row="1" Grid.Column="0" LastChildFill="True" VerticalAlignment="Center">
-            <TextBlock DockPanel.Dock="Left" Text="{Binding StatusText}" />
+            <TextBlock DockPanel.Dock="Left" Text="{Binding StatusText}" ToolTip.Tip="{Binding StatusText}" />
             <ProgressBar Margin="4 0 4 0" Minimum="0" Maximum="100"
                          Value="{Binding ProgressBarValue}" IsVisible="{Binding IsProgressBarVisible}"
                          IsIndeterminate="{Binding IsProgressBarIndeterminate}" />
