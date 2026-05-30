@@ -46,6 +46,9 @@
                         <views:MotionEnergyOverlayControl
                             Circles="{Binding PyramidCircles}"
                             Arrows="{Binding PyramidArrows}"
+                            DynamicCircles="{Binding DynamicCircles}"
+                            DynamicSpokes="{Binding DynamicSpokes}"
+                            RenderTrigger="{Binding OverlayRenderTrigger}"
                             Width="{Binding CanvasWidth}"
                             Height="{Binding CanvasHeight}"
                             IsHitTestVisible="False" />
@@ -98,19 +101,26 @@
                                 <TextBlock VerticalAlignment="Center" Width="150">Pad percent</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding PadPercent}" Increment="10"
                                                Minimum="100"
-                                               FormatString="0" />
+                                               FormatString="0"
+                                               LostFocus="FilterParameterControl_LostFocus"
+                                               KeyDown="FilterParameterControl_KeyDown" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Pad value</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding PadValue}" Increment="0.05"
                                                Minimum="0.0" Maximum="1.0"
-                                               FormatString="0.00" />
+                                               FormatString="0.00"
+                                               Tag="NoPyramidRebuild"
+                                               LostFocus="FilterParameterControl_LostFocus"
+                                               KeyDown="FilterParameterControl_KeyDown" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Frame scale</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding FrameScale}" Increment="0.025"
                                                Minimum="0.01" Maximum="1.0"
-                                               FormatString="0.000" />
+                                               FormatString="0.000"
+                                               LostFocus="FilterParameterControl_LostFocus"
+                                               KeyDown="FilterParameterControl_KeyDown" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0 4 0 0">
                                 <TextBlock VerticalAlignment="Center" Width="150">Output frame</TextBlock>
@@ -135,7 +145,9 @@
                                 <TextBlock VerticalAlignment="Center" Width="150">Video FPS</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding VideoFps}" Increment="1"
                                                Minimum="1"
-                                               FormatString="0.##" />
+                                               FormatString="0.##"
+                                               LostFocus="FilterParameterControl_LostFocus"
+                                               KeyDown="FilterParameterControl_KeyDown" />
                             </StackPanel>
 
                             <Expander Margin="0 8 0 0" IsExpanded="{Binding IsSpatialFrequenciesExpanded}"
@@ -233,6 +245,29 @@
                             <ToggleSwitch Margin="0 8 0 0" OnContent="Show motion-energy pyramid"
                                           OffContent="Show motion-energy pyramid"
                                           IsChecked="{Binding ShowMotionEnergyPyramid}" />
+                            <ToggleSwitch Margin="0 4 0 0" OnContent="Show dynamic responses"
+                                          OffContent="Show dynamic responses"
+                                          IsEnabled="{Binding CanShowDynamicOverlay}"
+                                          IsChecked="{Binding ShowDynamicOverlay}" />
+                            <TextBlock Margin="0 2 0 0" Foreground="#CC8800" TextWrapping="Wrap"
+                                       IsVisible="{Binding IsDynamicOverlayStale}"
+                                       Text="Filter parameters changed. Recompute features to update the dynamic responses." />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Response scaling</TextBlock>
+                                <ComboBox Margin="4" Width="150" Items="{Binding NormalizationSchemeNames}"
+                                          SelectedIndex="{Binding SelectedNormalizationSchemeIndex}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Max opacity</TextBlock>
+                                <Slider Margin="4" Width="150" Minimum="0" Maximum="1"
+                                        Value="{Binding DynamicBaseAlpha}" />
+                            </StackPanel>
                             <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180"
                                     HorizontalContentAlignment="Center"
                                     Command="{Binding RestoreFilterDefaultsCommand}">
