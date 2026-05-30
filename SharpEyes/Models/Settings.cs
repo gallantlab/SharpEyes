@@ -43,6 +43,17 @@ namespace SharpEyes.Models
 		[XmlArrayItem("double")]
 		public List<double> MotionEnergyDirections { get; set; } = null;
 
+		// Filter batching: when enabled, ExtractAsync calls pymoten's
+		// project_stimulus_batched, which processes MotionEnergyFilterBatchSize
+		// gabor filters at a time. Batching is over filters.
+		public bool MotionEnergyUseFilterBatching { get; set; } = false;
+		public int MotionEnergyFilterBatchSize { get; set; } = 128;
+
+		// Precision of pymoten's response accumulators. Lower precision uses
+		// less memory. Features are saved to disk at this dtype; the in-memory
+		// features used for visualization are float32.
+		public string MotionEnergyOutputDtype { get; set; } = "float32";
+
 		// Expander open/close states - CalibrationUserControl
 		public bool CalibrationParametersExpanded { get; set; } = true;
 		public bool CalibrationPointsExpanded { get; set; } = true;

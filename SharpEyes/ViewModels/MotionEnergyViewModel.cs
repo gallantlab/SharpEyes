@@ -10,7 +10,6 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-using Num = NumSharp.np;
 using Mat = OpenCvSharp.Mat;
 using NumSharp;
 using ReactiveUI;
@@ -521,6 +520,49 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _startFrame, value);
 		}
 
+		private bool _useFilterBatching = false;
+		public bool UseFilterBatching
+		{
+			get => _useFilterBatching;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _useFilterBatching, value);
+				SaveSettings();
+			}
+		}
+
+		private int _filterBatchSize = 128;
+		public int FilterBatchSize
+		{
+			get => _filterBatchSize;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _filterBatchSize, value);
+				SaveSettings();
+			}
+		}
+
+		public ObservableCollection<string> OutputDtypeNames { get; } = new ObservableCollection<string>
+		{
+			"float16", "float32", "float64"
+		};
+
+		private int _selectedOutputDtypeIndex = 1;
+		public int SelectedOutputDtypeIndex
+		{
+			get => _selectedOutputDtypeIndex;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _selectedOutputDtypeIndex, value);
+				SaveSettings();
+			}
+		}
+
+		public string SelectedOutputDtype =>
+			_selectedOutputDtypeIndex >= 0 && _selectedOutputDtypeIndex < OutputDtypeNames.Count
+				? OutputDtypeNames[_selectedOutputDtypeIndex]
+				: "float32";
+
 		public ReactiveCommand<Unit, Unit> ComputeFeaturesCommand { get; }
 
 		private CancellationTokenSource? _computeFeaturesTokenSource = null;
@@ -598,6 +640,10 @@ namespace SharpEyes.ViewModels
 			_isTemporalFrequenciesExpanded = settings.MotionEnergyTemporalFrequenciesExpanded;
 			_isDirectionsExpanded = settings.MotionEnergyDirectionsExpanded;
 			_isComputeFeaturesExpanded = settings.MotionEnergyComputeFeaturesExpanded;
+			_useFilterBatching = settings.MotionEnergyUseFilterBatching;
+			_filterBatchSize = settings.MotionEnergyFilterBatchSize;
+			int savedDtypeIndex = OutputDtypeNames.IndexOf(settings.MotionEnergyOutputDtype);
+			_selectedOutputDtypeIndex = savedDtypeIndex >= 0 ? savedDtypeIndex : 1;
 			foreach (string backendKey in settings.BackendPreference)
 				AvailableBackends.Add(new PymotenBackend(backendKey));
 			foreach (double value in settings.MotionEnergySpatialFrequencies)
@@ -739,6 +785,9 @@ namespace SharpEyes.ViewModels
 			settings.MotionEnergyTemporalFrequenciesExpanded = _isTemporalFrequenciesExpanded;
 			settings.MotionEnergyDirectionsExpanded = _isDirectionsExpanded;
 			settings.MotionEnergyComputeFeaturesExpanded = _isComputeFeaturesExpanded;
+			settings.MotionEnergyUseFilterBatching = _useFilterBatching;
+			settings.MotionEnergyFilterBatchSize = _filterBatchSize;
+			settings.MotionEnergyOutputDtype = SelectedOutputDtype;
 			settings.Save();
 		}
 
@@ -1355,6 +1404,9 @@ namespace SharpEyes.ViewModels
 
 				// Phase 3: extract features (indeterminate progress)
 				motionEnergyFeatures.Backend = SelectedBackendKey;
+				motionEnergyFeatures.UseFilterBatching = _useFilterBatching;
+				motionEnergyFeatures.FilterBatchSize = _filterBatchSize;
+				motionEnergyFeatures.OutputDtype = SelectedOutputDtype;
 				StatusText = "Computing motion energy...";
 				IsProgressBarIndeterminate = true;
 				NDArray features;
@@ -1388,7 +1440,7 @@ namespace SharpEyes.ViewModels
 				string? savePath = await saveDialog.ShowAsync(MainWindow);
 				if (savePath != null)
 				{
-					await Task.Run(() => Num.save(savePath, features));
+					await Task.Run(() => motionEnergyFeatures.SaveFeatures(savePath));
 
 					string saveDirectory = System.IO.Path.GetDirectoryName(savePath);
 					string saveBaseName = System.IO.Path.GetFileNameWithoutExtension(savePath);
@@ -1440,6 +1492,7 @@ namespace SharpEyes.ViewModels
 					textContent.AppendLine(String.Format("  Temporal frequencies: {0}", String.Join(", ", TemporalFrequencies)));
 					textContent.AppendLine(String.Format("  Directions: {0}", String.Join(", ", Directions)));
 					textContent.AppendLine(String.Format("  Start frame: {0}", _startFrame));
+					textContent.AppendLine(String.Format("  Compute dtype: {0}", SelectedOutputDtype));
 
 					System.Text.StringBuilder csvContent = new System.Text.StringBuilder();
 					csvContent.AppendLine("Y center,X center,Direction (degrees),Spatial Frequency,Spatial Envelope,Temporal Frequency,Temporal Envelope,Temporal width,Spatial phase offset");

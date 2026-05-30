@@ -63,9 +63,29 @@ namespace SharpEyes.Models
 
 		public string Backend { get; set; } = "numpy";
 
+		// == Filter batching ==
+
+		// When true, ExtractAsync calls pymoten's project_stimulus_batched, which
+		// processes FilterBatchSize gabor filters at a time in a single matrix
+		// multiply instead of one filter at a time. Batching is over filters: a
+		// larger batch is faster but uses more memory.
+		public bool UseFilterBatching { get; set; } = false;
+		public int FilterBatchSize { get; set; } = 128;
+
+		// Precision of pymoten's response accumulators (e.g. "float16",
+		// "float32", "float64"). Lower precision uses less memory. Features are
+		// saved to disk at this dtype; C# reads them back as float32 for
+		// visualization.
+		public string OutputDtype { get; set; } = "float32";
+
 		// == Pyramid state (runtime, not persisted) ==
 
 		private PyObject? _pyramidObject = null;
+
+		// Most recently computed features retained at the compute dtype so they
+		// can be saved to disk at that dtype. C# reads the features back as
+		// float32 separately for visualization. Released on the next ExtractAsync.
+		private PyObject? _lastFeatures = null;
 
 		public int FilterCount { get; private set; } = 0;
 		public List<MotionEnergyFilterParameters> FilterParameters { get; private set; } = new List<MotionEnergyFilterParameters>();
@@ -166,20 +186,40 @@ namespace SharpEyes.Models
 						handle.Free();
 					}
 
-					dynamic result = ((dynamic)_pyramidObject).project_stimulus(npArray).cpu().numpy(); // this is a float32
-					nFeatures = (int)result.shape[1];
-
-					// Convert numpy result back to C#
-					byte[] resultBytes = (byte[])result.tobytes();
-					resultData = new float[nFrames * nFeatures];
-					Buffer.BlockCopy(resultBytes, 0, resultData, 0, resultBytes.Length);
-
-					dynamic gc = Py.Import("gc");
-					gc.collect();
-					if (Backend == "torch_cuda")
+					try
 					{
-						dynamic torch = Py.Import("torch");
-						torch.cuda.empty_cache();
+						// Batching is over filters: project_stimulus_batched processes
+						// FilterBatchSize gabor filters per matrix multiply, while
+						// project_stimulus processes one filter at a time.
+						dynamic projection = UseFilterBatching
+							? ((dynamic)_pyramidObject).project_stimulus_batched(npArray, batch_size: new PyInt(FilterBatchSize), dtype: new PyString(OutputDtype))
+							: ((dynamic)_pyramidObject).project_stimulus(npArray, dtype: new PyString(OutputDtype));
+						// Move off the GPU at the compute dtype and retain it so the
+						// features can be saved to disk at that dtype.
+						PyObject computedFeatures = projection.cpu().numpy();
+						_lastFeatures?.Dispose();
+						_lastFeatures = computedFeatures;
+						// C# reads the features back as float32 for visualization only.
+						dynamic result = ((dynamic)computedFeatures).astype(np.float32);
+						nFeatures = (int)result.shape[1];
+
+						// Convert numpy result back to C#
+						byte[] resultBytes = (byte[])result.tobytes();
+						resultData = new float[nFrames * nFeatures];
+						Buffer.BlockCopy(resultBytes, 0, resultData, 0, resultBytes.Length);
+					}
+					finally
+					{
+						// Free Python and GPU memory even when the projection throws
+						// (e.g. CUDA out-of-memory) so a failed run does not leave VRAM
+						// allocated.
+						dynamic gc = Py.Import("gc");
+						gc.collect();
+						if (Backend == "torch_cuda")
+						{
+							dynamic torch = Py.Import("torch");
+							torch.cuda.empty_cache();
+						}
 					}
 				}
 
@@ -187,6 +227,22 @@ namespace SharpEyes.Models
 				progress.Report(1.0);
 				return output;
 			});
+		}
+
+		/// <summary>
+		/// Saves the most recently computed motion-energy features to a NumPy .npy
+		/// file at the compute dtype they were produced in. Does nothing if no
+		/// features have been computed. Must be called after ExtractAsync.
+		/// </summary>
+		/// <param name="path">Destination .npy file path.</param>
+		public void SaveFeatures(string path)
+		{
+			if (_lastFeatures == null) return;
+			using (Py.GIL())
+			{
+				dynamic np = Py.Import("numpy");
+				np.save(path, _lastFeatures);
+			}
 		}
 
 		// Copies parameter values from Settings into this model.

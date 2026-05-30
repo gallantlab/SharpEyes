@@ -296,9 +296,24 @@
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Compute dtype</TextBlock>
+                                <ComboBox Margin="4" Width="150" Items="{Binding OutputDtypeNames}"
+                                          SelectedIndex="{Binding SelectedOutputDtypeIndex}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Start frame</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding StartFrame}" Increment="1"
                                                Minimum="0"
+                                               FormatString="0" />
+                            </StackPanel>
+                            <ToggleSwitch Margin="4" HorizontalAlignment="Left"
+                                          OnContent="Batch filters" OffContent="Batch filters"
+                                          IsChecked="{Binding UseFilterBatching}"
+                                          ToolTip.Tip="Batching is over filters: the batch size is the number of motion-energy filters processed together in one matrix multiply. Larger values run faster but use more memory; lower the batch size if the GPU runs out of memory." />
+                            <StackPanel Orientation="Horizontal" IsVisible="{Binding UseFilterBatching}">
+                                <TextBlock VerticalAlignment="Center" Width="150">Filter batch size</TextBlock>
+                                <NumericUpDown Margin="4" Width="150" Value="{Binding FilterBatchSize}" Increment="1"
+                                               Minimum="1"
                                                FormatString="0" />
                             </StackPanel>
                             <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180"
