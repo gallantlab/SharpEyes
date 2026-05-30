@@ -20,7 +20,7 @@ There are no prebuilt executable for macOS. To run on macOS, [build the project 
 
 <img src="assets/general%20settings.png" width="600" />
 
-SharpEyes can parse Eyelink files. The text files that you get out of the Eyelink coverter are out-of-the-box parsable. To be able to parse the EDF files directly, you need to provide your own copy of SR Research's edfapi library. It has to be either in the system library path, or you can set a path in the settings for SharpEyes to look for it.
+SharpEyes can parse Eyelink files. The text files that you get out of the Eyelink converter are out-of-the-box parsable. To be able to parse the EDF files directly, you need to provide your own copy of SR Research's edfapi library. It has to be either in the system library path, or you can set a path in the settings for SharpEyes to look for it.
 
 ## Python interop setup
 
