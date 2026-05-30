@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Publish SharpEyes to folder" type="DotNetFolderPublish" factoryName="Publish to folder">
+    <riderPublish configuration="Linux Release" delete_existing_files="true" platform="x64" produce_single_file="true" ready_to_run="true" self_contained="true" target_folder="$PROJECT_DIR$/SharpEyes/Release" target_framework="net10.0" uuid_high="4325477997295258908" uuid_low="-6327923102395661176">
+      <runtimes>
+        <item value="linux-x64" />
+      </runtimes>
+    </riderPublish>
+    <method v="2" />
+  </configuration>
+</component>
