@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using NumSharp;
 
 namespace Eyetracking
@@ -93,7 +94,7 @@ namespace Eyetracking
 		{
 			int halfWindow = windowSize / 2;
 			double[] result = new double[data.Length];
-			for (int i = 0; i < data.Length; i++)
+			Parallel.For(0, data.Length, i =>
 			{
 				int start = Math.Max(0, i - halfWindow);
 				int end = Math.Min(data.Length - 1, i + halfWindow);
@@ -101,7 +102,7 @@ namespace Eyetracking
 				Array.Copy(data, start, window, 0, window.Length);
 				Array.Sort(window);
 				result[i] = window[window.Length / 2];
-			}
+			});
 			return result;
 		}
 
