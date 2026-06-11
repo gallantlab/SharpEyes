@@ -65,12 +65,12 @@ namespace SharpEyes.Models
 
 		// == Filter batching ==
 
-		// When true, ExtractAsync calls pymoten's project_stimulus_batched, which
-		// processes FilterBatchSize gabor filters at a time in a single matrix
-		// multiply instead of one filter at a time. Batching is over filters: a
-		// larger batch is faster but uses more memory.
-		public bool UseFilterBatching { get; set; } = false;
+		// Batch process filter repsonses?
+		public bool BatchFilters { get; set; } = false;
 		public int FilterBatchSize { get; set; } = 128;
+
+		// Frame batch size, if null, process all in one go
+		public int? FrameBatchSize { get; set; } = null;
 
 		// Precision of pymoten's response accumulators (e.g. "float16",
 		// "float32", "float64"). Lower precision uses less memory. Features are
@@ -188,12 +188,10 @@ namespace SharpEyes.Models
 
 					try
 					{
-						// Batching is over filters: project_stimulus_batched processes
-						// FilterBatchSize gabor filters per matrix multiply, while
-						// project_stimulus processes one filter at a time.
-						dynamic projection = UseFilterBatching
-							? ((dynamic)_pyramidObject).project_stimulus_batched(npArray, batch_size: new PyInt(FilterBatchSize), dtype: new PyString(OutputDtype))
-							: ((dynamic)_pyramidObject).project_stimulus(npArray, dtype: new PyString(OutputDtype));
+						// Batching or not matching we call the same method just to make logic easier
+						dynamic projection = ((dynamic)_pyramidObject).project_stimulus_batched(npArray, batch_size: new PyInt(BatchFilters ? FilterBatchSize : 1), 
+																								dtype: new PyString(OutputDtype),
+																								stimulus_batch_size: FrameBatchSize.HasValue? new PyInt(FrameBatchSize.Value) : null);
 						// Move off the GPU at the compute dtype and retain it so the
 						// features can be saved to disk at that dtype.
 						PyObject computedFeatures = projection.cpu().numpy();

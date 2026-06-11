@@ -1432,9 +1432,10 @@ namespace SharpEyes.ViewModels
 
 				// Phase 3: extract features (indeterminate progress)
 				motionEnergyFeatures.Backend = SelectedBackendKey;
-				motionEnergyFeatures.UseFilterBatching = batchFilters;
+				motionEnergyFeatures.BatchFilters = batchFilters;
 				motionEnergyFeatures.FilterBatchSize = _filterBatchSize;
 				motionEnergyFeatures.OutputDtype = SelectedOutputDtype;
+				motionEnergyFeatures.FrameBatchSize = batchFrames ? _frameBatchSize : null;
 				StatusText = "Computing motion energy...";
 				IsProgressBarIndeterminate = true;
 				NDArray features;

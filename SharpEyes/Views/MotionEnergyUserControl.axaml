@@ -306,10 +306,13 @@
                                                Minimum="0"
                                                FormatString="0" />
                             </StackPanel>
-                            <ToggleSwitch Margin="4" HorizontalAlignment="Left"
-                                          OnContent="Batch filters" OffContent="Batch filters"
-                                          IsChecked="{Binding BatchFilters}"
-                                          ToolTip.Tip="Compute filter responses in batches? Default computes the response of one filter at a time" />
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Right" HorizontalAlignment="Right" IsVisible="{Binding BatchFilters}">All</Button>
+                                <ToggleSwitch Margin="4" HorizontalAlignment="Left"
+                                              OnContent="Batch filters" OffContent="Batch filters"
+                                              IsChecked="{Binding BatchFilters}"
+                                              ToolTip.Tip="Compute filter responses in batches? Default computes the response of one filter at a time" />
+                            </DockPanel>
                             <StackPanel Orientation="Horizontal" IsVisible="{Binding BatchFilters}">
                                 <TextBlock VerticalAlignment="Center" Width="150">Filter batch size</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding FilterBatchSize}" Increment="1"
