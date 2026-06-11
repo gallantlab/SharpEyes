@@ -330,6 +330,14 @@
                                                Minimum="1"
                                                FormatString="0" />
                             </StackPanel>
+                            <ToggleSwitch Margin="4" HorizontalAlignment="Left"
+                                          OnContent="Stimulus frames in CPU" OffContent="Stimulus frames in CPU"
+                                          IsChecked="{Binding FramesInCPU}"
+                                          ToolTip.Tip="Keep stimulus frames on CPU; copy only the current batch to the GPU rather than uploading the full tensor up front" />
+                            <ToggleSwitch Margin="4" HorizontalAlignment="Left"
+                                          OnContent="Filter responses in CPU" OffContent="Filter responses in CPU"
+                                          IsChecked="{Binding ResponsesInCPU}"
+                                          ToolTip.Tip="Accumulate filter responses on CPU; copy each batch's output off the GPU immediately rather than keeping the full response tensor in VRAM" />
                             <Button Margin="4 8 4 4" HorizontalAlignment="Center" Width="180"
                                     HorizontalContentAlignment="Center"
                                     Command="{Binding ComputeFeaturesCommand}"

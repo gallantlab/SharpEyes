@@ -58,6 +58,13 @@ namespace SharpEyes.Models
 		// features used for visualization are float32.
 		public string MotionEnergyOutputDtype { get; set; } = "float32";
 
+		// When true, only the frames in each batch are copied to the GPU rather
+		// than moving the entire stimulus tensor up front.
+		public bool MotionEnergyFramesInCPU { get; set; } = false;
+		// When true, per-batch filter responses are copied back to CPU immediately
+		// rather than accumulating the full (nimages x nfilters) array on the GPU.
+		public bool MotionEnergyResponsesInCPU { get; set; } = false;
+
 		// Expander open/close states - CalibrationUserControl
 		public bool CalibrationParametersExpanded { get; set; } = true;
 		public bool CalibrationPointsExpanded { get; set; } = true;

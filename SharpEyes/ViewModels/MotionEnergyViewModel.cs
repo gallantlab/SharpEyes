@@ -567,6 +567,28 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
+		private bool _framesInCPU = false;
+		public bool FramesInCPU
+		{
+			get => _framesInCPU;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _framesInCPU, value);
+				SaveSettings();
+			}
+		}
+
+		private bool _responsesInCPU = false;
+		public bool ResponsesInCPU
+		{
+			get => _responsesInCPU;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _responsesInCPU, value);
+				SaveSettings();
+			}
+		}
+
 		public ObservableCollection<string> OutputDtypeNames { get; } = new ObservableCollection<string>
 		{
 			"float16", "float32", "float64"
@@ -669,6 +691,8 @@ namespace SharpEyes.ViewModels
 			_filterBatchSize = settings.MotionEnergyFilterBatchSize;
 			batchFrames = settings.MotionEnergyBatchFrames;
 			_frameBatchSize = settings.MotionEnergyFrameBatchSize;
+			_framesInCPU = settings.MotionEnergyFramesInCPU;
+			_responsesInCPU = settings.MotionEnergyResponsesInCPU;
 			int savedDtypeIndex = OutputDtypeNames.IndexOf(settings.MotionEnergyOutputDtype);
 			_selectedOutputDtypeIndex = savedDtypeIndex >= 0 ? savedDtypeIndex : 1;
 			foreach (string backendKey in settings.BackendPreference)
@@ -817,6 +841,8 @@ namespace SharpEyes.ViewModels
 			settings.MotionEnergyFilterBatchSize = _filterBatchSize;
 			settings.MotionEnergyBatchFrames = batchFrames;
 			settings.MotionEnergyFrameBatchSize = _frameBatchSize;
+			settings.MotionEnergyFramesInCPU = _framesInCPU;
+			settings.MotionEnergyResponsesInCPU = _responsesInCPU;
 			settings.MotionEnergyOutputDtype = SelectedOutputDtype;
 			settings.Save();
 		}
@@ -1449,6 +1475,8 @@ namespace SharpEyes.ViewModels
 				motionEnergyFeatures.FilterBatchSize = _filterBatchSize;
 				motionEnergyFeatures.OutputDtype = SelectedOutputDtype;
 				motionEnergyFeatures.FrameBatchSize = batchFrames ? _frameBatchSize : null;
+				motionEnergyFeatures.FramesInCPU = _framesInCPU;
+				motionEnergyFeatures.ResponsesInCPU = _responsesInCPU;
 				StatusText = "Computing motion energy...";
 				IsProgressBarIndeterminate = true;
 				NDArray features;

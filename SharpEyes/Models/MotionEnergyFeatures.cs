@@ -78,6 +78,13 @@ namespace SharpEyes.Models
 		// visualization.
 		public string OutputDtype { get; set; } = "float32";
 
+		// When true, only each batch's frames are copied to the GPU rather than
+		// moving the full stimulus tensor up front.
+		public bool FramesInCPU { get; set; } = false;
+		// When true, per-batch filter responses are copied back to CPU immediately
+		// rather than accumulating the full (nimages x nfilters) tensor on the GPU.
+		public bool ResponsesInCPU { get; set; } = false;
+
 		// == Pyramid state (runtime, not persisted) ==
 
 		private PyObject? _pyramidObject = null;
@@ -189,20 +196,21 @@ namespace SharpEyes.Models
 					try
 					{
 						// Batching or not matching we call the same method just to make logic easier
-						dynamic projection = ((dynamic)_pyramidObject).project_stimulus_batched(npArray, batch_size: new PyInt(BatchFilters ? FilterBatchSize : 1), 
+						dynamic projection = ((dynamic)_pyramidObject).project_stimulus_batched(npArray, batch_size: new PyInt(BatchFilters ? FilterBatchSize : 1),
 																								dtype: new PyString(OutputDtype),
-																								stimulus_batch_size: FrameBatchSize.HasValue? new PyInt(FrameBatchSize.Value) : null);
-						// Move off the GPU at the compute dtype and retain it so the
-						// features can be saved to disk at that dtype.
-						PyObject computedFeatures = projection.cpu().numpy();
+																								stimulus_batch_size: FrameBatchSize.HasValue? new PyInt(FrameBatchSize.Value) : null,
+																								frames_in_cpu: FramesInCPU.ToPython(),
+																								responses_in_cpu: ResponsesInCPU.ToPython());
+						// if the responses were not in CPU we have to explicitly moved it back
+						PyObject computedFeatures = ResponsesInCPU ? projection : projection.cpu().numpy();
 						_lastFeatures?.Dispose();
 						_lastFeatures = computedFeatures;
 						// C# reads the features back as float32 for visualization only.
 						dynamic result = ((dynamic)computedFeatures).astype(np.float32);
 						nFeatures = (int)result.shape[1];
 
-						// Convert numpy result back to C#
-						byte[] resultBytes = (byte[])result.tobytes();
+						// Pin the C# float array and copy numpy result directly into it,
+						// avoiding the intermediate Python bytes object and cross-boundary marshal
 						resultData = new float[nFrames * nFeatures];
 						Buffer.BlockCopy(resultBytes, 0, resultData, 0, resultBytes.Length);
 					}
