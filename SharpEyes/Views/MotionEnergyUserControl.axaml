@@ -307,7 +307,7 @@
                                                FormatString="0" />
                             </StackPanel>
                             <DockPanel LastChildFill="True">
-                                <Button DockPanel.Dock="Right" HorizontalAlignment="Right" IsVisible="{Binding BatchFilters}">All</Button>
+                                <Button DockPanel.Dock="Right" HorizontalAlignment="Right" IsVisible="{Binding BatchFilters}" Command="{Binding SetAllFiltersCommand}">All</Button>
                                 <ToggleSwitch Margin="4" HorizontalAlignment="Left"
                                               OnContent="Batch filters" OffContent="Batch filters"
                                               IsChecked="{Binding BatchFilters}"

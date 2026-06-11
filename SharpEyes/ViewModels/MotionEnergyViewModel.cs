@@ -496,6 +496,7 @@ namespace SharpEyes.ViewModels
 		private float[]? _perFilterPercentile = null;
 
 		public ReactiveCommand<Unit, Unit> ComputePyramidCommand { get; }
+		public ReactiveCommand<Unit, Unit> SetAllFiltersCommand { get; }
 
 		// == Feature computation ==
 
@@ -761,6 +762,7 @@ namespace SharpEyes.ViewModels
 					SelectedDirectionIndex = -1;
 			});
 			ComputePyramidCommand = ReactiveCommand.CreateFromTask(() => ComputePyramid());
+			SetAllFiltersCommand = ReactiveCommand.CreateFromTask(() => SetAllFilters());
 			ComputeFeaturesCommand = ReactiveCommand.Create(() =>
 			{
 				if (_isComputingFeatures)
@@ -1352,6 +1354,17 @@ namespace SharpEyes.ViewModels
 				int percentileIndex = (int)Math.Ceiling(0.99 * (frameCount - 1));
 				_perFilterPercentile[column] = sortedColumn[Math.Clamp(percentileIndex, 0, frameCount - 1)];
 			}
+		}
+
+		/// <summary>
+		/// Sets the filter batch size to the total number of filters in the pyramid,
+		/// building the pyramid first if it has not yet been built.
+		/// </summary>
+		private async Task SetAllFilters()
+		{
+			if (motionEnergyFeatures.FilterCount < 1)
+				await ComputePyramid(false);
+			FilterBatchSize = motionEnergyFeatures.FilterCount;
 		}
 
 		private async Task ComputePyramid(bool updateDisplay = true)
