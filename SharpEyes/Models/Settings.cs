@@ -92,6 +92,15 @@ namespace SharpEyes.Models
 		public bool StimulusGazeFilteringExpanded { get; set; } = true;
 		public bool StimulusKeyframesExpanded { get; set; } = true;
 
+		// Gaze filter options - StimulusGazeUserControl
+		public bool GazeFilterEnabled { get; set; } = false;
+		public int GazeFilterWindowSize { get; set; } = 15;
+		public bool GazeFilterPupilSize { get; set; } = true;
+		public bool GazeFilterEnableOutlierRemoval { get; set; } = false;
+		public double GazeFilterOutlierThresholdX { get; set; } = 95;
+		public double GazeFilterOutlierThresholdY { get; set; } = 95;
+		public double GazeFilterOutlierThresholdRadius { get; set; } = 95;
+
 		public static Settings Current { get; private set; }
 
 		public static string SettingsFilePath =>

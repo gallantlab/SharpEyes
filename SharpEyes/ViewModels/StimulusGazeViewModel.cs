@@ -346,66 +346,92 @@ namespace SharpEyes.ViewModels
 		}
 
 		// Gaze filtering
-		private bool _isGazeFilterEnabled = false;
+		private bool _isGazeFilterEnabled = Settings.Current.GazeFilterEnabled;
 		public bool IsGazeFilterEnabled
 		{
 			get => _isGazeFilterEnabled;
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _isGazeFilterEnabled, value);
+				Settings.Current.GazeFilterEnabled = value;
+				Settings.Current.Save();
 				if (value)
 					ApplyFilter();
 			}
 		}
 
-		private int _filterWindowSize = 15;
+		private int _filterWindowSize = Settings.Current.GazeFilterWindowSize;
 		public int FilterWindowSize
 		{
 			get => _filterWindowSize;
-			set => this.RaiseAndSetIfChanged(ref _filterWindowSize, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _filterWindowSize, value);
+				Settings.Current.GazeFilterWindowSize = value;
+				Settings.Current.Save();
+			}
 		}
 
-		private bool _filterPupilSize = true;
+		private bool _filterPupilSize = Settings.Current.GazeFilterPupilSize;
 		public bool FilterPupilSize
 		{
 			get => _filterPupilSize;
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _filterPupilSize, value);
+				Settings.Current.GazeFilterPupilSize = value;
+				Settings.Current.Save();
 				ReapplyFilterIfEnabled();
 			}
 		}
 
-		private bool _enableOutlierRemoval = false;
+		private bool _enableOutlierRemoval = Settings.Current.GazeFilterEnableOutlierRemoval;
 		public bool EnableOutlierRemoval
 		{
 			get => _enableOutlierRemoval;
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _enableOutlierRemoval, value);
+				Settings.Current.GazeFilterEnableOutlierRemoval = value;
+				Settings.Current.Save();
 				ReapplyFilterIfEnabled();
 			}
 		}
 
-		private double _outlierThresholdX = 95;
+		private double _outlierThresholdX = Settings.Current.GazeFilterOutlierThresholdX;
 		public double OutlierThresholdX
 		{
 			get => _outlierThresholdX;
-			set => this.RaiseAndSetIfChanged(ref _outlierThresholdX, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _outlierThresholdX, value);
+				Settings.Current.GazeFilterOutlierThresholdX = value;
+				Settings.Current.Save();
+			}
 		}
 
-		private double _outlierThresholdY = 95;
+		private double _outlierThresholdY = Settings.Current.GazeFilterOutlierThresholdY;
 		public double OutlierThresholdY
 		{
 			get => _outlierThresholdY;
-			set => this.RaiseAndSetIfChanged(ref _outlierThresholdY, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _outlierThresholdY, value);
+				Settings.Current.GazeFilterOutlierThresholdY = value;
+				Settings.Current.Save();
+			}
 		}
 
-		private double _outlierThresholdRadius = 95;
+		private double _outlierThresholdRadius = Settings.Current.GazeFilterOutlierThresholdRadius;
 		public double OutlierThresholdRadius
 		{
 			get => _outlierThresholdRadius;
-			set => this.RaiseAndSetIfChanged(ref _outlierThresholdRadius, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _outlierThresholdRadius, value);
+				Settings.Current.GazeFilterOutlierThresholdRadius = value;
+				Settings.Current.Save();
+			}
 		}
 
 		private string? videoFilePath = null;
