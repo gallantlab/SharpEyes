@@ -263,6 +263,29 @@ namespace SharpEyes.Models
 			}
 		}
 
+		/// <summary>
+		/// Sets entire rows of the most recently computed feature array to zero or NaN
+		/// for the specified frame indices, modifying the retained Python array in place
+		/// using NumPy fancy indexing. Must be called after ExtractAsync and before
+		/// SaveFeatures.
+		/// </summary>
+		/// <param name="frameIndices">Zero-based row indices into the feature array for frames to fill.</param>
+		/// <param name="fillWithNaN">True to fill each row with NaN; false to fill with zero.</param>
+		public void FillMissingFrames(List<int> frameIndices, bool fillWithNaN)
+		{
+			if (_lastFeatures == null || frameIndices.Count == 0) return;
+			using (Py.GIL())
+			{
+				dynamic np = Py.Import("numpy");
+				dynamic features = (dynamic)_lastFeatures;
+				dynamic indices = np.array(frameIndices.ToArray());
+				if (fillWithNaN)
+					features[indices] = np.nan;
+				else
+					features[indices] = 0;
+			}
+		}
+
 		// Copies parameter values from Settings into this model.
 		public void LoadFromSettings(Settings settings)
 		{

@@ -301,6 +301,17 @@
                                           SelectedIndex="{Binding SelectedOutputDtypeIndex}" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" Width="150">Missing gaze</TextBlock>
+                                <ComboBox Margin="4" Width="150" Items="{Binding MissingGazeTreatmentNames}"
+                                          SelectedIndex="{Binding SelectedMissingGazeTreatmentIndex}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Start frame</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding StartFrame}" Increment="1"
                                                Minimum="0"

@@ -26,6 +26,13 @@ namespace SharpEyes.ViewModels
 		Logarithmic
 	}
 
+	public enum MissingGazeTreatment
+	{
+		Zeros,
+		NaN,
+		DoNothing
+	}
+
 	public class PyramidCircleOverlay
 	{
 		public double Left { get; set; }
@@ -609,6 +616,20 @@ namespace SharpEyes.ViewModels
 			_selectedOutputDtypeIndex >= 0 && _selectedOutputDtypeIndex < OutputDtypeNames.Count
 				? OutputDtypeNames[_selectedOutputDtypeIndex]
 				: "float32";
+
+		public ObservableCollection<string> MissingGazeTreatmentNames { get; } = new ObservableCollection<string>
+		{
+			"Zeros", "NaN", "Do nothing"
+		};
+
+		private int _selectedMissingGazeTreatmentIndex = 0;
+		public int SelectedMissingGazeTreatmentIndex
+		{
+			get => _selectedMissingGazeTreatmentIndex;
+			set => this.RaiseAndSetIfChanged(ref _selectedMissingGazeTreatmentIndex, value);
+		}
+
+		private MissingGazeTreatment SelectedMissingGazeTreatment => (MissingGazeTreatment)_selectedMissingGazeTreatmentIndex;
 
 		public ReactiveCommand<Unit, Unit> ComputeFeaturesCommand { get; }
 
@@ -1404,6 +1425,31 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
+		/// <summary>
+		/// Returns the zero-based row indices in the feature array for which no valid gaze
+		/// data exists (i.e., gaze X or Y is NaN at the corresponding eyetracking sample).
+		/// Uses the current gaze locations, data start frame, and FPS settings.
+		/// </summary>
+		/// <param name="startFrame">Video frame number corresponding to feature array row zero.</param>
+		/// <param name="frameCount">Total number of rows in the feature array.</param>
+		/// <returns>A list of row indices with missing gaze data.</returns>
+		private List<int> FindMissingGazeFrameIndices(int startFrame, int frameCount)
+		{
+			List<int> missingIndices = new List<int>();
+			if ((object)_gazeLocations == null) return missingIndices;
+			int gazeRowCount = _gazeLocations.Shape[0];
+			for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
+			{
+				int videoFrame = startFrame + frameIndex;
+				int dataIndex = Math.Clamp(VideoTimeToDataIndex(videoFrame), 0, gazeRowCount - 1);
+				double gazeX = (double)_gazeLocations[dataIndex, 0];
+				double gazeY = (double)_gazeLocations[dataIndex, 1];
+				if (Double.IsNaN(gazeX) || Double.IsNaN(gazeY))
+					missingIndices.Add(frameIndex);
+			}
+			return missingIndices;
+		}
+
 		private async Task ComputeFeatures()
 		{
 			if (_videoReader == null || (object)_gazeLocations == null || _dataStartFrame == null) return;
@@ -1472,6 +1518,18 @@ namespace SharpEyes.ViewModels
 				{
 					StatusText = String.Format("Error computing motion energy: {0}", exception.Message);
 					return;
+				}
+
+				// Apply missing-gaze treatment
+				if (SelectedMissingGazeTreatment != MissingGazeTreatment.DoNothing)
+				{
+					List<int> missingFrameIndices = FindMissingGazeFrameIndices(_startFrame, features.Shape[0]);
+					if (missingFrameIndices.Count > 0)
+					{
+						bool fillWithNaN = SelectedMissingGazeTreatment == MissingGazeTreatment.NaN;
+						motionEnergyFeatures.FillMissingFrames(missingFrameIndices, fillWithNaN);
+						features[missingFrameIndices.ToArray()] = fillWithNaN ? float.NaN : 0.0f;
+					}
 				}
 
 				_motionEnergyFeatures = features;
