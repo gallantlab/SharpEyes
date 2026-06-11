@@ -520,13 +520,14 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _startFrame, value);
 		}
 
-		private bool _useFilterBatching = false;
-		public bool UseFilterBatching
+		// batch over motion-energy filters?
+		private bool batchFilters = false;
+		public bool BatchFilters
 		{
-			get => _useFilterBatching;
+			get => batchFilters;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _useFilterBatching, value);
+				this.RaiseAndSetIfChanged(ref batchFilters, value);
 				SaveSettings();
 			}
 		}
@@ -538,6 +539,29 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _filterBatchSize, value);
+				SaveSettings();
+			}
+		}
+		
+		// batch over stimulus frames?
+		private bool batchFrames = false;
+		public bool BatchFrames
+		{
+			get => batchFrames;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref batchFrames, value);
+				SaveSettings();
+			}
+		}
+		
+		private int _frameBatchSize = 128;
+		public int FrameBatchSize
+		{
+			get => _frameBatchSize;
+			set
+			{
+				this.RaiseAndSetIfChanged(ref _frameBatchSize, value);
 				SaveSettings();
 			}
 		}
@@ -640,8 +664,10 @@ namespace SharpEyes.ViewModels
 			_isTemporalFrequenciesExpanded = settings.MotionEnergyTemporalFrequenciesExpanded;
 			_isDirectionsExpanded = settings.MotionEnergyDirectionsExpanded;
 			_isComputeFeaturesExpanded = settings.MotionEnergyComputeFeaturesExpanded;
-			_useFilterBatching = settings.MotionEnergyUseFilterBatching;
+			batchFilters = settings.MotionEnergyUseFilterBatching;
 			_filterBatchSize = settings.MotionEnergyFilterBatchSize;
+			batchFrames = settings.MotionEnergyBatchFrames;
+			_frameBatchSize = settings.MotionEnergyFrameBatchSize;
 			int savedDtypeIndex = OutputDtypeNames.IndexOf(settings.MotionEnergyOutputDtype);
 			_selectedOutputDtypeIndex = savedDtypeIndex >= 0 ? savedDtypeIndex : 1;
 			foreach (string backendKey in settings.BackendPreference)
@@ -785,8 +811,10 @@ namespace SharpEyes.ViewModels
 			settings.MotionEnergyTemporalFrequenciesExpanded = _isTemporalFrequenciesExpanded;
 			settings.MotionEnergyDirectionsExpanded = _isDirectionsExpanded;
 			settings.MotionEnergyComputeFeaturesExpanded = _isComputeFeaturesExpanded;
-			settings.MotionEnergyUseFilterBatching = _useFilterBatching;
+			settings.MotionEnergyUseFilterBatching = batchFilters;
 			settings.MotionEnergyFilterBatchSize = _filterBatchSize;
+			settings.MotionEnergyBatchFrames = batchFrames;
+			settings.MotionEnergyFrameBatchSize = _frameBatchSize;
 			settings.MotionEnergyOutputDtype = SelectedOutputDtype;
 			settings.Save();
 		}
@@ -1404,7 +1432,7 @@ namespace SharpEyes.ViewModels
 
 				// Phase 3: extract features (indeterminate progress)
 				motionEnergyFeatures.Backend = SelectedBackendKey;
-				motionEnergyFeatures.UseFilterBatching = _useFilterBatching;
+				motionEnergyFeatures.UseFilterBatching = batchFilters;
 				motionEnergyFeatures.FilterBatchSize = _filterBatchSize;
 				motionEnergyFeatures.OutputDtype = SelectedOutputDtype;
 				StatusText = "Computing motion energy...";

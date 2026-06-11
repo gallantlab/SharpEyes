@@ -48,6 +48,10 @@ namespace SharpEyes.Models
 		// gabor filters at a time. Batching is over filters.
 		public bool MotionEnergyUseFilterBatching { get; set; } = false;
 		public int MotionEnergyFilterBatchSize { get; set; } = 128;
+		
+		// Batch over stimulus frames?
+		public bool MotionEnergyBatchFrames { get; set; } = true;
+		public int MotionEnergyFrameBatchSize { get; set; } = 1000;
 
 		// Precision of pymoten's response accumulators. Lower precision uses
 		// less memory. Features are saved to disk at this dtype; the in-memory

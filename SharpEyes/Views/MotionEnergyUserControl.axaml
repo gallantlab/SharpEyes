@@ -308,11 +308,22 @@
                             </StackPanel>
                             <ToggleSwitch Margin="4" HorizontalAlignment="Left"
                                           OnContent="Batch filters" OffContent="Batch filters"
-                                          IsChecked="{Binding UseFilterBatching}"
-                                          ToolTip.Tip="Batching is over filters: the batch size is the number of motion-energy filters processed together in one matrix multiply. Larger values run faster but use more memory; lower the batch size if the GPU runs out of memory." />
-                            <StackPanel Orientation="Horizontal" IsVisible="{Binding UseFilterBatching}">
+                                          IsChecked="{Binding BatchFilters}"
+                                          ToolTip.Tip="Compute filter responses in batches? Default computes the response of one filter at a time" />
+                            <StackPanel Orientation="Horizontal" IsVisible="{Binding BatchFilters}">
                                 <TextBlock VerticalAlignment="Center" Width="150">Filter batch size</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding FilterBatchSize}" Increment="1"
+                                               Minimum="1"
+                                               FormatString="0" />
+                            </StackPanel>
+                            
+                            <ToggleSwitch Margin="4" HorizontalAlignment="Left"
+                                          OnContent="Batch frames" OffContent="Batch frames"
+                                          IsChecked="{Binding BatchFrames}"
+                                          ToolTip.Tip="Split stimulus frame into batches instead of doing all of them at one go?" />
+                            <StackPanel Orientation="Horizontal" IsVisible="{Binding BatchFrames}">
+                                <TextBlock VerticalAlignment="Center" Width="150">Frame batch size</TextBlock>
+                                <NumericUpDown Margin="4" Width="150" Value="{Binding FrameBatchSize}" Increment="1"
                                                Minimum="1"
                                                FormatString="0" />
                             </StackPanel>
