@@ -1355,31 +1355,13 @@ namespace SharpEyes.ViewModels
 				return;
 			}
 
-			int frameCount = _motionEnergyFeatures.Shape[0];
-			int filterCount = _motionEnergyFeatures.Shape[1];
-			float[] flatFeatures = _motionEnergyFeatures.ToArray<float>();
-			_perFilterMax = new float[filterCount];
-			_perFilterPercentile = new float[filterCount];
-			_globalMax = 0;
-			float[] columnValues = new float[frameCount];
+			NDArray columnMaxes = np.amax(_motionEnergyFeatures, axis: 0);
+			_perFilterMax = columnMaxes.ToArray<float>();
+			_globalMax = (float)np.amax(_motionEnergyFeatures);
 
-			for (int column = 0; column < filterCount; column++)
-			{
-				float columnMax = 0;
-				for (int row = 0; row < frameCount; row++)
-				{
-					float value = flatFeatures[row * filterCount + column];
-					columnValues[row] = value;
-					if (value > columnMax) columnMax = value;
-				}
-				_perFilterMax[column] = columnMax;
-				if (columnMax > _globalMax) _globalMax = columnMax;
-
-				float[] sortedColumn = (float[])columnValues.Clone();
-				Array.Sort(sortedColumn);
-				int percentileIndex = (int)Math.Ceiling(0.99 * (frameCount - 1));
-				_perFilterPercentile[column] = sortedColumn[Math.Clamp(percentileIndex, 0, frameCount - 1)];
-			}
+			NDArray columnMeans = np.mean(_motionEnergyFeatures, axis: 0);
+			NDArray columnStds = np.std(_motionEnergyFeatures, axis: 0);
+			_perFilterPercentile = (columnMeans + 2.326 * columnStds).ToArray<float>();
 		}
 
 		/// <summary>
@@ -1498,8 +1480,8 @@ namespace SharpEyes.ViewModels
 				_areFilterResponsesStale = false;
 				this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
 				this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
-				ComputeNormalizationStatistics();
-				await BuildDynamicOverlay();
+				Task.Run(() => ComputeNormalizationStatistics());
+				BuildDynamicOverlay();
 				IsProgressBarIndeterminate = false;
 				IsProgressBarVisible = false;
 

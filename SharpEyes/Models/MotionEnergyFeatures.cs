@@ -212,7 +212,19 @@ namespace SharpEyes.Models
 						// Pin the C# float array and copy numpy result directly into it,
 						// avoiding the intermediate Python bytes object and cross-boundary marshal
 						resultData = new float[nFrames * nFeatures];
-						Buffer.BlockCopy(resultBytes, 0, resultData, 0, resultBytes.Length);
+						GCHandle outputHandle = GCHandle.Alloc(resultData, GCHandleType.Pinned);
+						try
+						{
+							long outputPtr = outputHandle.AddrOfPinnedObject().ToInt64();
+							dynamic outputCArrayType = ctypes.c_float * resultData.Length;
+							dynamic outputCArray = outputCArrayType.from_address(outputPtr);
+							dynamic outputNpArray = npCtypeslib.as_array(outputCArray);
+							np.copyto(outputNpArray, result.reshape(-1));
+						}
+						finally
+						{
+							outputHandle.Free();
+						}
 					}
 					finally
 					{
