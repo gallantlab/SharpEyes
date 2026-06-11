@@ -852,9 +852,10 @@ namespace SharpEyes.ViewModels
 				EyetrackingFPS = capturedSampleRate;
 			IsGazeLoaded = true;
 			gazeFileName = fileName[0];
-			ReapplyFilterIfEnabled();
 			if (videoReader != null)
 				SetCurrentAsDataStart();
+			if (_isGazeFilterEnabled)
+				await ApplyFilter();
 			IsLoadingGaze = false;
 		}
 
@@ -957,7 +958,7 @@ namespace SharpEyes.ViewModels
 				ApplyFilter();
 		}
 
-		private async void ApplyFilter()
+		private async Task ApplyFilter()
 		{
 			if ((object)RawGazeLocations == null) return;
 
