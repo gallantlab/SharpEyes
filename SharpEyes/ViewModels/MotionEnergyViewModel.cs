@@ -1036,7 +1036,7 @@ namespace SharpEyes.ViewModels
 
 			Dictionary<double, double> strokeThicknessBySize = new Dictionary<double, double>();
 			for (int index = 0; index < uniqueSpatialEnvelopes.Count; index++)
-				strokeThicknessBySize[uniqueSpatialEnvelopes[index]] = index + 1;
+				strokeThicknessBySize[uniqueSpatialEnvelopes[index]] = (index * 2) + 1;
 			return strokeThicknessBySize;
 		}
 
