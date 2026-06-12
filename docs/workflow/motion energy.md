@@ -31,6 +31,9 @@ These control the filter bank that PyMoten uses to decompose the video into moti
 | Temporal frequencies | The temporal frequencies (cycles/second) to include in the pyramid. Select multiple; use + and − to add or remove values. |
 | Directions | The motion directions (degrees) to include in the pyramid. Select multiple; use + and − to add or remove values. |
 | Show motion-energy pyramid | When enabled, the pyramid filters are overlaid on the video preview as circles and arrows so you can verify coverage. |
+| Show dynamic responses | When enabled, the pyramid overlay is colored by the computed filter responses for the current frame. Only available after a feature extraction run completes. A warning is shown if filter parameters have changed since the last extraction, in which case the responses are stale and should be recomputed. |
+| Response scaling | Controls how filter responses are normalized before being mapped to opacity. Options: **Per-filter** (each filter is normalized against its own maximum), **Global** (all filters share the same maximum), **Percentile** (uses the 95th percentile as the ceiling), **Logarithmic** (log-scaled). |
+| Max opacity | Maximum opacity applied to the dynamic response overlay elements at full response strength. |
 
 Click **Compute pyramid** to compute and display the pyramid for the current frame. Click **Restore defaults** to reset the pyramid parameters to their defaults.
 
@@ -49,7 +52,19 @@ The preferred backend order is configured in Python Settings. After a compute ru
 
 ## Compute features
 
-Once the frame parameters, pyramid, and backend are configured, click **Compute features** to run the full feature extraction over the video. Set **Start frame** to begin extraction from a specific frame rather than the beginning. While computing, the button changes to **Cancel** to interrupt the run.
+Once the frame parameters, pyramid, and backend are configured, click **Compute features** to run the full feature extraction over the video. The following options are available before running:
+
+| Control | Description |
+|---|---|
+| Compute dtype | Floating-point precision of the output features array: `float16`, `float32` (default), or `float64`. |
+| Missing gaze | How to handle video frames where gaze position is absent or invalid. **Zeros** fills those rows in the output with zeros; **NaN** fills them with NaN; **Do nothing** leaves them unchanged. |
+| Start frame | Frame number at which extraction begins. |
+| Batch filters | When enabled, filter responses are computed in groups rather than one filter at a time. Useful on backends that can parallelize across filters. Set **Filter batch size** to control how many filters are processed per batch. The **All** button sets the batch size to the total number of filters. |
+| Batch frames | When enabled, the stimulus frames are split into batches rather than processed all at once. Set **Frame batch size** to control how many frames are included per batch. |
+| Stimulus frames in CPU | Keep the full stimulus frame tensor on CPU; only the current batch is transferred to the GPU. Reduces peak GPU memory use when frame batching is on. |
+| Filter responses in CPU | Accumulate the filter response tensor on CPU; each batch's output is copied off the GPU immediately rather than held in VRAM for the full run. Reduces peak GPU memory use when filter batching is on. |
+
+While computing, the button changes to **Cancel** to interrupt the run.
 
 After extraction completes, a save dialog prompts for the output path. Three files are saved, all sharing the same base name:
 
