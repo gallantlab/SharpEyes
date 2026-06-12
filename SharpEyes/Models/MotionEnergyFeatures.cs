@@ -195,7 +195,7 @@ namespace SharpEyes.Models
 
 					try
 					{
-						// Batching or not matching we call the same method just to make logic easier
+						// Batching or not batching we call the same method just to make logic easier
 						dynamic projection = ((dynamic)_pyramidObject).project_stimulus_batched(npArray, batch_size: new PyInt(BatchFilters ? FilterBatchSize : 1),
 																								dtype: new PyString(OutputDtype),
 																								stimulus_batch_size: FrameBatchSize.HasValue? new PyInt(FrameBatchSize.Value) : null,
@@ -282,7 +282,7 @@ namespace SharpEyes.Models
 				if (fillWithNaN)
 					features[indices] = np.nan;
 				else
-					features[indices] = 0;
+					features[indices] = new PyInt(0);
 			}
 		}
 

@@ -1508,17 +1508,9 @@ namespace SharpEyes.ViewModels
 				StatusText = "Computing motion energy...";
 				IsProgressBarIndeterminate = true;
 				NDArray features;
-				try
-				{
-					IProgress<double> extractProgress = new Progress<double>(_ => { });
-					features = await motionEnergyFeatures.ExtractAsync(frames, extractProgress);
-				}
-				catch (OperationCanceledException) { throw; }
-				catch (Exception exception)
-				{
-					StatusText = String.Format("Error computing motion energy: {0}", exception.Message);
-					return;
-				}
+				
+				IProgress<double> extractProgress = new Progress<double>(_ => { });
+				features = await motionEnergyFeatures.ExtractAsync(frames, extractProgress);
 
 				// Apply missing-gaze treatment
 				if (SelectedMissingGazeTreatment != MissingGazeTreatment.DoNothing)
@@ -1528,7 +1520,7 @@ namespace SharpEyes.ViewModels
 					{
 						bool fillWithNaN = SelectedMissingGazeTreatment == MissingGazeTreatment.NaN;
 						motionEnergyFeatures.FillMissingFrames(missingFrameIndices, fillWithNaN);
-						features[missingFrameIndices.ToArray()] = fillWithNaN ? float.NaN : 0.0f;
+						features[new NDArray(missingFrameIndices.ToArray())] = fillWithNaN ? float.NaN : 0.0f;
 					}
 				}
 
@@ -1629,6 +1621,10 @@ namespace SharpEyes.ViewModels
 			catch (OperationCanceledException)
 			{
 				StatusText = "Cancelled.";
+			}
+			catch (Exception exception)
+			{
+				StatusText = String.Format("Error computing motion energy: {0}", exception.Message);
 			}
 			finally
 			{
