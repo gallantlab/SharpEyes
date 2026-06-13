@@ -46,8 +46,6 @@
                         <views:MotionEnergyOverlayControl
                             Circles="{Binding PyramidCircles}"
                             Arrows="{Binding PyramidArrows}"
-                            DynamicCircles="{Binding DynamicCircles}"
-                            DynamicSpokes="{Binding DynamicSpokes}"
                             RenderTrigger="{Binding OverlayRenderTrigger}"
                             Width="{Binding CanvasWidth}"
                             Height="{Binding CanvasHeight}"
@@ -96,14 +94,16 @@
                     <Expander Margin="4 2" IsExpanded="{Binding IsFrameParametersExpanded}" Header="Motion-energy frame parameters"
                               HorizontalContentAlignment="Center">
                         <StackPanel>
-                            <ToggleSwitch OffContent="Frame preview" OnContent="Frame preview" IsChecked="{Binding IsPreview}"></ToggleSwitch>
+                            <ToggleSwitch OffContent="Frame preview" OnContent="Frame preview" IsChecked="{Binding IsPreview}"
+                                          ToolTip.Tip="Show the actual pixel values that PyMoten will see?" />
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Pad percent</TextBlock>
                                 <NumericUpDown Margin="4" Width="150" Value="{Binding PadPercent}" Increment="10"
                                                Minimum="100"
                                                FormatString="0"
                                                LostFocus="FilterParameterControl_LostFocus"
-                                               KeyDown="FilterParameterControl_KeyDown" />
+                                               KeyDown="FilterParameterControl_KeyDown"
+                                               ToolTip.Tip="Padding added around each frame, as a percentage of the original frame size." />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Pad value</TextBlock>
@@ -112,7 +112,8 @@
                                                FormatString="0.00"
                                                Tag="NoPyramidRebuild"
                                                LostFocus="FilterParameterControl_LostFocus"
-                                               KeyDown="FilterParameterControl_KeyDown" />
+                                               KeyDown="FilterParameterControl_KeyDown"
+                                               ToolTip.Tip="Pixel intensity (0.0–1.0) of the padding area." />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Frame scale</TextBlock>
@@ -120,7 +121,8 @@
                                                Minimum="0.01" Maximum="1.0"
                                                FormatString="0.000"
                                                LostFocus="FilterParameterControl_LostFocus"
-                                               KeyDown="FilterParameterControl_KeyDown" />
+                                               KeyDown="FilterParameterControl_KeyDown"
+                                               ToolTip.Tip="Scale factor applied to each frame before processing." />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0 4 0 0">
                                 <TextBlock VerticalAlignment="Center" Width="150">Output frame</TextBlock>
@@ -147,7 +149,8 @@
                                                Minimum="1"
                                                FormatString="0.##"
                                                LostFocus="FilterParameterControl_LostFocus"
-                                               KeyDown="FilterParameterControl_KeyDown" />
+                                               KeyDown="FilterParameterControl_KeyDown"
+                                               ToolTip.Tip="Frame rate of the stimulus video." />
                             </StackPanel>
 
                             <Expander Margin="0 8 0 0" IsExpanded="{Binding IsSpatialFrequenciesExpanded}"
@@ -244,11 +247,13 @@
                             </Expander>
                             <ToggleSwitch Margin="0 8 0 0" OnContent="Show motion-energy pyramid"
                                           OffContent="Show motion-energy pyramid"
-                                          IsChecked="{Binding ShowMotionEnergyPyramid}" />
+                                          IsChecked="{Binding ShowMotionEnergyPyramid}"
+                                          ToolTip.Tip="Show motion-energy filter overlay?" />
                             <ToggleSwitch Margin="0 4 0 0" OnContent="Show dynamic responses"
                                           OffContent="Show dynamic responses"
                                           IsEnabled="{Binding CanShowDynamicOverlay}"
-                                          IsChecked="{Binding ShowDynamicOverlay}" />
+                                          IsChecked="{Binding IsOverlayOpacityDynamic}"
+                                          ToolTip.Tip="Show dynamic filter responses?" />
                             <TextBlock Margin="0 2 0 0" Foreground="#CC8800" TextWrapping="Wrap"
                                        IsVisible="{Binding IsDynamicOverlayStale}"
                                        Text="Filter parameters changed. Recompute features to update the dynamic responses." />
