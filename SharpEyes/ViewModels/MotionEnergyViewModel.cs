@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Mat = OpenCvSharp.Mat;
@@ -38,7 +39,6 @@ namespace SharpEyes.ViewModels
 		public double Left { get; set; }
 		public double Top { get; set; }
 		public double Diameter { get; set; }
-		public IBrush Stroke { get; set; }
 		public double StrokeThickness { get; set; }
 		// Dynamic-overlay fields: the indices of every filter at this spatial
 		// location (used to average their responses), the base color before
@@ -46,6 +46,18 @@ namespace SharpEyes.ViewModels
 		public List<int> FilterIndices { get; set; }
 		public Color BaseColor { get; set; }
 		public double CurrentOpacity { get; set; } = 1.0;
+		// Cached pen carrying the base color at the current opacity, rebuilt only when the
+		// opacity changes so that rendering allocates no brush or pen per element per frame.
+		public IPen Pen { get; private set; }
+
+		/// <summary>
+		/// Rebuilds the cached pen from the base color, the opacity for the current frame,
+		/// and the stroke thickness. Must be called after the opacity changes.
+		/// </summary>
+		public void RefreshPen()
+		{
+			Pen = PyramidOverlayPen.Build(BaseColor, CurrentOpacity, StrokeThickness);
+		}
 	}
 
 	public class PyramidArrowOverlay
@@ -53,7 +65,6 @@ namespace SharpEyes.ViewModels
 		public double CanvasLeft { get; set; }
 		public double CanvasTop { get; set; }
 		public Geometry Geometry { get; set; }
-		public IBrush Stroke { get; set; }
 		public double StrokeThickness { get; set; }
 		// Dynamic-overlay fields: the index of the single filter this spoke line
 		// draws from, the base color before opacity is applied, and the opacity
@@ -61,6 +72,40 @@ namespace SharpEyes.ViewModels
 		public int FilterIndex { get; set; }
 		public Color BaseColor { get; set; }
 		public double CurrentOpacity { get; set; } = 1.0;
+		// Cached pen carrying the base color at the current opacity, rebuilt only when the
+		// opacity changes so that rendering allocates no brush or pen per element per frame.
+		public IPen Pen { get; private set; }
+
+		/// <summary>
+		/// Rebuilds the cached pen from the base color, the opacity for the current frame,
+		/// and the stroke thickness. Must be called after the opacity changes.
+		/// </summary>
+		public void RefreshPen()
+		{
+			Pen = PyramidOverlayPen.Build(BaseColor, CurrentOpacity, StrokeThickness);
+		}
+	}
+
+	/// <summary>
+	/// Builds immutable pens for the motion-energy overlay elements. The pens are immutable
+	/// so they can be cached on each element and reused across renders, which avoids
+	/// allocating a brush and pen for every element on every frame.
+	/// </summary>
+	internal static class PyramidOverlayPen
+	{
+		/// <summary>
+		/// Builds an immutable pen carrying a base color at a given opacity and thickness.
+		/// </summary>
+		/// <param name="baseColor">The element's base color before opacity is applied.</param>
+		/// <param name="opacity">The opacity for the current frame, clamped into the range zero to one.</param>
+		/// <param name="strokeThickness">The stroke thickness of the element's outline.</param>
+		/// <returns>An immutable pen carrying the base color at the requested opacity.</returns>
+		public static ImmutablePen Build(Color baseColor, double opacity, double strokeThickness)
+		{
+			byte alpha = (byte)(Math.Clamp(opacity, 0.0, 1.0) * 255);
+			Color color = new Color(alpha, baseColor.R, baseColor.G, baseColor.B);
+			return new ImmutablePen(new ImmutableSolidColorBrush(color), strokeThickness);
+		}
 	}
 
 	public class MotionEnergyViewModel : ViewModelBase
@@ -424,17 +469,19 @@ namespace SharpEyes.ViewModels
 			set
 			{
 				this.RaiseAndSetIfChanged(ref _showMotionEnergyPyramid, value);
-				UpdatePyramidOverlay();
+				_ = UpdateOverlay();
 			}
 		}
 
 		public ObservableCollection<PyramidCircleOverlay> PyramidCircles { get; } = new ObservableCollection<PyramidCircleOverlay>();
 		public ObservableCollection<PyramidArrowOverlay> PyramidArrows { get; } = new ObservableCollection<PyramidArrowOverlay>();
 
-		// == Dynamic overlay ==
+		// The constant opacity applied to every overlay element when its opacity is not
+		// being driven by the filter responses. Matches the alpha of the former static
+		// overlay brush.
+		private const double StaticOverlayOpacity = 200.0 / 255.0;
 
-		public ObservableCollection<PyramidCircleOverlay> DynamicCircles { get; } = new ObservableCollection<PyramidCircleOverlay>();
-		public ObservableCollection<PyramidArrowOverlay> DynamicSpokes { get; } = new ObservableCollection<PyramidArrowOverlay>();
+		// == Dynamic overlay ==
 
 		// Incremented whenever dynamic-overlay opacities change so the overlay
 		// control re-renders without a collection-changed notification.
@@ -445,14 +492,31 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _overlayRenderTrigger, value);
 		}
 
-		private bool _showDynamicOverlay = false;
-		public bool ShowDynamicOverlay
+		// When true the overlay opacity is driven per frame by the filter responses; when
+		// false every overlay element uses the constant static opacity.
+		private bool _isOverlayOpacityDynamic = false;
+		public bool IsOverlayOpacityDynamic
 		{
-			get => _showDynamicOverlay;
+			get => _isOverlayOpacityDynamic;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _showDynamicOverlay, value);
-				_ = BuildDynamicOverlay();
+				this.RaiseAndSetIfChanged(ref _isOverlayOpacityDynamic, value);
+				bool overlayBuilt = PyramidArrows.Count > 0 || PyramidCircles.Count > 0;
+				bool shouldShowOverlay = _showMotionEnergyPyramid || _isOverlayOpacityDynamic;
+				if (overlayBuilt && shouldShowOverlay)
+				{
+					// The overlay geometry already exists, so only its opacity mode changes.
+					if (_isOverlayOpacityDynamic)
+						UpdateDynamicOpacities();
+					else
+						ApplyStaticOpacity();
+				}
+				else
+				{
+					// The overlay must be built because it became visible, or cleared
+					// because it is no longer visible.
+					_ = UpdateOverlay(false);
+				}
 			}
 		}
 
@@ -501,6 +565,16 @@ namespace SharpEyes.ViewModels
 		private float _globalMax = 0;
 		private float[]? _perFilterMax = null;
 		private float[]? _perFilterPercentile = null;
+
+		// Row-major copy of the retained filter responses (frames x filters), read
+		// once per displayed frame to drive the dynamic-overlay opacities. Caching a
+		// flat array lets each frame index directly by offset instead of re-slicing
+		// the NDArray and allocating a row array, which matters when the pyramid
+		// contains thousands of filters. Rebuilt when responses are retained and
+		// cleared when they are discarded.
+		private float[]? _flatFilterResponses = null;
+		private int _filterResponseColumnCount = 0;
+		private int _filterResponseRowCount = 0;
 
 		public ReactiveCommand<Unit, Unit> ComputePyramidCommand { get; }
 		public ReactiveCommand<Unit, Unit> SetAllFiltersCommand { get; }
@@ -1042,163 +1116,70 @@ namespace SharpEyes.ViewModels
 			return strokeThicknessBySize;
 		}
 
-		private async Task UpdatePyramidOverlay(bool rebuildPyramid = true)
+		/// <summary>
+		/// Builds the stream geometry and stroke thickness for one direction spoke of the
+		/// overlay. Within a direction group the filters are ordered ascending by temporal
+		/// frequency, and slower filters are drawn as thicker and shorter lines so the spoke
+		/// weight and length encode the temporal frequency.
+		/// </summary>
+		/// <param name="centerX">Horizontal center of the filter's circle in canvas coordinates.</param>
+		/// <param name="centerY">Vertical center of the filter's circle in canvas coordinates.</param>
+		/// <param name="radius">Radius of the filter's circle in canvas coordinates.</param>
+		/// <param name="dx">Horizontal component of the spoke's unit direction vector.</param>
+		/// <param name="dy">Vertical component of the spoke's unit direction vector.</param>
+		/// <param name="rank">Index of this filter within its direction group after sorting ascending by temporal frequency.</param>
+		/// <param name="directionFilterCount">Number of filters sharing this direction at this location.</param>
+		/// <param name="spokeFloorThickness">Stroke thickness of the fastest filter's spoke, before temporal scaling.</param>
+		/// <param name="canvasLeft">Outputs the left edge of the spoke geometry's bounding box in canvas coordinates.</param>
+		/// <param name="canvasTop">Outputs the top edge of the spoke geometry's bounding box in canvas coordinates.</param>
+		/// <param name="strokeThickness">Outputs the stroke thickness for this spoke after temporal scaling.</param>
+		/// <returns>The stream geometry for the spoke, positioned relative to its bounding box.</returns>
+		private StreamGeometry BuildSpokeGeometry(double centerX, double centerY, double radius, double dx, double dy, int rank, int directionFilterCount, double spokeFloorThickness, out double canvasLeft, out double canvasTop, out double strokeThickness)
+		{
+			double temporalThicknessMultiplier = 4.0;
+			double temporalLengthMultiplier = 0.6;
+			double spokeCeilingHalfLength = radius / 6.0;
+			int stepsSlowerThanFastest = (directionFilterCount - 1) - rank;
+			strokeThickness = spokeFloorThickness * Math.Pow(temporalThicknessMultiplier, stepsSlowerThanFastest);
+			double spokeHalfLength = spokeCeilingHalfLength * Math.Pow(temporalLengthMultiplier, stepsSlowerThanFastest);
+
+			Point lineStart = new Point(centerX + (radius - spokeHalfLength) * dx, centerY + (radius - spokeHalfLength) * dy);
+			Point lineEnd   = new Point(centerX + (radius + spokeHalfLength) * dx, centerY + (radius + spokeHalfLength) * dy);
+
+			canvasLeft = Math.Min(lineStart.X, lineEnd.X);
+			canvasTop  = Math.Min(lineStart.Y, lineEnd.Y);
+
+			StreamGeometry spokeGeometry = new StreamGeometry();
+			using (StreamGeometryContext streamContext = spokeGeometry.Open())
+			{
+				streamContext.BeginFigure(new Point(lineStart.X - canvasLeft, lineStart.Y - canvasTop), false);
+				streamContext.LineTo(new Point(lineEnd.X - canvasLeft, lineEnd.Y - canvasTop));
+				streamContext.EndFigure(false);
+			}
+			return spokeGeometry;
+		}
+
+		/// <summary>
+		/// Builds the overlay geometry: one circle per spatial location and, at each
+		/// location, one spoke line per filter grouped by direction. Within a direction the
+		/// temporal frequencies are ordered ascending so that the fastest temporal frequency
+		/// is thinnest and longest and each slower temporal frequency is thicker and shorter.
+		/// Each element is tagged with the filter index (or indices) it draws from. Once the
+		/// geometry exists the opacity is applied for the current mode: per frame from the
+		/// filter responses when dynamic opacity is on, otherwise at the constant static
+		/// opacity. Builds the pyramid first if required.
+		/// </summary>
+		/// <param name="rebuildPyramid">Whether the pyramid must be rebuilt: true when the change affects pyramid geometry, false for changes such as pad value that do not.</param>
+		private async Task UpdateOverlay(bool rebuildPyramid = true)
 		{
 			PyramidCircles.Clear();
 			PyramidArrows.Clear();
-			if (!_showMotionEnergyPyramid) return;
-			if (rebuildPyramid || motionEnergyFeatures.FilterCount < 1)
-				await ComputePyramid(false);
-			if (motionEnergyFeatures.FilterCount < 1) return;
-
-			IBrush overlayBrush = new SolidColorBrush(Color.FromArgb(200, 255, 220, 0));
-
-			Dictionary<(double, double, double), HashSet<double>> filterDirectionsByCircle =
-				new Dictionary<(double, double, double), HashSet<double>>();
-
-			foreach (MotionEnergyFilterParameters filter in motionEnergyFeatures.FilterParameters)
-			{
-				(double, double, double) key = (filter.CenterHorizontal, filter.CenterVertical, filter.SpatialEnvelope);
-				if (!filterDirectionsByCircle.ContainsKey(key))
-					filterDirectionsByCircle[key] = new HashSet<double>();
-				filterDirectionsByCircle[key].Add(filter.Direction);
-			}
-
-			Dictionary<double, double> strokeThicknessBySize = BuildStrokeThicknessBySize();
-
-			int frameHeight = CanvasHeight;
-			foreach (KeyValuePair<(double, double, double), HashSet<double>> circleEntry in filterDirectionsByCircle)
-			{
-				double centerX = circleEntry.Key.Item1 * frameHeight;
-				double centerY = circleEntry.Key.Item2 * frameHeight;
-				double radius  = circleEntry.Key.Item3 * frameHeight;
-				double strokeThickness = strokeThicknessBySize[circleEntry.Key.Item3] * 2;
-
-				PyramidCircles.Add(new PyramidCircleOverlay
-				{
-					Left           = centerX - radius,
-					Top            = centerY - radius,
-					Diameter       = 2 * radius,
-					Stroke         = overlayBrush,
-					StrokeThickness = strokeThickness
-				});
-
-				foreach (double direction in circleEntry.Value)
-				{
-					double directionRadians = direction * Math.PI / 180.0;
-					double dx = Math.Cos(directionRadians);
-					double dy = -Math.Sin(directionRadians);
-
-					double spokeHalfLength = radius / 6.0;
-					Point arrowStart = new Point(centerX + (radius - spokeHalfLength) * dx, centerY + (radius - spokeHalfLength) * dy);
-					Point arrowTip   = new Point(centerX + (radius + spokeHalfLength) * dx, centerY + (radius + spokeHalfLength) * dy);
-
-					double canvasLeft = Math.Min(arrowStart.X, arrowTip.X);
-					double canvasTop  = Math.Min(arrowStart.Y, arrowTip.Y);
-
-					StreamGeometry arrowGeometry = new StreamGeometry();
-					using (StreamGeometryContext streamContext = arrowGeometry.Open())
-					{
-						streamContext.BeginFigure(new Point(arrowStart.X - canvasLeft, arrowStart.Y - canvasTop), false);
-						streamContext.LineTo(new Point(arrowTip.X - canvasLeft, arrowTip.Y - canvasTop));
-						streamContext.EndFigure(false);
-					}
-
-					PyramidArrows.Add(new PyramidArrowOverlay
-					{
-						CanvasLeft      = canvasLeft,
-						CanvasTop       = canvasTop,
-						Geometry        = arrowGeometry,
-						Stroke          = overlayBrush,
-						StrokeThickness = strokeThickness
-					});
-				}
-			}
-		}
-
-		/// <summary>
-		/// Marks the filter responses stale so the dynamic overlay is disabled until
-		/// they are recomputed. Cheap; called immediately when a parameter value
-		/// changes, before the change is committed.
-		/// </summary>
-		private void MarkFilterResponsesStale()
-		{
-			if (!_hasFilterResponses || _areFilterResponsesStale) return;
-			_areFilterResponsesStale = true;
-			this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
-			this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
-		}
-
-		/// <summary>
-		/// Commits a filter-parameter change. Called when a parameter control is
-		/// accepted or loses focus, or on a discrete change such as adding or removing
-		/// a frequency. Marks the responses stale, falls back from the dynamic overlay
-		/// to the static pyramid overlay, and rebuilds whichever overlay is shown.
-		/// </summary>
-		/// <param name="rebuildPyramid">Whether the pyramid must be rebuilt: true when the change affects pyramid geometry, false for changes such as pad value that do not.</param>
-		public void CommitFilterParameterChange(bool rebuildPyramid)
-		{
-			MarkFilterResponsesStale();
-			if (_showDynamicOverlay)
-			{
-				_showDynamicOverlay = false;
-				this.RaisePropertyChanged(nameof(ShowDynamicOverlay));
-				DynamicCircles.Clear();
-				DynamicSpokes.Clear();
-				_showMotionEnergyPyramid = true;
-				this.RaisePropertyChanged(nameof(ShowMotionEnergyPyramid));
-			}
-			if (_showMotionEnergyPyramid)
-				_ = UpdatePyramidOverlay(rebuildPyramid);
-			else
-				OverlayRenderTrigger++;
-		}
-
-		/// <summary>
-		/// Clears all filter-response state and the dynamic overlay. Called when a new
-		/// video or gaze is loaded, since previously computed responses no longer match
-		/// the displayed content.
-		/// </summary>
-		private void ResetDynamicState()
-		{
-			_motionEnergyFeatures = null;
-			_hasFilterResponses = false;
-			_areFilterResponsesStale = false;
-			_globalMax = 0;
-			_perFilterMax = null;
-			_perFilterPercentile = null;
-			if (_showDynamicOverlay)
-			{
-				_showDynamicOverlay = false;
-				this.RaisePropertyChanged(nameof(ShowDynamicOverlay));
-			}
-			DynamicCircles.Clear();
-			DynamicSpokes.Clear();
-			this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
-			this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
-			OverlayRenderTrigger++;
-		}
-
-		/// <summary>
-		/// Builds the dynamic-overlay geometry: one circle per spatial location and,
-		/// at each location, one spoke line per filter grouped by direction. Every spoke
-		/// crosses the circle outline, extending one sixth of a radius inside the perimeter
-		/// and one sixth of a radius outside it. Within
-		/// a direction the temporal frequencies are ordered ascending so that the fastest
-		/// temporal frequency is thinnest and each slower temporal frequency is thicker.
-		/// Each element is tagged with the filter index (or indices) it draws from. Builds
-		/// the pyramid first if it has not been built.
-		/// </summary>
-		private async Task BuildDynamicOverlay()
-		{
-			DynamicCircles.Clear();
-			DynamicSpokes.Clear();
-			if (!_showDynamicOverlay)
+			if (!_showMotionEnergyPyramid && !_isOverlayOpacityDynamic)
 			{
 				OverlayRenderTrigger++;
 				return;
 			}
-			if (motionEnergyFeatures.FilterCount < 1)
+			if (rebuildPyramid || motionEnergyFeatures.FilterCount < 1)
 				await ComputePyramid(false);
 			if (motionEnergyFeatures.FilterCount < 1) return;
 
@@ -1224,7 +1205,7 @@ namespace SharpEyes.ViewModels
 				double centerY = locationEntry.Key.Item2 * canvasHeight;
 				double radius  = locationEntry.Key.Item3 * canvasHeight;
 
-				DynamicCircles.Add(new PyramidCircleOverlay
+				PyramidCircles.Add(new PyramidCircleOverlay
 				{
 					Left            = centerX - radius,
 					Top             = centerY - radius,
@@ -1255,30 +1236,16 @@ namespace SharpEyes.ViewModels
 						.CompareTo(motionEnergyFeatures.FilterParameters[b].TemporalFrequency));
 					int directionFilterCount = directionFilters.Count;
 
-					double temporalThicknessMultiplier = 2.0;
 					double spokeFloorThickness = strokeThicknessBySize[locationEntry.Key.Item3];
 					for (int rank = 0; rank < directionFilterCount; rank++)
 					{
-						int stepsSlowerThanFastest = (directionFilterCount - 1) - rank;
-						double thickness = spokeFloorThickness * Math.Pow(temporalThicknessMultiplier, stepsSlowerThanFastest);
-						double spokeHalfLength = radius / 6.0;
 						int filterIndex = directionFilters[rank];
+						double thickness;
+						double canvasLeft;
+						double canvasTop;
+						StreamGeometry spokeGeometry = BuildSpokeGeometry(centerX, centerY, radius, dx, dy, rank, directionFilterCount, spokeFloorThickness, out canvasLeft, out canvasTop, out thickness);
 
-						Point lineStart = new Point(centerX + (radius - spokeHalfLength) * dx, centerY + (radius - spokeHalfLength) * dy);
-						Point lineEnd   = new Point(centerX + (radius + spokeHalfLength) * dx, centerY + (radius + spokeHalfLength) * dy);
-
-						double canvasLeft = Math.Min(lineStart.X, lineEnd.X);
-						double canvasTop  = Math.Min(lineStart.Y, lineEnd.Y);
-
-						StreamGeometry spokeGeometry = new StreamGeometry();
-						using (StreamGeometryContext streamContext = spokeGeometry.Open())
-						{
-							streamContext.BeginFigure(new Point(lineStart.X - canvasLeft, lineStart.Y - canvasTop), false);
-							streamContext.LineTo(new Point(lineEnd.X - canvasLeft, lineEnd.Y - canvasTop));
-							streamContext.EndFigure(false);
-						}
-
-						DynamicSpokes.Add(new PyramidArrowOverlay
+						PyramidArrows.Add(new PyramidArrowOverlay
 						{
 							CanvasLeft      = canvasLeft,
 							CanvasTop       = canvasTop,
@@ -1292,7 +1259,96 @@ namespace SharpEyes.ViewModels
 				}
 			}
 
-			UpdateDynamicOpacities();
+			if (_isOverlayOpacityDynamic)
+				UpdateDynamicOpacities();
+			else
+				ApplyStaticOpacity();
+		}
+
+		/// <summary>
+		/// Sets every overlay element to the constant static opacity, rebuilds each
+		/// element's cached pen, and triggers a redraw. Used when the overlay is built with
+		/// dynamic opacity off and when dynamic opacity is turned off.
+		/// </summary>
+		private void ApplyStaticOpacity()
+		{
+			foreach (PyramidArrowOverlay spoke in PyramidArrows)
+			{
+				spoke.CurrentOpacity = StaticOverlayOpacity;
+				spoke.RefreshPen();
+			}
+			foreach (PyramidCircleOverlay circle in PyramidCircles)
+			{
+				circle.CurrentOpacity = StaticOverlayOpacity;
+				circle.RefreshPen();
+			}
+			OverlayRenderTrigger++;
+		}
+
+		/// <summary>
+		/// Marks the filter responses stale so the dynamic overlay is disabled until
+		/// they are recomputed. Cheap; called immediately when a parameter value
+		/// changes, before the change is committed.
+		/// </summary>
+		private void MarkFilterResponsesStale()
+		{
+			if (!_hasFilterResponses || _areFilterResponsesStale) return;
+			_areFilterResponsesStale = true;
+			this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
+			this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
+		}
+
+		/// <summary>
+		/// Commits a filter-parameter change. Called when a parameter control is
+		/// accepted or loses focus, or on a discrete change such as adding or removing
+		/// a frequency. Marks the responses stale, falls back from the dynamic overlay
+		/// to the static pyramid overlay, and rebuilds whichever overlay is shown.
+		/// </summary>
+		/// <param name="rebuildPyramid">Whether the pyramid must be rebuilt: true when the change affects pyramid geometry, false for changes such as pad value that do not.</param>
+		public void CommitFilterParameterChange(bool rebuildPyramid)
+		{
+			MarkFilterResponsesStale();
+			if (_isOverlayOpacityDynamic)
+			{
+				_isOverlayOpacityDynamic = false;
+				this.RaisePropertyChanged(nameof(IsOverlayOpacityDynamic));
+			}
+			_ = UpdateOverlay(rebuildPyramid);
+		}
+
+		/// <summary>
+		/// Clears all filter-response state and the dynamic overlay. Called when a new
+		/// video or gaze is loaded, since previously computed responses no longer match
+		/// the displayed content.
+		/// </summary>
+		private void ResetDynamicState()
+		{
+			_motionEnergyFeatures = null;
+			_flatFilterResponses = null;
+			_filterResponseColumnCount = 0;
+			_filterResponseRowCount = 0;
+			_hasFilterResponses = false;
+			_areFilterResponsesStale = false;
+			_globalMax = 0;
+			_perFilterMax = null;
+			_perFilterPercentile = null;
+			if (_isOverlayOpacityDynamic)
+			{
+				_isOverlayOpacityDynamic = false;
+				this.RaisePropertyChanged(nameof(IsOverlayOpacityDynamic));
+			}
+			if (_showMotionEnergyPyramid)
+			{
+				ApplyStaticOpacity();
+			}
+			else
+			{
+				PyramidCircles.Clear();
+				PyramidArrows.Clear();
+				OverlayRenderTrigger++;
+			}
+			this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
+			this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
 		}
 
 		/// <summary>
@@ -1304,24 +1360,27 @@ namespace SharpEyes.ViewModels
 		/// </summary>
 		private void UpdateDynamicOpacities()
 		{
-			if (!_showDynamicOverlay) return;
-			if ((object)_motionEnergyFeatures == null) return;
-			if (DynamicSpokes.Count == 0 && DynamicCircles.Count == 0) return;
+			if (!_isOverlayOpacityDynamic) return;
+			if (_flatFilterResponses == null) return;
+			if (PyramidArrows.Count == 0 && PyramidCircles.Count == 0) return;
 
-			int frameCount = _motionEnergyFeatures.Shape[0];
-			int featureRow = Math.Clamp(CurrentVideoFrame - _filterResponsesStartFrame, 0, frameCount - 1);
-			float[] rowResponses = _motionEnergyFeatures[featureRow].ToArray<float>();
+			int featureRow = Math.Clamp(CurrentVideoFrame - _filterResponsesStartFrame, 0, _filterResponseRowCount - 1);
+			int rowOffset = featureRow * _filterResponseColumnCount;
 
-			foreach (PyramidArrowOverlay spoke in DynamicSpokes)
-				spoke.CurrentOpacity = _dynamicBaseAlpha * NormalizedOpacity(spoke.FilterIndex, rowResponses);
+			foreach (PyramidArrowOverlay spoke in PyramidArrows)
+			{
+				spoke.CurrentOpacity = _dynamicBaseAlpha * NormalizedOpacity(spoke.FilterIndex, rowOffset);
+				spoke.RefreshPen();
+			}
 
-			foreach (PyramidCircleOverlay circle in DynamicCircles)
+			foreach (PyramidCircleOverlay circle in PyramidCircles)
 			{
 				double opacitySum = 0;
 				foreach (int filterIndex in circle.FilterIndices)
-					opacitySum += NormalizedOpacity(filterIndex, rowResponses);
+					opacitySum += NormalizedOpacity(filterIndex, rowOffset);
 				double meanOpacity = circle.FilterIndices.Count > 0 ? opacitySum / circle.FilterIndices.Count : 0;
 				circle.CurrentOpacity = _dynamicBaseAlpha * meanOpacity;
+				circle.RefreshPen();
 			}
 
 			OverlayRenderTrigger++;
@@ -1333,10 +1392,10 @@ namespace SharpEyes.ViewModels
 		/// fully transparent.
 		/// </summary>
 		/// <param name="filterIndex">Index of the filter, matching the filter-response column and FilterParameters order.</param>
-		/// <param name="rowResponses">Raw responses of every filter at the current frame.</param>
-		private double NormalizedOpacity(int filterIndex, float[] rowResponses)
+		/// <param name="rowOffset">Index into the cached flat filter-response array of the current frame's first filter column (i.e. featureRow times the filter count).</param>
+		private double NormalizedOpacity(int filterIndex, int rowOffset)
 		{
-			float response = rowResponses[filterIndex];
+			float response = _flatFilterResponses![rowOffset + filterIndex];
 			if (response <= 0) return 0;
 			double opacity;
 			switch (SelectedNormalizationScheme)
@@ -1415,7 +1474,7 @@ namespace SharpEyes.ViewModels
 					motionEnergyFeatures.FilterCount);
 				this.RaisePropertyChanged("ModelFrameWidth");
 				this.RaisePropertyChanged("ModelFrameHeight");
-				if (updateDisplay) UpdatePyramidOverlay();
+				if (updateDisplay) _ = UpdateOverlay();
 			}
 			catch (Exception exception)
 			{
@@ -1495,7 +1554,7 @@ namespace SharpEyes.ViewModels
 				NDArray frames = framesTask.Result;
 				this.RaisePropertyChanged("ModelFrameWidth");
 				this.RaisePropertyChanged("ModelFrameHeight");
-				UpdatePyramidOverlay();
+				_ = UpdateOverlay();
 
 				cancellationToken.ThrowIfCancellationRequested();
 
@@ -1527,13 +1586,16 @@ namespace SharpEyes.ViewModels
 				}
 
 				_motionEnergyFeatures = features;
+				_filterResponseRowCount = features.Shape[0];
+				_filterResponseColumnCount = features.Shape[1];
+				_flatFilterResponses = features.ToArray<float>();
 				_filterResponsesStartFrame = _startFrame;
+				await Task.Run(() => ComputeNormalizationStatistics());
 				_hasFilterResponses = true;
 				_areFilterResponsesStale = false;
 				this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
 				this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
-				Task.Run(() => ComputeNormalizationStatistics());
-				BuildDynamicOverlay();
+				UpdateDynamicOpacities();
 				IsProgressBarIndeterminate = false;
 				IsProgressBarVisible = false;
 

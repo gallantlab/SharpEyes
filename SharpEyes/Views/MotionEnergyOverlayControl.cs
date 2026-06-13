@@ -18,14 +18,6 @@ namespace SharpEyes.Views
 			AvaloniaProperty.Register<MotionEnergyOverlayControl, ObservableCollection<PyramidArrowOverlay>>(
 				nameof(Arrows));
 
-		public static readonly StyledProperty<ObservableCollection<PyramidCircleOverlay>> DynamicCirclesProperty =
-			AvaloniaProperty.Register<MotionEnergyOverlayControl, ObservableCollection<PyramidCircleOverlay>>(
-				nameof(DynamicCircles));
-
-		public static readonly StyledProperty<ObservableCollection<PyramidArrowOverlay>> DynamicSpokesProperty =
-			AvaloniaProperty.Register<MotionEnergyOverlayControl, ObservableCollection<PyramidArrowOverlay>>(
-				nameof(DynamicSpokes));
-
 		public static readonly StyledProperty<int> RenderTriggerProperty =
 			AvaloniaProperty.Register<MotionEnergyOverlayControl, int>(
 				nameof(RenderTrigger));
@@ -40,18 +32,6 @@ namespace SharpEyes.Views
 		{
 			get => GetValue(ArrowsProperty);
 			set => SetValue(ArrowsProperty, value);
-		}
-
-		public ObservableCollection<PyramidCircleOverlay> DynamicCircles
-		{
-			get => GetValue(DynamicCirclesProperty);
-			set => SetValue(DynamicCirclesProperty, value);
-		}
-
-		public ObservableCollection<PyramidArrowOverlay> DynamicSpokes
-		{
-			get => GetValue(DynamicSpokesProperty);
-			set => SetValue(DynamicSpokesProperty, value);
 		}
 
 		public int RenderTrigger
@@ -84,26 +64,6 @@ namespace SharpEyes.Views
 				if (newValue != null) newValue.CollectionChanged += OnCollectionChanged;
 				InvalidateVisual();
 			}
-			else if (change.Property == DynamicCirclesProperty)
-			{
-				ObservableCollection<PyramidCircleOverlay> oldValue =
-					change.OldValue.GetValueOrDefault<ObservableCollection<PyramidCircleOverlay>>();
-				ObservableCollection<PyramidCircleOverlay> newValue =
-					change.NewValue.GetValueOrDefault<ObservableCollection<PyramidCircleOverlay>>();
-				if (oldValue != null) oldValue.CollectionChanged -= OnCollectionChanged;
-				if (newValue != null) newValue.CollectionChanged += OnCollectionChanged;
-				InvalidateVisual();
-			}
-			else if (change.Property == DynamicSpokesProperty)
-			{
-				ObservableCollection<PyramidArrowOverlay> oldValue =
-					change.OldValue.GetValueOrDefault<ObservableCollection<PyramidArrowOverlay>>();
-				ObservableCollection<PyramidArrowOverlay> newValue =
-					change.NewValue.GetValueOrDefault<ObservableCollection<PyramidArrowOverlay>>();
-				if (oldValue != null) oldValue.CollectionChanged -= OnCollectionChanged;
-				if (newValue != null) newValue.CollectionChanged += OnCollectionChanged;
-				InvalidateVisual();
-			}
 			else if (change.Property == RenderTriggerProperty)
 			{
 				InvalidateVisual();
@@ -126,11 +86,11 @@ namespace SharpEyes.Views
 			{
 				foreach (PyramidCircleOverlay circle in circles)
 				{
+					if (circle.Pen == null) continue;
 					double radius = circle.Diameter / 2.0;
-					Pen pen = new Pen(circle.Stroke, circle.StrokeThickness);
 					context.DrawEllipse(
 						null,
-						pen,
+						circle.Pen,
 						new Point(circle.Left + radius, circle.Top + radius),
 						radius,
 						radius);
@@ -141,51 +101,14 @@ namespace SharpEyes.Views
 			{
 				foreach (PyramidArrowOverlay arrow in arrows)
 				{
-					Pen pen = new Pen(arrow.Stroke, arrow.StrokeThickness);
+					if (arrow.Pen == null) continue;
 					using (IDisposable translateState = context.PushPreTransform(
 						Matrix.CreateTranslation(arrow.CanvasLeft, arrow.CanvasTop)))
 					{
-						context.DrawGeometry(null, pen, arrow.Geometry);
+						context.DrawGeometry(null, arrow.Pen, arrow.Geometry);
 					}
 				}
 			}
-
-			ObservableCollection<PyramidCircleOverlay> dynamicCircles = DynamicCircles;
-			ObservableCollection<PyramidArrowOverlay> dynamicSpokes = DynamicSpokes;
-
-			if (dynamicCircles != null)
-			{
-				foreach (PyramidCircleOverlay circle in dynamicCircles)
-				{
-					double radius = circle.Diameter / 2.0;
-					Pen pen = new Pen(new SolidColorBrush(ApplyOpacity(circle.BaseColor, circle.CurrentOpacity)), circle.StrokeThickness);
-					context.DrawEllipse(
-						null,
-						pen,
-						new Point(circle.Left + radius, circle.Top + radius),
-						radius,
-						radius);
-				}
-			}
-
-			if (dynamicSpokes != null)
-			{
-				foreach (PyramidArrowOverlay spoke in dynamicSpokes)
-				{
-					Pen pen = new Pen(new SolidColorBrush(ApplyOpacity(spoke.BaseColor, spoke.CurrentOpacity)), spoke.StrokeThickness);
-					using (IDisposable translateState = context.PushPreTransform(
-						Matrix.CreateTranslation(spoke.CanvasLeft, spoke.CanvasTop)))
-					{
-						context.DrawGeometry(null, pen, spoke.Geometry);
-					}
-				}
-			}
-		}
-
-		private static Color ApplyOpacity(Color baseColor, double opacity)
-		{
-			byte alpha = (byte)(Math.Clamp(opacity, 0.0, 1.0) * 255);
-			return new Color(alpha, baseColor.R, baseColor.G, baseColor.B);
 		}
 	}
 }
