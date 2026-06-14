@@ -478,13 +478,14 @@ namespace SharpEyes.ViewModels
 		/// Loads video and gaze directly from existing data, without file dialogs.
 		/// Called from the Stimulus and Gaze tab's "Send to Recentering" button.
 		/// </summary>
-		public void LoadFromStimulusGaze(string videoFilePath, NDArray gazeData, int gazeDataStartFrame, int eyetrackingFPS, GazeFilterSettings? filterSettings = null)
+		public void LoadFromStimulusGaze(string videoFilePath, NDArray gazeData, int gazeDataStartFrame, int eyetrackingFPS, GazeFilterSettings? filterSettings = null, string? gazeFileName = null)
 		{
 			if (IsVideoPlaying)
 				PlayPause();
 
 			SetupVideo(videoFilePath);
 			this.gazeLocations = gazeData.Clone() as NDArray;
+			this.gazeFileName = gazeFileName;
 			this.dataStartFrame = gazeDataStartFrame;
 			this.RaisePropertyChanged("DataStartFrame");
 			EyetrackingFPS = eyetrackingFPS;

@@ -909,7 +909,7 @@ namespace SharpEyes.ViewModels
 				OutlierThresholdY = _outlierThresholdY,
 				OutlierThresholdRadius = _outlierThresholdRadius
 			};
-			RecenteringViewModel.LoadFromStimulusGaze(videoFilePath, DisplayedGazeLocations, dataStartFrame.Value, EyetrackingFPS, filterSettings);
+			RecenteringViewModel.LoadFromStimulusGaze(videoFilePath, DisplayedGazeLocations, dataStartFrame.Value, EyetrackingFPS, filterSettings, gazeFileName);
 			SwitchToRecenteringTab?.Invoke();
 		}
 
