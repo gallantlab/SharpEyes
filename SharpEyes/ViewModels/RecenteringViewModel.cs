@@ -676,7 +676,6 @@ namespace SharpEyes.ViewModels
 			IsLoadingGaze = true;
 			StatusText = "Loading gaze...";
 
-			string extension = System.IO.Path.GetExtension(fileName[0]);
 			NDArray? loadedGazeLocations = null;
 			int parsedSampleRate = 0;
 
@@ -684,48 +683,7 @@ namespace SharpEyes.ViewModels
 			{
 				await Task.Run(() =>
 				{
-					if (extension == ".npy")
-						loadedGazeLocations = Num.load(fileName[0]);
-					else if (extension == ".txt")
-					{
-						loadedGazeLocations = EyelinkParser.ParseTextFile(fileName[0], out parsedSampleRate);
-					}
-					else if (extension == ".edf")
-					{
-						loadedGazeLocations = EyelinkParser.ParseEDFFile(fileName[0], out parsedSampleRate);
-					}
-					else // parse a csv file
-					{
-						using StreamReader csvFile = new StreamReader(fileName[0]);
-						string line = csvFile.ReadLine();
-						List<double[]> values = new List<double[]>();
-						bool isFirstLine = true;
-						while (line != null)
-						{
-							try
-							{
-								string[] tokens = line.Split(',');
-								double x = Double.Parse(tokens[0]);
-								double y = Double.Parse(tokens[1]);
-								values.Add(new double[]{x, y});
-								isFirstLine = false;
-								line = csvFile.ReadLine();
-							}
-							catch (Exception e)
-							{	// so if the first line is a header, we throw it away,
-								// but if there's a parsing error anywhere else we raise it
-								if (!isFirstLine)
-									throw;
-							}
-						}
-
-						loadedGazeLocations = new NDArray(NPTypeCode.Double, Shape.Matrix(values.Count, 2));
-						for (int i = 0; i < values.Count; i++)
-						{
-							loadedGazeLocations[i, 0] = values[i][0];
-							loadedGazeLocations[i, 1] = values[i][1];
-						}
-					}
+					loadedGazeLocations = GazeFileLoader.Load(fileName[0], out parsedSampleRate);
 				});
 			}
 			catch (InvalidDataException)

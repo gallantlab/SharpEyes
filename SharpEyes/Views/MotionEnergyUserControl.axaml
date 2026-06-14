@@ -30,6 +30,7 @@
             <!--Top button row-->
             <StackPanel Orientation="Horizontal" Grid.Row="0">
                 <Button Margin="4" Command="{Binding LoadVideoCommand}">Open Video</Button>
+                <Button Margin="4" Command="{Binding LoadSavedFeaturesCommand}">Load Features</Button>
             </StackPanel>
 
             <!--Video display-->

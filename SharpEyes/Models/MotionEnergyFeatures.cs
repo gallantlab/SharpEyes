@@ -264,6 +264,50 @@ namespace SharpEyes.Models
 		}
 
 		/// <summary>
+		/// Loads a previously saved motion-energy feature array from a NumPy .npy file
+		/// and returns it as a float32 NDArray for visualization. The file is loaded and
+		/// cast through Python (numpy) rather than NumSharp so that arrays saved at a
+		/// lower compute dtype (e.g. float16) read back correctly. Must be called after
+		/// PythonEnvironmentManager.Initialize().
+		/// </summary>
+		/// <param name="path">Source .npy file path.</param>
+		/// <returns>An (nFrames x nFeatures) float32 array.</returns>
+		public NDArray LoadFeatures(string path)
+		{
+			float[] resultData;
+			int nFrames;
+			int nFeatures;
+			using (Py.GIL())
+			{
+				dynamic np = Py.Import("numpy");
+				dynamic ctypes = Py.Import("ctypes");
+				dynamic npCtypeslib = Py.Import("numpy.ctypeslib");
+
+				dynamic loaded = np.load(path);
+				// Ascontiguousarray guarantees the reshape(-1) below is a contiguous view
+				dynamic result = np.ascontiguousarray(loaded.astype(np.float32));
+				nFrames = (int)result.shape[0];
+				nFeatures = (int)result.shape[1];
+
+				resultData = new float[nFrames * nFeatures];
+				GCHandle outputHandle = GCHandle.Alloc(resultData, GCHandleType.Pinned);
+				try
+				{
+					long outputPtr = outputHandle.AddrOfPinnedObject().ToInt64();
+					dynamic outputCArrayType = ctypes.c_float * resultData.Length;
+					dynamic outputCArray = outputCArrayType.from_address(outputPtr);
+					dynamic outputNpArray = npCtypeslib.as_array(outputCArray);
+					np.copyto(outputNpArray, result.reshape(-1));
+				}
+				finally
+				{
+					outputHandle.Free();
+				}
+			}
+			return new NDArray(resultData).reshape(nFrames, nFeatures);
+		}
+
+		/// <summary>
 		/// Sets entire rows of the most recently computed feature array to zero or NaN
 		/// for the specified frame indices, modifying the retained Python array in place
 		/// using NumPy fancy indexing. Must be called after ExtractAsync and before

@@ -632,6 +632,7 @@ namespace SharpEyes.ViewModels
 		private MissingGazeTreatment SelectedMissingGazeTreatment => (MissingGazeTreatment)_selectedMissingGazeTreatmentIndex;
 
 		public ReactiveCommand<Unit, Unit> ComputeFeaturesCommand { get; }
+		public ReactiveCommand<Unit, Unit> LoadSavedFeaturesCommand { get; }
 
 		private CancellationTokenSource? _computeFeaturesTokenSource = null;
 
@@ -815,6 +816,7 @@ namespace SharpEyes.ViewModels
 				else
 					_ = ComputeFeatures();
 			});
+			LoadSavedFeaturesCommand = ReactiveCommand.Create(LoadSavedFeatures);
 			SpatialFrequencies.CollectionChanged += (s, e) => { this.RaisePropertyChanged("SpatialFrequenciesHeaderText"); SaveSettings(); CommitFilterParameterChange(true); };
 			TemporalFrequencies.CollectionChanged += (s, e) => { this.RaisePropertyChanged("TemporalFrequenciesHeaderText"); SaveSettings(); CommitFilterParameterChange(true); };
 			Directions.CollectionChanged += (s, e) => { this.RaisePropertyChanged("DirectionsHeaderText"); SaveSettings(); CommitFilterParameterChange(true); };
@@ -1631,6 +1633,303 @@ namespace SharpEyes.ViewModels
 				tokenSource.Dispose();
 				_computeFeaturesTokenSource = null;
 				IsComputingFeatures = false;
+				IsProgressBarVisible = false;
+				IsProgressBarIndeterminate = false;
+			}
+		}
+
+		/// <summary>
+		/// Holds the metadata parsed from a saved "... info.txt" file, used to
+		/// reconstruct the full motion-energy state when loading saved features.
+		/// </summary>
+		private class LoadedFeatureMetadata
+		{
+			public string? VideoPath = null;
+			public string? GazePath = null; // null when no gaze file was used
+			public int EyetrackingFPS = 60;
+			public int DataStartFrame = 0;
+			public int GazeSpaceWidth = 1024;
+			public int GazeSpaceHeight = 768;
+			public GazeFilterSettings GazeFilter = new GazeFilterSettings();
+			public double PadPercent = 200;
+			public double PadValue = 0.1;
+			public double FrameScale = 0.125;
+			public double VideoFps = 30;
+			public List<double> SpatialFrequencies = new List<double>();
+			public List<double> TemporalFrequencies = new List<double>();
+			public List<double> Directions = new List<double>();
+			public int StartFrame = 0;
+			public string OutputDtype = "float32";
+		}
+
+		/// <summary>
+		/// Parses a saved "... info.txt" file. Each value is read by matching the
+		/// known line prefix and taking everything after the first ": ", so values that
+		/// themselves contain colons (file paths, timecodes) survive intact. The gaze
+		/// filter is treated as enabled only when its parameter lines are present (the
+		/// "None" placeholder leaves them absent).
+		/// </summary>
+		private LoadedFeatureMetadata ParseInfoFile(string path)
+		{
+			LoadedFeatureMetadata meta = new LoadedFeatureMetadata();
+			foreach (string rawLine in File.ReadAllLines(path))
+			{
+				string line = rawLine.Trim();
+				if (TryGetValue(line, "Stimulus video: ", out string value))
+					meta.VideoPath = value;
+				else if (TryGetValue(line, "Gaze file: ", out value))
+					meta.GazePath = value == "none" ? null : value;
+				else if (TryGetValue(line, "Eyetracking FPS: ", out value))
+					meta.EyetrackingFPS = int.Parse(value);
+				else if (TryGetValue(line, "Data start frame: ", out value))
+					meta.DataStartFrame = int.Parse(value);
+				else if (TryGetValue(line, "Gaze space width: ", out value))
+					meta.GazeSpaceWidth = int.Parse(value);
+				else if (TryGetValue(line, "Gaze space height: ", out value))
+					meta.GazeSpaceHeight = int.Parse(value);
+				else if (TryGetValue(line, "Median filter window size: ", out value))
+				{
+					meta.GazeFilter.IsEnabled = true;
+					meta.GazeFilter.MedianFilterWindowSize = int.Parse(value);
+				}
+				else if (TryGetValue(line, "Filter pupil size: ", out value))
+					meta.GazeFilter.FilterPupilSize = bool.Parse(value);
+				else if (TryGetValue(line, "Outlier removal enabled: ", out value))
+					meta.GazeFilter.EnableOutlierRemoval = bool.Parse(value);
+				else if (TryGetValue(line, "Outlier threshold X: ", out value))
+					meta.GazeFilter.OutlierThresholdX = double.Parse(value);
+				else if (TryGetValue(line, "Outlier threshold Y: ", out value))
+					meta.GazeFilter.OutlierThresholdY = double.Parse(value);
+				else if (TryGetValue(line, "Outlier threshold radius: ", out value))
+					meta.GazeFilter.OutlierThresholdRadius = double.Parse(value);
+				else if (TryGetValue(line, "Pad percent: ", out value))
+					meta.PadPercent = double.Parse(value);
+				else if (TryGetValue(line, "Pad value: ", out value))
+					meta.PadValue = double.Parse(value);
+				else if (TryGetValue(line, "Frame scale: ", out value))
+					meta.FrameScale = double.Parse(value);
+				else if (TryGetValue(line, "Video FPS: ", out value))
+					meta.VideoFps = double.Parse(value);
+				else if (TryGetValue(line, "Spatial frequencies: ", out value))
+					meta.SpatialFrequencies = ParseDoubleList(value);
+				else if (TryGetValue(line, "Temporal frequencies: ", out value))
+					meta.TemporalFrequencies = ParseDoubleList(value);
+				else if (TryGetValue(line, "Directions: ", out value))
+					meta.Directions = ParseDoubleList(value);
+				else if (TryGetValue(line, "Start frame: ", out value))
+					meta.StartFrame = int.Parse(value);
+				else if (TryGetValue(line, "Compute dtype: ", out value))
+					meta.OutputDtype = value;
+			}
+			return meta;
+		}
+
+		// Returns true and the trimmed remainder when the line starts with the prefix.
+		private static bool TryGetValue(string line, string prefix, out string value)
+		{
+			if (line.StartsWith(prefix))
+			{
+				value = line.Substring(prefix.Length).Trim();
+				return true;
+			}
+			value = "";
+			return false;
+		}
+
+		// Parses a comma-separated list of doubles (e.g. "0, 2, 4, 8").
+		private static List<double> ParseDoubleList(string value)
+		{
+			List<double> result = new List<double>();
+			foreach (string token in value.Split(','))
+			{
+				string trimmed = token.Trim();
+				if (trimmed.Length > 0)
+					result.Add(double.Parse(trimmed));
+			}
+			return result;
+		}
+
+		/// <summary>
+		/// Resolves a file path recorded in a saved info file so a result folder remains
+		/// portable. Returns the recorded path if it exists; otherwise falls back to a file
+		/// of the same name in <paramref name="fallbackDirectory"/> (the info file's folder),
+		/// which handles the whole folder being copied to another machine; otherwise null.
+		/// </summary>
+		private static string? ResolveFile(string? recordedPath, string fallbackDirectory)
+		{
+			if (string.IsNullOrEmpty(recordedPath)) return null;
+			if (File.Exists(recordedPath)) return recordedPath;
+			string sibling = System.IO.Path.Combine(fallbackDirectory, System.IO.Path.GetFileName(recordedPath));
+			if (File.Exists(sibling)) return sibling;
+			return null;
+		}
+
+		// Shows an open-file dialog with a single filter and returns the chosen path, or null if cancelled.
+		private async Task<string?> PromptForFile(string title, string filterName, params string[] extensions)
+		{
+			OpenFileDialog dialog = new OpenFileDialog() { Title = title };
+			FileDialogFilter filter = new FileDialogFilter() { Name = filterName };
+			foreach (string extension in extensions)
+				filter.Extensions.Add(extension);
+			dialog.Filters.Add(filter);
+			string[] result = await dialog.ShowAsync(MainWindow);
+			return (result == null || result.Length == 0) ? null : result[0];
+		}
+
+		/// <summary>
+		/// Loads a previously saved motion-energy result. The user selects the saved
+		/// "... info.txt" file; the sibling ".npy" feature array is derived from its name.
+		/// All parameters, the stimulus video, the gaze data and its mapping are
+		/// reconstructed from the info file. If the gaze was filtered, the same filter is
+		/// reapplied to the loaded gaze. The user is prompted to relocate the video, gaze,
+		/// or feature file if any has moved.
+		/// </summary>
+		public async void LoadSavedFeatures()
+		{
+			string? infoPath = await PromptForFile("Load saved motion energy (select the info text file)", "Motion energy info", "txt");
+			if (infoPath == null) return;
+
+			if (IsVideoPlaying) PlayPause();
+			IsProgressBarVisible = true;
+			IsProgressBarIndeterminate = true;
+			StatusText = "Loading saved motion energy...";
+			try
+			{
+				LoadedFeatureMetadata meta = ParseInfoFile(infoPath);
+
+				// Derive the features .npy path from the info file name ("X info.txt" -> "X.npy").
+				string directory = System.IO.Path.GetDirectoryName(infoPath);
+				string infoFileName = System.IO.Path.GetFileName(infoPath);
+				string baseName = infoFileName.EndsWith(" info.txt")
+					? infoFileName.Substring(0, infoFileName.Length - " info.txt".Length)
+					: System.IO.Path.GetFileNameWithoutExtension(infoPath);
+				string featuresPath = System.IO.Path.Combine(directory, baseName + ".npy");
+				if (!File.Exists(featuresPath))
+				{
+					featuresPath = await PromptForFile("Locate the motion energy .npy file", "NumPy arrays", "npy");
+					if (featuresPath == null) { StatusText = "Load cancelled: no feature file selected."; return; }
+				}
+
+				// Open the stimulus video, falling back to the info file's folder, then prompting.
+				string? videoPath = ResolveFile(meta.VideoPath, directory);
+				if (videoPath == null)
+				{
+					videoPath = await PromptForFile("Locate the stimulus video", "Videos", "avi", "mkv", "mp4", "m4v");
+					if (videoPath == null) { StatusText = "Load cancelled: no stimulus video selected."; return; }
+				}
+				VideoReader videoReader = new VideoReader(videoPath);
+				videoReader.ReadFrame();
+
+				// Load the gaze data, or synthesize centered gaze when none was used.
+				// Resolve relative to the info file's folder before prompting, for portability.
+				string? gazeFileName = ResolveFile(meta.GazePath, directory);
+				if (meta.GazePath != null && gazeFileName == null)
+					gazeFileName = await PromptForFile("Locate the gaze file", "Gaze files", "npy", "csv", "txt", "asc", "edf");
+
+				NDArray gazeLocations;
+				if (gazeFileName != null && File.Exists(gazeFileName))
+				{
+					string gazePathToLoad = gazeFileName;
+					gazeLocations = await Task.Run(() => GazeFileLoader.Load(gazePathToLoad, out int _));
+					// Reapply the same gaze filter that was used when the features were computed.
+					if (meta.GazeFilter.IsEnabled)
+					{
+						GazeFilterSettings gazeFilter = meta.GazeFilter;
+						NDArray rawGaze = gazeLocations;
+						gazeLocations = await Task.Run(() => GazeFilter.Filter(
+							rawGaze, gazeFilter.MedianFilterWindowSize, gazeFilter.FilterPupilSize,
+							gazeFilter.EnableOutlierRemoval, gazeFilter.OutlierThresholdX,
+							gazeFilter.OutlierThresholdY, gazeFilter.OutlierThresholdRadius));
+					}
+				}
+				else
+				{
+					gazeFileName = null;
+					gazeLocations = new NDArray(NPTypeCode.Double, Shape.Matrix(videoReader.frameCount, 2));
+					for (int frameIndex = 0; frameIndex < videoReader.frameCount; frameIndex++)
+					{
+						gazeLocations[frameIndex, 0] = meta.GazeSpaceWidth / 2.0;
+						gazeLocations[frameIndex, 1] = meta.GazeSpaceHeight / 2.0;
+					}
+				}
+
+				// Load the feature array (float32) through Python so lower-dtype saves read back correctly.
+				NDArray features = await Task.Run(() =>
+				{
+					PythonEnvironmentManager.Instance.Initialize();
+					return motionEnergyFeatures.LoadFeatures(featuresPath);
+				});
+
+				// Apply parsed parameters via the public setters so the UI updates.
+				ResetDynamicState();
+				PadPercent = meta.PadPercent;
+				PadValue = meta.PadValue;
+				FrameScale = meta.FrameScale;
+				VideoFps = meta.VideoFps;
+				StartFrame = meta.StartFrame;
+				int dtypeIndex = OutputDtypeNames.IndexOf(meta.OutputDtype);
+				if (dtypeIndex >= 0) SelectedOutputDtypeIndex = dtypeIndex;
+
+				SpatialFrequencies.Clear();
+				foreach (double frequency in meta.SpatialFrequencies) SpatialFrequencies.Add(frequency);
+				motionEnergyFeatures.SpatialFrequencies = new List<double>(SpatialFrequencies);
+				TemporalFrequencies.Clear();
+				foreach (double frequency in meta.TemporalFrequencies) TemporalFrequencies.Add(frequency);
+				motionEnergyFeatures.TemporalFrequencies = new List<double>(TemporalFrequencies);
+				Directions.Clear();
+				foreach (double direction in meta.Directions) Directions.Add(direction);
+				motionEnergyFeatures.Directions = new List<double>(Directions);
+
+				// Mirror LoadFromRecentering for the video/gaze state.
+				_videoReader = videoReader;
+				_gazeLocations = gazeLocations;
+				_gazeFileName = gazeFileName;
+				_gazeFilterSettings = meta.GazeFilter;
+				_dataStartFrame = meta.DataStartFrame;
+				_eyetrackingFPS = meta.EyetrackingFPS;
+				_gazeSpaceWidth = meta.GazeSpaceWidth;
+				_gazeSpaceHeight = meta.GazeSpaceHeight;
+				VideoWidth = videoReader.width;
+				VideoHeight = videoReader.height;
+				_videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)videoReader.fps);
+				TotalVideoFrames = videoReader.frameCount;
+				IsLoadedFromRecentering = true;
+				this.RaisePropertyChanged("CanPlayVideo");
+				_updateDisplayDelegate = _isPreview ? UpdateDisplayRecenteredPreview : UpdateDisplayRecentered;
+
+				// Rebuild the pyramid so the filter parameters exist for the overlays.
+				await ComputePyramid(false);
+
+				bool filterCountMismatch = motionEnergyFeatures.FilterCount > 0
+					&& features.Shape.NDim == 2
+					&& features.Shape[1] != motionEnergyFeatures.FilterCount;
+
+				_motionEnergyFeatures = features;
+				_filterResponsesStartFrame = meta.StartFrame;
+				_hasFilterResponses = true;
+				_areFilterResponsesStale = false;
+				this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
+				this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
+				await Task.Run(() => ComputeNormalizationStatistics());
+				await BuildDynamicOverlay();
+
+				UpdateTimecodeDisplay();
+				UpdateDisplay();
+
+				if (filterCountMismatch)
+					StatusText = String.Format(
+						"Loaded {0} frames x {1} features, but the pyramid has {2} filters. The overlay may not match.",
+						features.Shape[0], features.Shape[1], motionEnergyFeatures.FilterCount);
+				else
+					StatusText = String.Format("Loaded motion energy: {0} frames x {1} features",
+						features.Shape[0], features.Shape[1]);
+			}
+			catch (Exception exception)
+			{
+				StatusText = String.Format("Error loading saved motion energy: {0}", exception.Message);
+			}
+			finally
+			{
 				IsProgressBarVisible = false;
 				IsProgressBarIndeterminate = false;
 			}
