@@ -12,8 +12,8 @@ Given traces and stimulus video, you can then recenter the video to be retinotop
 The motion-energy features are actually processed by [PyMoten](https://github.com/gallantlab/pymoten), but the user doesn't have to interact with it. 
 Sharpeyes will handle everything under the hood, including setup.
 
-<video width="800" controls>
-    <source src="assets/live%20motion-energy.mp4" type = "video/mp4">
+<video width="800" controls loop>
+    <source src="https://github.com/gallantlab/SharpEyes/raw/refs/heads/main/docs/assets/live%20motion-energy.mp4" type = "video/mp4">
 </video>
 
 See [Getting Started](getting%20started.md) for installation and Python setup. See the [Workflow](workflow/index.md) section for documentation on each tab. 
