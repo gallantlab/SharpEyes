@@ -8,7 +8,9 @@ It then lets you overlay the gaze on the stimulus to look at eyetraces, and then
 Given traces and stimulus video, you can then recenter the video to be retinotopic, and generate motion-energy features from stimuli.
 The motion-energy features are actually processed by [PyMoten](https://github.com/gallantlab/pymoten), but the user doesn't have to interact at all with it. Sharpeyes will handle everything under the hood, including setup.
 
-![](./docs/assets/recenetering.png)
+<video width="800" controls loop autoplay>
+    <source src="https://github.com/gallantlab/SharpEyes/raw/refs/heads/main/docs/assets/live%20motion-energy.mp4" type = "video/mp4">
+</video>
 
 See the [Documentation](https://gallantlab.org/SharpEyes) for full details.
 
