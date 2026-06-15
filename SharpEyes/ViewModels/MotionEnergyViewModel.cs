@@ -1892,7 +1892,7 @@ namespace SharpEyes.ViewModels
 				if (gazeFileName != null && File.Exists(gazeFileName))
 				{
 					string gazePathToLoad = gazeFileName;
-					gazeLocations = await Task.Run(() => GazeFileLoader.Load(gazePathToLoad, out int _));
+					gazeLocations = await Task.Run(() => GazeLoader.Load(gazePathToLoad, out int _));
 					// Reapply the same gaze filter that was used when the features were computed.
 					if (meta.GazeFilter.IsEnabled)
 					{

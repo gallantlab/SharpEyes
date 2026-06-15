@@ -684,7 +684,7 @@ namespace SharpEyes.ViewModels
 			{
 				await Task.Run(() =>
 				{
-					loadedGazeLocations = GazeFileLoader.Load(fileName[0], out parsedSampleRate);
+					loadedGazeLocations = GazeLoader.Load(fileName[0], out parsedSampleRate);
 				});
 			}
 			catch (InvalidDataException)
