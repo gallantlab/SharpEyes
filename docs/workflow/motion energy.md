@@ -2,7 +2,12 @@
 
 <img src="../assets/motion-energy.png" width="800" />
 
-The Motion-Energy tab computes motion-energy features from a video using [PyMoten](https://github.com/gallantlab/pymoten). It can operate on recentered video sent from the [Recentering](recentering.md) tab, or on a raw video loaded directly. If you want to compute motion-energy for retinotopic videos, then they _have_ to be sent over from the [Recentering](./recentering.md) tab. The video preview overlays the motion-energy pyramid on the frames so you can visually verify the filter parameters before committing to a full computation.
+The Motion-Energy tab computes motion-energy features from a video using [PyMoten](https://github.com/gallantlab/pymoten). 
+It can operate on recentered video sent from the [Recentering](recentering.md) tab, or on a raw video loaded directly. 
+If you want to compute motion-energy for retinotopic videos, then they _have_ to be sent over from the [Recentering](./recentering.md) tab. 
+The video preview overlays the motion-energy pyramid on the frames so you can visually verify the filter parameters before committing to a full computation.
+If you have computed motion-energy features, you can use the "Load Features" button to select the text file that SharpEyes generated, 
+and read in the previously computed features and thei parameters along with the video and eyetracking information.
 
 ## Motion-energy frame parameters
 
@@ -24,16 +29,16 @@ Click **Restore defaults** to reset these parameters.
 
 These control the filter bank that PyMoten uses to decompose the video into motion-energy features.
 
-| Control | Description |
-|---|---|
-| Video FPS | Frame rate of the input video, used to convert temporal frequencies from cycles/second to cycles/frame. This is read from the video but can be overridden|
-| Spatial frequencies | The spatial frequencies (cycles/image) to include in the pyramid. Select multiple; use + and − to add or remove values. |
-| Temporal frequencies | The temporal frequencies (cycles/second) to include in the pyramid. Select multiple; use + and − to add or remove values. |
-| Directions | The motion directions (degrees) to include in the pyramid. Select multiple; use + and − to add or remove values. |
-| Show motion-energy pyramid | When enabled, the pyramid filters are overlaid on the video preview as circles and arrows so you can verify coverage. |
-| Show dynamic responses | When enabled, the pyramid overlay is colored by the computed filter responses for the current frame. Only available after a feature extraction run completes. A warning is shown if filter parameters have changed since the last extraction, in which case the responses are stale and should be recomputed. |
-| Response scaling | Controls how filter responses are normalized before being mapped to opacity. Options: **Per-filter** (each filter is normalized against its own maximum), **Global** (all filters share the same maximum), **Percentile** (uses the 95th percentile as the ceiling), **Logarithmic** (log-scaled). |
-| Max opacity | Maximum opacity applied to the dynamic response overlay elements at full response strength. |
+| Control | Description                                                                                                                                                                                                                                                                                                  |
+|---|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Video FPS | Frame rate of the input video, used to convert temporal frequencies from cycles/second to cycles/frame. This is read from the video but can be overridden                                                                                                                                                    |
+| Spatial frequencies | The spatial frequencies (cycles/image) to include in the pyramid. Select multiple; use + and − to add or remove values.                                                                                                                                                                                      |
+| Temporal frequencies | The temporal frequencies (cycles/second) to include in the pyramid. Select multiple; use + and − to add or remove values.                                                                                                                                                                                    |
+| Directions | The motion directions (degrees) to include in the pyramid. Select multiple; use + and − to add or remove values.                                                                                                                                                                                             |
+| Show motion-energy pyramid | When enabled, the pyramid filters are overlaid on the video preview as circles and arrows so you can verify coverage.                                                                                                                                                                                        |
+| Show dynamic responses | When enabled, the pyramid overlay is colored by the computed filter responses for the current frame. Only available after a feature extraction run completes or if saved features are loaded. If filter parameters have changed since the last extraction, the responses are stale and should be recomputed. |
+| Response scaling | Controls how filter responses are normalized before being mapped to opacity. Options: **Per-filter** (each filter is normalized against its own maximum), **Global** (all filters share the same maximum), **Percentile** (uses the 95th percentile as the ceiling), **Logarithmic** (log-scaled).           |
+| Max opacity | Maximum opacity applied to the dynamic response overlay elements at full response strength.                                                                                                                                                                                                                  |
 
 Click **Compute pyramid** to compute and display the pyramid for the current frame. Click **Restore defaults** to reset the pyramid parameters to their defaults.
 
