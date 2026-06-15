@@ -1138,14 +1138,14 @@ namespace SharpEyes.ViewModels
 		private StreamGeometry BuildSpokeGeometry(double centerX, double centerY, double radius, double dx, double dy, int rank, int directionFilterCount, double spokeFloorThickness, out double canvasLeft, out double canvasTop, out double strokeThickness)
 		{
 			double temporalThicknessMultiplier = 4.0;
-			double temporalLengthMultiplier = 0.6;
-			double spokeCeilingHalfLength = radius / 6.0;
+			double temporalLengthMultiplier = 0.5;
+			double spokeCeilingHalfLength = radius / 5.0;
 			int stepsSlowerThanFastest = (directionFilterCount - 1) - rank;
 			strokeThickness = spokeFloorThickness * Math.Pow(temporalThicknessMultiplier, stepsSlowerThanFastest);
-			double spokeHalfLength = spokeCeilingHalfLength * Math.Pow(temporalLengthMultiplier, stepsSlowerThanFastest);
+			double spokeLength = 2 * spokeCeilingHalfLength * Math.Pow(temporalLengthMultiplier, stepsSlowerThanFastest);
 
-			Point lineStart = new Point(centerX + (radius - spokeHalfLength) * dx, centerY + (radius - spokeHalfLength) * dy);
-			Point lineEnd   = new Point(centerX + (radius + spokeHalfLength) * dx, centerY + (radius + spokeHalfLength) * dy);
+			Point lineStart = new Point(centerX + (radius) * dx, centerY + (radius) * dy);
+			Point lineEnd   = new Point(centerX + (radius + spokeLength) * dx, centerY + (radius + spokeLength) * dy);
 
 			canvasLeft = Math.Min(lineStart.X, lineEnd.X);
 			canvasTop  = Math.Min(lineStart.Y, lineEnd.Y);
