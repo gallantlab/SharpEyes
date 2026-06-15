@@ -1970,10 +1970,12 @@ namespace SharpEyes.ViewModels
 				_filterResponsesStartFrame = meta.StartFrame;
 				_hasFilterResponses = true;
 				_areFilterResponsesStale = false;
+				_filterResponseRowCount = features.Shape[0];
+				_filterResponseColumnCount = features.Shape[1];
+				_flatFilterResponses = features.ToArray<float>();
 				this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
 				this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
 				await Task.Run(() => ComputeNormalizationStatistics());
-				await BuildDynamicOverlay();
 
 				UpdateTimecodeDisplay();
 				UpdateDisplay();
