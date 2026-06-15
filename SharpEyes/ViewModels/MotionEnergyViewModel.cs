@@ -1458,10 +1458,16 @@ namespace SharpEyes.ViewModels
 			FilterBatchSize = motionEnergyFeatures.FilterCount;
 		}
 
-		private async Task ComputePyramid(bool updateDisplay = true)
+		/// <summary>
+		/// Builds the motion-energy pyramid filter parameters on a background thread, updating
+		/// the status text and, when it owns the progress bar, the progress bar while it runs.
+		/// </summary>
+		/// <param name="updateDisplay">Whether to rebuild the overlay from the new filter parameters once the pyramid is built.</param>
+		/// <param name="manageProgressBar">Whether this method shows and hides the progress bar itself. Pass false when the pyramid build is one step of a larger operation that owns the progress bar, so the bar is not hidden before that operation finishes.</param>
+		private async Task ComputePyramid(bool updateDisplay = true, bool manageProgressBar = true)
 		{
 			StatusText = "Building pyramid...";
-			IsProgressBarVisible = true;
+			if (manageProgressBar) IsProgressBarVisible = true;
 			ProgressBarValue = 0;
 			try
 			{
@@ -1483,7 +1489,7 @@ namespace SharpEyes.ViewModels
 			}
 			finally
 			{
-				IsProgressBarVisible = false;
+				if (manageProgressBar) IsProgressBarVisible = false;
 			}
 		}
 
@@ -1946,7 +1952,6 @@ namespace SharpEyes.ViewModels
 				motionEnergyFeatures.Directions = new List<double>(Directions);
 
 				// Mirror LoadFromRecentering for the video/gaze state.
-				_videoReader = videoReader;
 				_gazeLocations = gazeLocations;
 				_gazeFileName = gazeFileName;
 				_gazeFilterSettings = meta.GazeFilter;
@@ -1959,11 +1964,12 @@ namespace SharpEyes.ViewModels
 				_videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)videoReader.fps);
 				TotalVideoFrames = videoReader.frameCount;
 				IsLoadedFromRecentering = true;
-				this.RaisePropertyChanged("CanPlayVideo");
 				_updateDisplayDelegate = _isPreview ? UpdateDisplayRecenteredPreview : UpdateDisplayRecentered;
 
 				// Rebuild the pyramid so the filter parameters exist for the overlays.
-				await ComputePyramid(false);
+				// Pass manageProgressBar false so the pyramid build does not hide the progress
+				// bar while the rest of the load (normalization statistics, display) is still running.
+				await ComputePyramid(false, false);
 
 				bool filterCountMismatch = motionEnergyFeatures.FilterCount > 0
 					&& features.Shape.NDim == 2
@@ -1980,9 +1986,6 @@ namespace SharpEyes.ViewModels
 				this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
 				await Task.Run(() => ComputeNormalizationStatistics());
 
-				UpdateTimecodeDisplay();
-				UpdateDisplay();
-
 				if (filterCountMismatch)
 					StatusText = String.Format(
 						"Loaded {0} frames x {1} features, but the pyramid has {2} filters. The overlay may not match.",
@@ -1990,6 +1993,11 @@ namespace SharpEyes.ViewModels
 				else
 					StatusText = String.Format("Loaded motion energy: {0} frames x {1} features",
 						features.Shape[0], features.Shape[1]);
+				
+				_videoReader = videoReader;
+				this.RaisePropertyChanged("CanPlayVideo");
+				UpdateTimecodeDisplay();
+				UpdateDisplay();
 			}
 			catch (Exception exception)
 			{
