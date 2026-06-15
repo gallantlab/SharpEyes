@@ -13,6 +13,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Mat = OpenCvSharp.Mat;
 using NumSharp;
+using Num = NumSharp.np;
 using ReactiveUI;
 using SharpEyes.Models;
 using Eyetracking;
@@ -1437,12 +1438,12 @@ namespace SharpEyes.ViewModels
 				return;
 			}
 
-			NDArray columnMaxes = np.amax(_motionEnergyFeatures, axis: 0);
+			NDArray columnMaxes = Num.amax(_motionEnergyFeatures, axis: 0);
 			_perFilterMax = columnMaxes.ToArray<float>();
-			_globalMax = (float)np.amax(_motionEnergyFeatures);
+			_globalMax = (float)Num.amax(_motionEnergyFeatures);
 
-			NDArray columnMeans = np.mean(_motionEnergyFeatures, axis: 0);
-			NDArray columnStds = np.std(_motionEnergyFeatures, axis: 0);
+			NDArray columnMeans = Num.mean(_motionEnergyFeatures, axis: 0);
+			NDArray columnStds = Num.std(_motionEnergyFeatures, axis: 0);
 			_perFilterPercentile = (columnMeans + 2.326 * columnStds).ToArray<float>();
 		}
 
@@ -1914,13 +1915,16 @@ namespace SharpEyes.ViewModels
 						gazeLocations[frameIndex, 1] = meta.GazeSpaceHeight / 2.0;
 					}
 				}
-
-				// Load the feature array (float32) through Python so lower-dtype saves read back correctly.
-				NDArray features = await Task.Run(() =>
+				
+				int dtypeIndex = OutputDtypeNames.IndexOf(meta.OutputDtype);
+				// Load the feature array
+				// dtype == 0 is float16, which numsharp does not support, so that has to go through python
+				// the other kinds can be loaded from numsharp
+				NDArray features = dtypeIndex == 0 ? await Task.Run(() =>
 				{
 					PythonEnvironmentManager.Instance.Initialize();
 					return motionEnergyFeatures.LoadFeatures(featuresPath);
-				});
+				}) : Num.load(featuresPath).astype(NPTypeCode.Single);
 
 				// Apply parsed parameters via the public setters so the UI updates.
 				ResetDynamicState();
@@ -1929,7 +1933,6 @@ namespace SharpEyes.ViewModels
 				FrameScale = meta.FrameScale;
 				VideoFps = meta.VideoFps;
 				StartFrame = meta.StartFrame;
-				int dtypeIndex = OutputDtypeNames.IndexOf(meta.OutputDtype);
 				if (dtypeIndex >= 0) SelectedOutputDtypeIndex = dtypeIndex;
 
 				SpatialFrequencies.Clear();
