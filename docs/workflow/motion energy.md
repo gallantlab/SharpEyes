@@ -59,15 +59,18 @@ The preferred backend order is configured in Python Settings. After a compute ru
 
 Once the frame parameters, pyramid, and backend are configured, click **Compute features** to run the full feature extraction over the video. The following options are available before running:
 
-| Control | Description |
-|---|---|
-| Compute dtype | Floating-point precision of the output features array: `float16`, `float32` (default), or `float64`. |
-| Missing gaze | How to handle video frames where gaze position is absent or invalid. **Zeros** fills those rows in the output with zeros; **NaN** fills them with NaN; **Do nothing** leaves them unchanged. |
-| Start frame | Frame number at which extraction begins. |
+| Control | Description                                                                                                                                                                                                                                                                                           |
+|---|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compute dtype | Floating-point precision of the output features array: `float16`\*, `float32` (default), or `float64`.                                                                                                                                                                                                |
+| Missing gaze | How to handle video frames where gaze position is absent or invalid. **Zeros** fills those rows in the output with zeros; **NaN** fills them with NaN; **Do nothing** leaves them unchanged.                                                                                                          |
+| Start frame | Frame number at which extraction begins.                                                                                                                                                                                                                                                              |
 | Batch filters | When enabled, filter responses are computed in groups rather than one filter at a time. Useful on backends that can parallelize across filters. Set **Filter batch size** to control how many filters are processed per batch. The **All** button sets the batch size to the total number of filters. |
-| Batch frames | When enabled, the stimulus frames are split into batches rather than processed all at once. Set **Frame batch size** to control how many frames are included per batch. |
-| Stimulus frames in CPU | Keep the full stimulus frame tensor on CPU; only the current batch is transferred to the GPU. Reduces peak GPU memory use when frame batching is on. |
-| Filter responses in CPU | Accumulate the filter response tensor on CPU; each batch's output is copied off the GPU immediately rather than held in VRAM for the full run. Reduces peak GPU memory use when filter batching is on. |
+| Batch frames | When enabled, the stimulus frames are split into batches rather than processed all at once. Set **Frame batch size** to control how many frames are included per batch.                                                                                                                               |
+| Stimulus frames in CPU | Keep the full stimulus frame tensor on CPU; only the current batch is transferred to the GPU. Reduces peak GPU memory use when frame batching is on.                                                                                                                                                  |
+| Filter responses in CPU | Accumulate the filter response tensor on CPU; each batch's output is copied off the GPU immediately rather than held in VRAM for the full run. Reduces peak GPU memory use when filter batching is on.                                                                                                |
+
+\* **Note**: the scale filter responses, especially for spatially large ones, can easily overflow half-precision 
+floating point limits and get you `infs`. It's best to use at least single precision.
 
 While computing, the button changes to **Cancel** to interrupt the run.
 
