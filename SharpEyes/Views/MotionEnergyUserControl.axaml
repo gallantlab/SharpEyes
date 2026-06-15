@@ -5,10 +5,15 @@
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              xmlns:vm="clr-namespace:SharpEyes.ViewModels"
              xmlns:views="clr-namespace:SharpEyes.Views"
+             xmlns:conv="clr-namespace:SharpEyes.Converters"
              x:Class="SharpEyes.Views.MotionEnergyUserControl">
     <Design.DataContext>
         <vm:MotionEnergyViewModel />
     </Design.DataContext>
+    <UserControl.Resources>
+        <conv:OutputDtypeForegroundConverter x:Key="OutputDtypeForegroundConverter" />
+        <conv:OutputDtypeWarningConverter x:Key="OutputDtypeWarningConverter" />
+    </UserControl.Resources>
     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="4" ShowGridLines="False">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -304,7 +309,23 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Compute dtype</TextBlock>
                                 <ComboBox Margin="4" Width="150" Items="{Binding OutputDtypeNames}"
-                                          SelectedIndex="{Binding SelectedOutputDtypeIndex}" />
+                                          SelectedIndex="{Binding SelectedOutputDtypeIndex}">
+                                    <ComboBox.Styles>
+                                        <Style Selector="ComboBoxItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        </Style>
+                                    </ComboBox.Styles>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent" HorizontalAlignment="Stretch"
+                                                    ToolTip.Tip="{Binding Converter={StaticResource OutputDtypeWarningConverter}}"
+                                                    ToolTip.ShowDelay="0">
+                                                <TextBlock Text="{Binding}"
+                                                           Foreground="{Binding Converter={StaticResource OutputDtypeForegroundConverter}}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock VerticalAlignment="Center" Width="150">Missing gaze</TextBlock>
