@@ -119,6 +119,7 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> RestoreFilterDefaultsCommand { get; }
 
 		private string _statusText = "Idle";
+
 		public string StatusText
 		{
 			get => _statusText;
@@ -126,6 +127,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private bool _isProgressBarVisible = false;
+
 		public bool IsProgressBarVisible
 		{
 			get => _isProgressBarVisible;
@@ -133,6 +135,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private bool _isProgressBarIndeterminate = false;
+
 		public bool IsProgressBarIndeterminate
 		{
 			get => _isProgressBarIndeterminate;
@@ -140,6 +143,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private double _progressBarValue = 0;
+
 		public double ProgressBarValue
 		{
 			get => _progressBarValue;
@@ -154,6 +158,7 @@ namespace SharpEyes.ViewModels
 		private DispatcherTimer _videoPlaybackTimer;
 
 		private int _videoWidth = 1024;
+
 		public int VideoWidth
 		{
 			get => _videoWidth;
@@ -170,6 +175,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private int _videoHeight = 768;
+
 		public int VideoHeight
 		{
 			get => _videoHeight;
@@ -194,14 +200,22 @@ namespace SharpEyes.ViewModels
 		private int _eyetrackingFPS = 60;
 		private int _gazeSpaceWidth = 1024;
 		private int _gazeSpaceHeight = 768;
-		private NDArray? _motionEnergyFeatures = null;
 
-		private bool _isLoadedFromRecentering = false;
+		private NDArray? filterResponses
+		{
+			get;
+			set
+			{
+				field = value;
+				_perFilterPercentile = null;
+			}
+		} = null;
+
 		public bool IsLoadedFromRecentering
 		{
-			get => _isLoadedFromRecentering;
-			private set => this.RaiseAndSetIfChanged(ref _isLoadedFromRecentering, value);
-		}
+			get;
+			private set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
 		private bool _isPreview = false;
 		public bool IsPreview
@@ -219,27 +233,25 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private double _gazeX = 0;
 		public double GazeX
 		{
-			get => _gazeX;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _gazeX, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("ImageLeft");
 			}
-		}
+		} = 0;
 
-		private double _gazeY = 0;
 		public double GazeY
 		{
-			get => _gazeY;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _gazeY, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("ImageTop");
 			}
-		}
+		} = 0;
 
 		public int CanvasWidth => (int)(VideoWidth * _padPercent / 100.0);
 		public int CanvasHeight => (int)(VideoHeight * _padPercent / 100.0);
@@ -1327,7 +1339,7 @@ namespace SharpEyes.ViewModels
 		/// </summary>
 		private void ResetDynamicState()
 		{
-			_motionEnergyFeatures = null;
+			filterResponses = null;
 			_flatFilterResponses = null;
 			_filterResponseColumnCount = 0;
 			_filterResponseRowCount = 0;
@@ -1364,7 +1376,7 @@ namespace SharpEyes.ViewModels
 		/// </summary>
 		private void UpdateDynamicOpacities()
 		{
-			if (!_isOverlayOpacityDynamic) return;
+			if (!showDynamicOverlay) return;
 			if (_flatFilterResponses == null) return;
 			if (PyramidArrows.Count == 0 && PyramidCircles.Count == 0) return;
 
@@ -1433,7 +1445,7 @@ namespace SharpEyes.ViewModels
 		/// </summary>
 		private void ComputeNormalizationStatistics()
 		{
-			if ((object)_motionEnergyFeatures == null)
+			if ((object)filterResponses == null)
 			{
 				_globalMax = 0;
 				_perFilterMax = null;
@@ -1441,12 +1453,12 @@ namespace SharpEyes.ViewModels
 				return;
 			}
 
-			NDArray columnMaxes = Num.amax(_motionEnergyFeatures, axis: 0);
+			NDArray columnMaxes = Num.amax(filterResponses, axis: 0);
 			_perFilterMax = columnMaxes.ToArray<float>();
-			_globalMax = (float)Num.amax(_motionEnergyFeatures);
+			_globalMax = (float)Num.amax(filterResponses);
 
-			NDArray columnMeans = Num.mean(_motionEnergyFeatures, axis: 0);
-			NDArray columnStds = Num.std(_motionEnergyFeatures, axis: 0);
+			NDArray columnMeans = Num.mean(filterResponses, axis: 0);
+			NDArray columnStds = Num.std(filterResponses, axis: 0);
 			_perFilterPercentile = (columnMeans + 2.326 * columnStds).ToArray<float>();
 		}
 
@@ -1595,12 +1607,13 @@ namespace SharpEyes.ViewModels
 					}
 				}
 
-				_motionEnergyFeatures = features;
+				filterResponses = features;
 				_filterResponseRowCount = features.Shape[0];
 				_filterResponseColumnCount = features.Shape[1];
 				_flatFilterResponses = features.ToArray<float>();
 				_filterResponsesStartFrame = _startFrame;
-				await Task.Run(() => ComputeNormalizationStatistics());
+				
+				// TODO: move these to background so they don't block progress
 				_hasFilterResponses = true;
 				_areFilterResponsesStale = false;
 				this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
@@ -1978,7 +1991,7 @@ namespace SharpEyes.ViewModels
 					&& features.Shape.NDim == 2
 					&& features.Shape[1] != motionEnergyFeatures.FilterCount;
 
-				_motionEnergyFeatures = features;
+				filterResponses = features;
 				_filterResponsesStartFrame = meta.StartFrame;
 				_hasFilterResponses = true;
 				_areFilterResponsesStale = false;
@@ -1987,7 +2000,6 @@ namespace SharpEyes.ViewModels
 				_flatFilterResponses = features.ToArray<float>();
 				this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
 				this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
-				await Task.Run(() => ComputeNormalizationStatistics());
 
 				if (filterCountMismatch)
 					StatusText = String.Format(
