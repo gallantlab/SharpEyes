@@ -1,17 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Reactive;
-using System.Text;
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
-using Avalonia.Threading;
 using Eyetracking;
 using NumSharp;
 using ReactiveUI;
@@ -19,19 +13,14 @@ using SharpEyes.Models;
 
 namespace SharpEyes.ViewModels
 {
-	public class StimulusGazeViewModel : ViewModelBase
+	public class StimulusGazeViewModel : GazeVideoPlayerViewModelBase
 	{
-		// == Commands ==
-		public ReactiveCommand<Unit, Unit> LoadVideoCommand { get; set; }
-		public ReactiveCommand<Unit, Unit>? PlayPauseCommand { get; set; } = null;
-		public ReactiveCommand<Unit, Unit>? PreviousFrameCommand { get; set; } = null;
-		public ReactiveCommand<Unit, Unit>? NextFrameCommand { get; set; } = null;
+		// == Commands (video transport and JumpToFirstTTL come from the base) ==
 		public ReactiveCommand<Unit, Unit> LoadGazeCommand { get; set; }
 		public ReactiveCommand<Unit, Unit>? SaveGazeCommand { get; set; } = null;
 		public ReactiveCommand<Unit, Unit> SetCurrentAsDataStartCommand { get; set; }
 		public ReactiveCommand<Unit, Unit>? FindDataStartCommand { get; set; } = null;
 		public ReactiveCommand<Unit, Unit> SendToRecenteringCommand { get; set; }
-		public ReactiveCommand<Unit, Unit>? JumpToFirstTTLCommand { get; set; } = null;
 		public ReactiveCommand<Unit, Unit> ShiftEyetrackingForwardCommand { get; set; }
 		public ReactiveCommand<Unit, Unit> ShiftEyetrackingBackCommand { get; set; }
 		public ReactiveCommand<Unit, Unit>? SetCurrentAsFirstTTLCommand { get; set; } = null;
@@ -39,12 +28,6 @@ namespace SharpEyes.ViewModels
 		// Set by MainWindowViewModel after construction
 		public RecenteringViewModel? RecenteringViewModel { get; set; }
 		public Action? SwitchToRecenteringTab { get; set; }
-
-		// == window reference for showing dialogs
-		public Window? MainWindow =>
-			Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-				? desktop.MainWindow
-				: null;
 
 		// == UI elements ==
 		private bool _isMovingGaze = false;
@@ -57,144 +40,23 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		// progress bar
-		private string _statusText = "Idle";
-		public string StatusText
-		{
-			get => _statusText;
-			set => this.RaiseAndSetIfChanged(ref _statusText, value);
-		}
-		private bool _isProgressBarVisible = false;
-		public bool IsProgressBarVisible
-		{
-			get => _isProgressBarVisible;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarVisible, value);
-		}
-		private bool _isProgressBarIndeterminate = false;
-		public bool IsProgressBarIndeterminate
-		{
-			get => _isProgressBarIndeterminate;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
-		}
-		private bool _isLoadingGaze = false;
-		public bool IsLoadingGaze
-		{
-			get => _isLoadingGaze;
-			set => this.RaiseAndSetIfChanged(ref _isLoadingGaze, value);
-		}
-		private double _progressBarValue = 0;
-		public double ProgressBarValue
-		{
-			get => _progressBarValue;
-			set => this.RaiseAndSetIfChanged(ref _progressBarValue, value);
-		}
-		
-		// == video stuff ==
-		private VideoReader? videoReader = null;
-		private DispatcherTimer videoPlaybackTimer;
-		private Func<int, string> _timeFormatter;
-
-		private int _videoWidth = 1024;
-		public int VideoWidth
-		{
-			get => _videoWidth;
-			set => this.RaiseAndSetIfChanged(ref _videoWidth, value);
-		}
-
-		private int _videoHeight = 768;
-		public int VideoHeight
-		{
-			get => _videoHeight;
-			set => this.RaiseAndSetIfChanged(ref _videoHeight, value);
-		}
-
-		private string _currentVideoTime = "0:00:00;00";
-
-		public string CurrentVideoTime
-		{
-			get => _currentVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoTime, value);
-		}
-		private string _totalVideoTime = "0:00:00;00";
-
-		public string TotalVideoTime
-		{
-			get => _totalVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoTime, value);
-		}
-		public string PlayPauseButtonText => IsVideoPlaying ? "Pause" : "Play";
-		private bool _isVideoPlaying = false;
-
-		public bool IsVideoPlaying
-		{
-			get => _isVideoPlaying;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref _isVideoPlaying, value);
-				this.RaisePropertyChanged("PlayPauseButtonText");
-			}
-		}
-		private int _currentVideoFrame = 0;
-		public int CurrentVideoFrame
-		{
-			get => _currentVideoFrame;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoFrame, value);
-		}
-
-		private int _totalVideoFrames = 0;
-		public int TotalVideoFrames
-		{
-			get => _totalVideoFrames;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoFrames, value);
-		}
-
-		private Bitmap? _videoFrame = null;
-		public Bitmap? VideoFrame
-		{
-			get => _videoFrame;
-			set => this.RaiseAndSetIfChanged(ref _videoFrame, value);
-		}
-
 		// Gaze overlay info
 		internal NDArray? RawGazeLocations = null;
 		internal NDArray? FilteredGazeLocations = null;
 		internal NDArray? DisplayedGazeLocations => _isGazeFilterEnabled && ((object)FilteredGazeLocations != null) ? FilteredGazeLocations : RawGazeLocations;
 
-		private bool _isGazeLoaded = false;
-		public bool IsGazeLoaded
+		protected override NDArray? GazeData => DisplayedGazeLocations;
+
+		public Color GazeStrokeColor
 		{
-			get => _isGazeLoaded;
+			get => GazeStrokeBrush.Color;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isGazeLoaded, value);
-				this.RaisePropertyChanged("IsGazeEllipseVisible");
-				this.RaisePropertyChanged("HasTTLData");
+				GazeStrokeBrush.Color = value;
+				this.RaisePropertyChanged("GazeStrokeBrush");
 			}
 		}
 
-		private bool _isGazeAtNaN = false;
-		public bool IsGazeAtNaN
-		{
-			get => _isGazeAtNaN;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref _isGazeAtNaN, value);
-				this.RaisePropertyChanged("IsGazeEllipseVisible");
-			}
-		}
-
-		public bool IsGazeEllipseVisible => IsGazeLoaded && !IsGazeAtNaN;
-
-		private bool _isTTL = false;
-		public bool IsTTL
-		{
-			get => _isTTL;
-			set => this.RaiseAndSetIfChanged(ref _isTTL, value);
-		}
-
-		public bool HasTTLData => IsGazeLoaded && Recenterer.FindFirstTTLGazeIndex(DisplayedGazeLocations) != null;
-
-		internal int? dataStartFrame = null;
 		public int? DataStartFrame
 		{
 			get => dataStartFrame;
@@ -224,105 +86,6 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private int? dataFrame // used to index into the gaze matrix. Updated by UpdateDisplay
-		{
-			get
-			{
-				if (dataStartFrame == null) return null;
-				return VideoTimeToDataIndex(CurrentVideoFrame);
-			}
-		}
-
-		private double _gazeX = 0;
-		private double _gazeY = 0;
-		public double GazeX
-		{
-			get => _gazeX;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref _gazeX, value);
-				this.RaisePropertyChanged("GazeCircleLeft");
-				this.RaisePropertyChanged("GazeXText");
-			}
-		}
-		public double GazeY
-		{
-			get => _gazeY;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref _gazeY, value);
-				this.RaisePropertyChanged("GazeCircleTop");
-				this.RaisePropertyChanged("GazeYText");
-			}
-		}
-		public double GazeCircleLeft => _gazeX - GazeRadius;
-		public double GazeCircleTop => _gazeY - GazeRadius;
-
-		private double _gazeDiameter = 204;
-		public double GazeRadius => _gazeDiameter / 2;
-		public double GazeDiameter
-		{
-			get => _gazeDiameter;
-			set
-			{
-				// gaze diameter is bounded
-				_gazeDiameter = value;
-
-				this.RaisePropertyChanged("GazeDiameter");
-				this.RaisePropertyChanged("GazeRadius");
-				this.RaisePropertyChanged("GazeRadiusText");
-				// because the circle is set by its left/top corner
-				this.RaisePropertyChanged("GazeCircleLeft");
-				this.RaisePropertyChanged("GazeCircleTop");
-			}
-		}
-
-		private double _gazeStrokeThickness = 4.0;
-		public double GazeStrokeThickness
-		{
-			get => _gazeStrokeThickness;
-			set => this.RaiseAndSetIfChanged(ref _gazeStrokeThickness, value);
-		}
-
-		private double _gazeStrokeOpacity = 0.75;
-		public double GazeStrokeOpacity
-		{
-			get => _gazeStrokeOpacity;
-			set => this.RaiseAndSetIfChanged(ref _gazeStrokeOpacity, value);
-		}
-		public Color GazeStrokeColor
-		{
-			get => GazeStrokeBrush.Color;
-			set
-			{
-				GazeStrokeBrush.Color = value;
-				this.RaisePropertyChanged("GazeStrokeBrush");
-			}
-		}
-
-		public SolidColorBrush GazeStrokeBrush { get; set; } = new SolidColorBrush(Colors.LimeGreen);
-
-		private int _eyetrackingFPS = 60;
-		public int EyetrackingFPS
-		{
-			get => _eyetrackingFPS;
-			set => this.RaiseAndSetIfChanged(ref _eyetrackingFPS, value);
-		}
-
-		private double _trailLength = 1.0;
-		public double TrailLength
-		{
-			get => _trailLength;
-			set => this.RaiseAndSetIfChanged(ref _trailLength, value);
-		}
-
-		private ObservableCollection<TrailGazePoint> _trailPoints;
-		public ObservableCollection<TrailGazePoint> TrailPoints
-		{
-			get => _trailPoints;
-			private set => this.RaiseAndSetIfChanged(ref _trailPoints, value);
-		}
-
 		private ObservableCollection<VideoKeyFrame> _videoKeyFrames = new ObservableCollection<VideoKeyFrame>(new List<VideoKeyFrame>());
 		public ObservableCollection<VideoKeyFrame> VideoKeyFrames
 		{
@@ -336,13 +99,6 @@ namespace SharpEyes.ViewModels
 		{
 			get => _setDefaultKeyFrames;
 			set => this.RaiseAndSetIfChanged(ref _setDefaultKeyFrames, value);
-		}
-
-		private bool _isPlaybackEnabled = true;
-		public bool IsPlaybackEnabled
-		{
-			get => _isPlaybackEnabled;
-			set => this.RaiseAndSetIfChanged(ref _isPlaybackEnabled, value);
 		}
 
 		// Gaze filtering
@@ -491,26 +247,16 @@ namespace SharpEyes.ViewModels
 
 		public StimulusGazeViewModel()
 		{
-			LoadVideoCommand = ReactiveCommand.Create(LoadVideo);
-			PlayPauseCommand = ReactiveCommand.Create(PlayPause);
 			LoadGazeCommand = ReactiveCommand.Create(LoadGaze);
 			SaveGazeCommand = ReactiveCommand.Create(SaveGaze);
 			SetCurrentAsDataStartCommand = ReactiveCommand.Create(SetCurrentAsDataStart);
-			videoPlaybackTimer = new DispatcherTimer();
-			videoPlaybackTimer.Tick += this.VideoTimerTick;
-
-			PreviousFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(-1); });
-			NextFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(1); });
 			SendToRecenteringCommand = ReactiveCommand.Create(SendToRecentering);
-			JumpToFirstTTLCommand = ReactiveCommand.Create(JumpToFirstTTL);
 			ShiftEyetrackingForwardCommand = ReactiveCommand.Create(ShiftEyetrackingForward);
 			ShiftEyetrackingBackCommand = ReactiveCommand.Create(ShiftEyetrackingBack);
 			SetCurrentAsFirstTTLCommand = ReactiveCommand.Create(SetCurrentAsFirstTTL);
-			TrailPoints = new ObservableCollection<TrailGazePoint>(
-				Enumerable.Range(0, 10).Select(_ => new TrailGazePoint()));
 		}
 
-		public async void LoadVideo()
+		public override async void LoadVideo()
 		{
 			// reset gaze stuff
 			dataStartFrame = null;
@@ -521,91 +267,13 @@ namespace SharpEyes.ViewModels
 			GazeX = 0;
 			GazeY = 0;
 
-			OpenFileDialog openFileDialog = new OpenFileDialog()
-			{
-				Title = "Load stimulus video"
-			};
-			openFileDialog.Filters.Add(new FileDialogFilter()
-			{
-				Name = "Videos",
-				Extensions = { "avi", "mkv", "mp4", "m4v" }
-			});
-			string[] fileName = await openFileDialog.ShowAsync(MainWindow);
-
-			if (fileName == null || fileName.Length == 0)
+			string? fileName = await PromptForVideoAsync();
+			if (fileName == null)
 				return;
 
-			videoFilePath = fileName[0];
-			videoReader = new VideoReader(fileName[0]);
-			videoReader.ReadFrame();
-			VideoFrame = videoReader.GetFrameForDisplay();
-			videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)videoReader.fps);
-			TotalVideoFrames = videoReader.frameCount;
-			UpdateTimecodeDisplay();
+			videoFilePath = fileName;
+			OpenVideoReader(fileName);
 			SaveGazeCommand = null;
-		}
-
-		public void PlayPause()
-		{
-			if (IsVideoPlaying)
-				videoPlaybackTimer.Stop();
-			else
-				videoPlaybackTimer.Start();
-			IsVideoPlaying = !IsVideoPlaying;
-		}
-
-		public void ChangeFrame(int delta)
-		{
-			if (videoReader != null)
-				ShowFrame(videoReader.CurrentFrameNumber + delta);
-		}
-
-		/// <summary>
-		/// Called by the dispatcher timer to play the video. this is called once every frame to read
-		/// in a video frame and update the display
-		/// </summary>
-		public void VideoTimerTick(object? sender, EventArgs e)
-		{
-			if (videoReader.CurrentFrameNumber >= videoReader.frameCount - 1)
-				PlayPause();
-			videoReader.ReadFrame();
-			UpdateDisplay();
-		}
-
-		public void ShowFrame()
-		{
-			ShowFrame(CurrentVideoFrame);
-		}
-
-		public void ShowFrame(int frame)
-		{
-			videoReader.CurrentFrameNumber = frame;
-			UpdateDisplay();
-		}
-
-		/// <summary>
-		/// Given a video frame index, gets the first corresponding index in the gaze locations
-		/// </summary>
-		/// <param name="videoFrame"></param>
-		/// <returns></returns>
-		private int VideoTimeToDataIndex(int videoFrame)
-		{
-			int videoFramesElapsed = videoFrame - dataStartFrame.Value;
-			if (videoFramesElapsed < 0)
-				return 0;
-			double videoElapsedTime = (double)videoFramesElapsed / videoReader.fps;
-			return (int)(videoElapsedTime * EyetrackingFPS);
-		}
-
-		private bool CheckTTLInVideoFrame(int videoFrame)
-		{
-			if ((object)DisplayedGazeLocations == null || DisplayedGazeLocations.Shape[1] < 4) return false;
-			int startIndex = VideoTimeToDataIndex(videoFrame);
-			int endIndex = VideoTimeToDataIndex(videoFrame + 1);
-			for (int i = startIndex; i < endIndex && i < DisplayedGazeLocations.Shape[0]; i++)
-				if ((double)DisplayedGazeLocations[i, 3] != 0.0)
-					return true;
-			return false;
 		}
 
 		/// <summary>
@@ -620,85 +288,6 @@ namespace SharpEyes.ViewModels
 			return dataStartFrame.Value + dataElapsedFrames;
 		}
 
-		public void UpdateTimecodeDisplay()
-		{
-			if (videoReader == null)
-				return;
-			if (Settings.Current.ShowFrameNumber)
-				_timeFormatter = frame => String.Format("Frame {0}", frame);
-			else
-				_timeFormatter = videoReader.FramesToTimecode;
-			CurrentVideoTime = _timeFormatter(videoReader.CurrentFrameNumber);
-			TotalVideoTime = _timeFormatter(videoReader.frameCount - 1);
-		}
-
-		public void UpdateDisplay()
-		{
-			VideoFrame = videoReader.GetFrameForDisplay();
-			CurrentVideoFrame = videoReader.CurrentFrameNumber;
-			CurrentVideoTime = _timeFormatter(videoReader.CurrentFrameNumber);
-			// TODO: set gaze circle location
-			if (dataStartFrame != null)
-			{
-				double gazeXValue = DisplayedGazeLocations[dataFrame, 0];
-				double gazeYValue = DisplayedGazeLocations[dataFrame, 1];
-				if (Double.IsNaN(gazeXValue) || Double.IsNaN(gazeYValue))
-				{
-					IsGazeAtNaN = true;
-				}
-				else
-				{
-					IsGazeAtNaN = false;
-					GazeX = gazeXValue;
-					GazeY = gazeYValue;
-				}
-				IsTTL = CheckTTLInVideoFrame(CurrentVideoFrame);
-				UpdateTrailPoints();
-			}
-			else
-			{
-				IsGazeAtNaN = false;
-				IsTTL = false;
-				foreach (TrailGazePoint point in TrailPoints)
-					point.IsVisible = false;
-			}
-		}
-
-		private void UpdateTrailPoints()
-		{
-			const int trailCircleCount = 10;
-			double stepSeconds = TrailLength / trailCircleCount;
-			int stepVideoFrames = Math.Max(1, (int)(stepSeconds * videoReader.fps));
-			// snap to multiples of the step so circles stay fixed between step intervals
-			int currentFrameBase = (videoReader.CurrentFrameNumber / stepVideoFrames) * stepVideoFrames;
-			for (int i = 0; i < trailCircleCount; i++)
-			{
-				int trailVideoFrame = currentFrameBase - (trailCircleCount - i) * stepVideoFrames;
-				if (trailVideoFrame < 0 || trailVideoFrame < dataStartFrame.Value)
-				{
-					TrailPoints[i].IsVisible = false;
-					continue;
-				}
-				int trailDataIndex = VideoTimeToDataIndex(trailVideoFrame);
-				if (trailDataIndex >= DisplayedGazeLocations.Shape[0])
-				{
-					TrailPoints[i].IsVisible = false;
-					continue;
-				}
-				double trailX = (double)DisplayedGazeLocations[trailDataIndex, 0];
-				double trailY = (double)DisplayedGazeLocations[trailDataIndex, 1];
-				if (Double.IsNaN(trailX) || Double.IsNaN(trailY))
-				{
-					TrailPoints[i].IsVisible = false;
-					continue;
-				}
-				TrailPoints[i].Left = trailX - GazeRadius;
-				TrailPoints[i].Top = trailY - GazeRadius;
-				TrailPoints[i].Opacity = GazeStrokeOpacity * (double)i / (trailCircleCount - 1);
-				TrailPoints[i].IsVisible = true;
-			}
-		}
-
 		// after gaze is manually edited, updates it.
 		public void UpdateGaze()
 		{
@@ -707,7 +296,7 @@ namespace SharpEyes.ViewModels
 
 			AddKeyFrame();
 
-			// if there is a keyframe before, ramp the delta from the previous keyframe 
+			// if there is a keyframe before, ramp the delta from the previous keyframe
 			// to this new keyframe
 			if (PreviousDataKeyFrame.HasValue)
 			{
@@ -765,7 +354,7 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private int? PreviousDataKeyFrame 
+		private int? PreviousDataKeyFrame
 		{
 			get
 			{
@@ -801,57 +390,22 @@ namespace SharpEyes.ViewModels
 
 		public async void LoadGaze()
 		{
-			OpenFileDialog openFileDialog = new OpenFileDialog()
-			{
-				Title = "Load gaze locations"
-			};
-			FileDialogFilter allFilesFilter = new FileDialogFilter()
-			{
-				Name = "All supported files",
-				Extensions = { "npy", "csv", "txt", "asc" }
-			};
-			if (GazeLoader.IsEDFSupported)
-				allFilesFilter.Extensions.Add("edf");
-			openFileDialog.Filters.Add(allFilesFilter);
-			openFileDialog.Filters.Add(new FileDialogFilter()
-			{
-				Name = "Numpy file",
-				Extensions = { "npy" }
-			});
-			openFileDialog.Filters.Add(new FileDialogFilter()
-			{
-				Name = "Comma-separated values",
-				Extensions = { "csv" }
-			});
-			openFileDialog.Filters.Add(new FileDialogFilter()
-			{
-				Name = "Eyelink text file",
-				Extensions = { "txt", "asc" }
-			});
-			if (GazeLoader.IsEDFSupported)
-				openFileDialog.Filters.Add(new FileDialogFilter()
-				{
-					Name = "Eyelink EDF file",
-					Extensions = { "edf" }
-				});
-			string[] fileName = await openFileDialog.ShowAsync(MainWindow);
-
-			if (fileName == null || fileName.Length == 0)
+			string? fileName = await GazeFileDialog.ShowAsync(MainWindow);
+			if (fileName == null)
 				return;
 			IsLoadingGaze = true;
 			int capturedSampleRate = 0;
 			NDArray? loadedGaze = null;
 			await Task.Run(() =>
 			{
-				int sampleRate;
-				loadedGaze = GazeLoader.Load(fileName[0], out sampleRate);
+				loadedGaze = GazeLoader.Load(fileName, out int sampleRate);
 				capturedSampleRate = sampleRate;
 			});
 			RawGazeLocations = loadedGaze;
 			if (capturedSampleRate > 0)
 				EyetrackingFPS = capturedSampleRate;
 			IsGazeLoaded = true;
-			gazeFileName = fileName[0];
+			gazeFileName = fileName;
 			if (videoReader != null)
 				SetCurrentAsDataStart();
 			if (_isGazeFilterEnabled)
@@ -911,16 +465,6 @@ namespace SharpEyes.ViewModels
 			};
 			RecenteringViewModel.LoadFromStimulusGaze(videoFilePath, DisplayedGazeLocations, dataStartFrame.Value, EyetrackingFPS, filterSettings, gazeFileName);
 			SwitchToRecenteringTab?.Invoke();
-		}
-
-		public void JumpToFirstTTL()
-		{
-			int? firstTTLGazeIndex = Recenterer.FindFirstTTLGazeIndex(DisplayedGazeLocations);
-			if (firstTTLGazeIndex == null || videoReader == null || dataStartFrame == null) return;
-			double gazeElapsedTime = (double)firstTTLGazeIndex.Value / EyetrackingFPS;
-			int videoFrame = dataStartFrame.Value + (int)(gazeElapsedTime * videoReader.fps);
-			videoFrame = Math.Clamp(videoFrame, 0, videoReader.frameCount - 1);
-			ShowFrame(videoFrame);
 		}
 
 		public void SetCurrentAsFirstTTL()
@@ -987,37 +531,6 @@ namespace SharpEyes.ViewModels
 
 			if (videoReader != null)
 				UpdateDisplay();
-		}
-	}
-
-	public class TrailGazePoint : ReactiveObject
-	{
-		private double _left;
-		public double Left
-		{
-			get => _left;
-			set => this.RaiseAndSetIfChanged(ref _left, value);
-		}
-
-		private double _top;
-		public double Top
-		{
-			get => _top;
-			set => this.RaiseAndSetIfChanged(ref _top, value);
-		}
-
-		private double _opacity;
-		public double Opacity
-		{
-			get => _opacity;
-			set => this.RaiseAndSetIfChanged(ref _opacity, value);
-		}
-
-		private bool _isVisible = false;
-		public bool IsVisible
-		{
-			get => _isVisible;
-			set => this.RaiseAndSetIfChanged(ref _isVisible, value);
 		}
 	}
 }
