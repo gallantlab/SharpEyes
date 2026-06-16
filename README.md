@@ -1,6 +1,6 @@
 
 
-   # SharpEyes
+# SharpEyes
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20401807.svg)](https://doi.org/10.5281/zenodo.20401807)
 
 A program for doing eyetracking and making motion-energy features out of stimulus videos.
@@ -10,7 +10,7 @@ It then lets you overlay the gaze on the stimulus to look at eyetraces, and then
 Given traces and stimulus video, you can then recenter the video to be retinotopic, and generate motion-energy features from stimuli.
 The motion-energy features are actually processed by [PyMoten](https://github.com/gallantlab/pymoten), but the user doesn't have to interact at all with it. Sharpeyes will handle everything under the hood, including setup.
 
-https://github.com/user-attachments/assets/ed4eec93-dfb4-419d-a5dc-ec49c309c074
+![](docs/assets/combined.avif)
 
 See the [Documentation](https://gallantlab.org/SharpEyes) for full details.
 
