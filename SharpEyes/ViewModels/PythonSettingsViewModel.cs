@@ -323,9 +323,10 @@ namespace SharpEyes.ViewModels
 			List<string> savedPreference = _manager.Settings.BackendPreference;
 
 			List<string> orderedResult = new List<string>();
-			foreach (string backend in savedPreference)
-				if (probeResult.Contains(backend))
-					orderedResult.Add(backend);
+			if (savedPreference != null)
+				foreach (string backend in savedPreference)
+					if (probeResult.Contains(backend))
+						orderedResult.Add(backend);
 			foreach (string backend in probeResult)
 				if (!orderedResult.Contains(backend))
 					orderedResult.Add(backend);
