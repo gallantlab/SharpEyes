@@ -589,8 +589,8 @@ namespace SharpEyes.ViewModels
 		// contains thousands of filters. Rebuilt when responses are retained and
 		// cleared when they are discarded.
 		private float[]? _flatFilterResponses = null;
-		private int _filterResponseColumnCount = 0;
-		private int _filterResponseRowCount = 0;
+		private int numFilters = 0;
+		private int numFilterResponseFrames = 0;
 
 		public ReactiveCommand<Unit, Unit> ComputePyramidCommand { get; }
 		public ReactiveCommand<Unit, Unit> SetAllFiltersCommand { get; }
@@ -1341,8 +1341,8 @@ namespace SharpEyes.ViewModels
 		{
 			filterResponses = null;
 			_flatFilterResponses = null;
-			_filterResponseColumnCount = 0;
-			_filterResponseRowCount = 0;
+			numFilters = 0;
+			numFilterResponseFrames = 0;
 			_hasFilterResponses = false;
 			_areFilterResponsesStale = false;
 			_globalMax = 0;
@@ -1380,8 +1380,8 @@ namespace SharpEyes.ViewModels
 			if (_flatFilterResponses == null) return;
 			if (PyramidArrows.Count == 0 && PyramidCircles.Count == 0) return;
 
-			int featureRow = Math.Clamp(CurrentVideoFrame - _filterResponsesStartFrame, 0, _filterResponseRowCount - 1);
-			int rowOffset = featureRow * _filterResponseColumnCount;
+			int featureRow = Math.Clamp(CurrentVideoFrame - _filterResponsesStartFrame, 0, numFilterResponseFrames - 1);
+			int rowOffset = featureRow * numFilters;
 
 			foreach (PyramidArrowOverlay spoke in PyramidArrows)
 			{
@@ -1545,7 +1545,7 @@ namespace SharpEyes.ViewModels
 
 			try
 			{
-				// Phase 1+2: build recentered frames and pyramid in parallel
+				// build recentered frames and motion-energy parameters
 				StatusText = "Processing frames and building pyramid...";
 				IsProgressBarIndeterminate = false;
 				ProgressBarValue = 0;
@@ -1580,7 +1580,7 @@ namespace SharpEyes.ViewModels
 
 				cancellationToken.ThrowIfCancellationRequested();
 
-				// Phase 3: extract features (indeterminate progress)
+				// extract features (indeterminate progress)
 				motionEnergyFeatures.Backend = SelectedBackendKey;
 				motionEnergyFeatures.BatchFilters = batchFilters;
 				motionEnergyFeatures.FilterBatchSize = _filterBatchSize;
@@ -1590,37 +1590,34 @@ namespace SharpEyes.ViewModels
 				motionEnergyFeatures.ResponsesInCPU = _responsesInCPU;
 				StatusText = "Computing motion energy...";
 				IsProgressBarIndeterminate = true;
-				NDArray features;
 				
 				IProgress<double> extractProgress = new Progress<double>(_ => { });
-				features = await motionEnergyFeatures.ExtractAsync(frames, extractProgress);
+				await motionEnergyFeatures.ExtractAsync(frames, extractProgress);
 
 				// Apply missing-gaze treatment
 				if (SelectedMissingGazeTreatment != MissingGazeTreatment.DoNothing)
 				{
-					List<int> missingFrameIndices = FindMissingGazeFrameIndices(_startFrame, features.Shape[0]);
+					List<int> missingFrameIndices = FindMissingGazeFrameIndices(_startFrame, frames.Shape[0]);
 					if (missingFrameIndices.Count > 0)
 					{
 						bool fillWithNaN = SelectedMissingGazeTreatment == MissingGazeTreatment.NaN;
 						motionEnergyFeatures.FillMissingFrames(missingFrameIndices, fillWithNaN);
-						features[new NDArray(missingFrameIndices.ToArray())] = fillWithNaN ? float.NaN : 0.0f;
 					}
 				}
 
-				filterResponses = features;
-				_filterResponseRowCount = features.Shape[0];
-				_filterResponseColumnCount = features.Shape[1];
-				_flatFilterResponses = features.ToArray<float>();
+				filterResponses = motionEnergyFeatures.filterResponses;
+				numFilterResponseFrames = filterResponses.Shape[0];
+				numFilters = filterResponses.Shape[1];
+				_flatFilterResponses = filterResponses.ToArray<float>();
 				_filterResponsesStartFrame = _startFrame;
 				
-				// TODO: move these to background so they don't block progress
 				_hasFilterResponses = true;
 				_areFilterResponsesStale = false;
 				this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
 				this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));
-				UpdateDynamicOpacities();
 				IsProgressBarIndeterminate = false;
 				IsProgressBarVisible = false;
+				showDynamicOverlay = false;	// user has to turn dynamics on again if they want to
 
 				// Save to disk
 				SaveFileDialog saveDialog = new SaveFileDialog() { Title = "Save motion energy features" };
@@ -1703,7 +1700,7 @@ namespace SharpEyes.ViewModels
 				}
 
 				StatusText = String.Format("Motion energy computed: {0} frames x {1} features",
-					features.Shape[0], features.Shape[1]);
+					filterResponses.Shape[0], filterResponses.Shape[1]);
 			}
 			catch (OperationCanceledException)
 			{
@@ -1995,8 +1992,8 @@ namespace SharpEyes.ViewModels
 				_filterResponsesStartFrame = meta.StartFrame;
 				_hasFilterResponses = true;
 				_areFilterResponsesStale = false;
-				_filterResponseRowCount = features.Shape[0];
-				_filterResponseColumnCount = features.Shape[1];
+				numFilterResponseFrames = features.Shape[0];
+				numFilters = features.Shape[1];
 				_flatFilterResponses = features.ToArray<float>();
 				this.RaisePropertyChanged(nameof(CanShowDynamicOverlay));
 				this.RaisePropertyChanged(nameof(IsDynamicOverlayStale));

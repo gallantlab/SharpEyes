@@ -155,13 +155,13 @@ namespace SharpEyes.Models
 		// Converts frames (nFrames x height x width, uint8) to motion-energy features
 		// (nFrames x nFeatures, float32).
 		// Must be called after BuildPyramid(). Frames must match FrameHeight x FrameWidth.
-		public async Task<NDArray> ExtractAsync(NDArray frames, IProgress<double> progress)
+		public async Task ExtractAsync(NDArray frames, IProgress<double> progress)
 		{
 			int nFrames = frames.Shape[0];
 			int height = frames.Shape[1];
 			int width = frames.Shape[2];
 
-			return await Task.Run(() =>
+			await Task.Run(() =>
 			{
 				float[] resultData;
 				int nFeatures;
@@ -205,26 +205,6 @@ namespace SharpEyes.Models
 						PyObject computedFeatures = ResponsesInCPU ? projection : projection.cpu().numpy();
 						_lastFeatures?.Dispose();
 						_lastFeatures = computedFeatures;
-						// C# reads the features back as float32 for visualization only.
-						dynamic result = ((dynamic)computedFeatures).astype(np.float32);
-						nFeatures = (int)result.shape[1];
-
-						// Pin the C# float array and copy numpy result directly into it,
-						// avoiding the intermediate Python bytes object and cross-boundary marshal
-						resultData = new float[nFrames * nFeatures];
-						GCHandle outputHandle = GCHandle.Alloc(resultData, GCHandleType.Pinned);
-						try
-						{
-							long outputPtr = outputHandle.AddrOfPinnedObject().ToInt64();
-							dynamic outputCArrayType = ctypes.c_float * resultData.Length;
-							dynamic outputCArray = outputCArrayType.from_address(outputPtr);
-							dynamic outputNpArray = npCtypeslib.as_array(outputCArray);
-							np.copyto(outputNpArray, result.reshape(-1));
-						}
-						finally
-						{
-							outputHandle.Free();
-						}
 					}
 					finally
 					{
@@ -240,10 +220,7 @@ namespace SharpEyes.Models
 						}
 					}
 				}
-
-				NDArray output = new NDArray(resultData).reshape(nFrames, nFeatures);
 				progress.Report(1.0);
-				return output;
 			});
 		}
 
@@ -327,6 +304,45 @@ namespace SharpEyes.Models
 					features[indices] = np.nan;
 				else
 					features[indices] = new PyInt(0);
+			}
+		}
+
+		public NDArray? filterResponses
+		{
+			get
+			{
+				if (_lastFeatures == null) return null;
+				using (Py.GIL())
+				{
+					dynamic motenBackend = Py.Import("moten.backend");
+					motenBackend.set_backend(Backend);
+
+					dynamic np = Py.Import("numpy");
+					dynamic ctypes = Py.Import("ctypes");
+					dynamic npCtypeslib = Py.Import("numpy.ctypeslib");
+					// C# reads the features back as float32 for visualization only.
+					dynamic result = ((dynamic)_lastFeatures).astype(np.float32);
+					int nFeatures = (int)result.shape[1];
+					int nFrames = (int)result.shape[0];
+
+					// Pin the C# float array and copy numpy result directly into it,
+					// avoiding the intermediate Python bytes object and cross-boundary marshal
+					var resultData = new float[nFrames * nFeatures];
+					GCHandle outputHandle = GCHandle.Alloc(resultData, GCHandleType.Pinned);
+					try
+					{
+						long outputPtr = outputHandle.AddrOfPinnedObject().ToInt64();
+						dynamic outputCArrayType = ctypes.c_float * resultData.Length;
+						dynamic outputCArray = outputCArrayType.from_address(outputPtr);
+						dynamic outputNpArray = npCtypeslib.as_array(outputCArray);
+						np.copyto(outputNpArray, result.reshape(-1));
+					}
+					finally
+					{
+						outputHandle.Free();
+					}
+					return new NDArray(resultData).reshape(nFrames, nFeatures);
+				}
 			}
 		}
 
