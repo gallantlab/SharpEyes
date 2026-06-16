@@ -307,7 +307,7 @@
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock VerticalAlignment="Center" Width="150">Compute dtype</TextBlock>
+                                <TextBlock VerticalAlignment="Center" Width="150">Precision</TextBlock>
                                 <ComboBox Margin="4" Width="150" Items="{Binding OutputDtypeNames}"
                                           SelectedIndex="{Binding SelectedOutputDtypeIndex}">
                                     <ComboBox.Styles>
