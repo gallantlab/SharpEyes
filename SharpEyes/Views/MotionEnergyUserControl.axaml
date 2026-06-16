@@ -258,7 +258,7 @@
                             <ToggleSwitch Margin="0 4 0 0" OnContent="Show dynamic responses"
                                           OffContent="Show dynamic responses"
                                           IsEnabled="{Binding CanShowDynamicOverlay}"
-                                          IsChecked="{Binding IsOverlayOpacityDynamic}"
+                                          IsChecked="{Binding ShowDynamicOverlay}"
                                           ToolTip.Tip="Show dynamic filter responses?" />
                             <TextBlock Margin="0 2 0 0" Foreground="#CC8800" TextWrapping="Wrap"
                                        IsVisible="{Binding IsDynamicOverlayStale}"

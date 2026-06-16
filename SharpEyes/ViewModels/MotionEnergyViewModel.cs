@@ -493,21 +493,24 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _overlayRenderTrigger, value);
 		}
 
-		// When true the overlay opacity is driven per frame by the filter responses; when
-		// false every overlay element uses the constant static opacity.
-		private bool _isOverlayOpacityDynamic = false;
-		public bool IsOverlayOpacityDynamic
+		// When true, the overlay opacities correspond to the filter responses at each frame
+		private bool showDynamicOverlay = false;
+		public bool ShowDynamicOverlay
 		{
-			get => _isOverlayOpacityDynamic;
+			get => showDynamicOverlay;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isOverlayOpacityDynamic, value);
+				this.RaiseAndSetIfChanged(ref showDynamicOverlay, value);
 				bool overlayBuilt = PyramidArrows.Count > 0 || PyramidCircles.Count > 0;
-				bool shouldShowOverlay = _showMotionEnergyPyramid || _isOverlayOpacityDynamic;
+				bool shouldShowOverlay = _showMotionEnergyPyramid || showDynamicOverlay;
+
+				if (value && _perFilterPercentile == null)
+					ComputeNormalizationStatistics();
+					
 				if (overlayBuilt && shouldShowOverlay)
 				{
 					// The overlay geometry already exists, so only its opacity mode changes.
-					if (_isOverlayOpacityDynamic)
+					if (showDynamicOverlay)
 						UpdateDynamicOpacities();
 					else
 						ApplyStaticOpacity();
@@ -1175,7 +1178,7 @@ namespace SharpEyes.ViewModels
 		{
 			PyramidCircles.Clear();
 			PyramidArrows.Clear();
-			if (!_showMotionEnergyPyramid && !_isOverlayOpacityDynamic)
+			if (!_showMotionEnergyPyramid && !showDynamicOverlay)
 			{
 				OverlayRenderTrigger++;
 				return;
@@ -1260,7 +1263,7 @@ namespace SharpEyes.ViewModels
 				}
 			}
 
-			if (_isOverlayOpacityDynamic)
+			if (showDynamicOverlay)
 				UpdateDynamicOpacities();
 			else
 				ApplyStaticOpacity();
@@ -1309,10 +1312,10 @@ namespace SharpEyes.ViewModels
 		public void CommitFilterParameterChange(bool rebuildPyramid)
 		{
 			MarkFilterResponsesStale();
-			if (_isOverlayOpacityDynamic)
+			if (showDynamicOverlay)
 			{
-				_isOverlayOpacityDynamic = false;
-				this.RaisePropertyChanged(nameof(IsOverlayOpacityDynamic));
+				showDynamicOverlay = false;
+				this.RaisePropertyChanged(nameof(ShowDynamicOverlay));
 			}
 			_ = UpdateOverlay(rebuildPyramid);
 		}
@@ -1333,10 +1336,10 @@ namespace SharpEyes.ViewModels
 			_globalMax = 0;
 			_perFilterMax = null;
 			_perFilterPercentile = null;
-			if (_isOverlayOpacityDynamic)
+			if (showDynamicOverlay)
 			{
-				_isOverlayOpacityDynamic = false;
-				this.RaisePropertyChanged(nameof(IsOverlayOpacityDynamic));
+				showDynamicOverlay = false;
+				this.RaisePropertyChanged(nameof(ShowDynamicOverlay));
 			}
 			if (_showMotionEnergyPyramid)
 			{
