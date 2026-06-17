@@ -172,18 +172,17 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private bool _isGazeAtNaN = false;
-		public bool IsGazeAtNaN
+		public bool FrameHasGaze
 		{
-			get => _isGazeAtNaN;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isGazeAtNaN, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("IsGazeEllipseVisible");
 			}
-		}
+		} = false;
 
-		public bool IsGazeEllipseVisible => IsGazeLoaded && !IsGazeAtNaN;
+		public bool IsGazeEllipseVisible => IsGazeLoaded && FrameHasGaze;
 
 		private bool _isTTL = false;
 		public bool IsTTL
@@ -640,24 +639,30 @@ namespace SharpEyes.ViewModels
 			// TODO: set gaze circle location
 			if (dataStartFrame != null)
 			{
-				double gazeXValue = DisplayedGazeLocations[dataFrame, 0];
-				double gazeYValue = DisplayedGazeLocations[dataFrame, 1];
-				if (Double.IsNaN(gazeXValue) || Double.IsNaN(gazeYValue))
-				{
-					IsGazeAtNaN = true;
-				}
+				if (dataFrame.Value >= DisplayedGazeLocations.Shape[0])
+					FrameHasGaze = false;
 				else
 				{
-					IsGazeAtNaN = false;
-					GazeX = gazeXValue;
-					GazeY = gazeYValue;
+					double gazeXValue = DisplayedGazeLocations[dataFrame, 0];
+					double gazeYValue = DisplayedGazeLocations[dataFrame, 1];
+					if (Double.IsNaN(gazeXValue) || Double.IsNaN(gazeYValue))
+					{
+						FrameHasGaze = false;
+					}
+					else
+					{
+						FrameHasGaze = true;
+						GazeX = gazeXValue;
+						GazeY = gazeYValue;
+					}
 				}
+
 				IsTTL = CheckTTLInVideoFrame(CurrentVideoFrame);
 				UpdateTrailPoints();
 			}
 			else
 			{
-				IsGazeAtNaN = false;
+				FrameHasGaze = false;
 				IsTTL = false;
 				foreach (TrailGazePoint point in TrailPoints)
 					point.IsVisible = false;
