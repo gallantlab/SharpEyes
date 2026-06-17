@@ -118,37 +118,29 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit> RestoreVideoDefaultsCommand { get; }
 		public ReactiveCommand<Unit, Unit> RestoreFilterDefaultsCommand { get; }
 
-		private string _statusText = "Idle";
-
 		public string StatusText
 		{
-			get => _statusText;
-			set => this.RaiseAndSetIfChanged(ref _statusText, value);
-		}
-
-		private bool _isProgressBarVisible = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "Idle";
 
 		public bool IsProgressBarVisible
 		{
-			get => _isProgressBarVisible;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarVisible, value);
-		}
-
-		private bool _isProgressBarIndeterminate = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
 		public bool IsProgressBarIndeterminate
 		{
-			get => _isProgressBarIndeterminate;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
-		}
-
-		private double _progressBarValue = 0;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
 		public double ProgressBarValue
 		{
-			get => _progressBarValue;
-			set => this.RaiseAndSetIfChanged(ref _progressBarValue, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
 		private readonly MotionEnergyFeatures motionEnergyFeatures = new MotionEnergyFeatures();
 		private Settings settings = Settings.Load();
@@ -343,26 +335,23 @@ namespace SharpEyes.ViewModels
 		public ObservableCollection<double> TemporalFrequencies { get; } = new ObservableCollection<double>();
 		public ObservableCollection<double> Directions { get; } = new ObservableCollection<double>();
 
-		private int _selectedSpatialFrequencyIndex = -1;
 		public int SelectedSpatialFrequencyIndex
 		{
-			get => _selectedSpatialFrequencyIndex;
-			set => this.RaiseAndSetIfChanged(ref _selectedSpatialFrequencyIndex, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = -1;
 
-		private int _selectedTemporalFrequencyIndex = -1;
 		public int SelectedTemporalFrequencyIndex
 		{
-			get => _selectedTemporalFrequencyIndex;
-			set => this.RaiseAndSetIfChanged(ref _selectedTemporalFrequencyIndex, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = -1;
 
-		private int _selectedDirectionIndex = -1;
 		public int SelectedDirectionIndex
 		{
-			get => _selectedDirectionIndex;
-			set => this.RaiseAndSetIfChanged(ref _selectedDirectionIndex, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = -1;
 
 		public List<int> SelectedSpatialFrequencyIndices { get; set; } = new List<int>();
 		public List<int> SelectedTemporalFrequencyIndices { get; set; } = new List<int>();
@@ -498,12 +487,11 @@ namespace SharpEyes.ViewModels
 
 		// Incremented whenever dynamic-overlay opacities change so the overlay
 		// control re-renders without a collection-changed notification.
-		private int _overlayRenderTrigger = 0;
 		public int OverlayRenderTrigger
 		{
-			get => _overlayRenderTrigger;
-			set => this.RaiseAndSetIfChanged(ref _overlayRenderTrigger, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
 		// When true, the overlay opacities correspond to the filter responses at each frame
 		private bool showDynamicOverlay = false;
@@ -739,51 +727,45 @@ namespace SharpEyes.ViewModels
 
 		public string ComputeFeaturesButtonText => _isComputingFeatures ? "Cancel" : "Compute features";
 
-		private Bitmap? _videoFrame = null;
 		public Bitmap? VideoFrame
 		{
-			get => _videoFrame;
-			set => this.RaiseAndSetIfChanged(ref _videoFrame, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = null;
 
-		private int _currentVideoFrame = 0;
 		public int CurrentVideoFrame
 		{
-			get => _currentVideoFrame;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoFrame, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private int _totalVideoFrames = 0;
 		public int TotalVideoFrames
 		{
-			get => _totalVideoFrames;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoFrames, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private string _currentVideoTime = "0:00:00;00";
 		public string CurrentVideoTime
 		{
-			get => _currentVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoTime, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "0:00:00;00";
 
-		private string _totalVideoTime = "0:00:00;00";
 		public string TotalVideoTime
 		{
-			get => _totalVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoTime, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "0:00:00;00";
 
-		private bool _isVideoPlaying = false;
 		public bool IsVideoPlaying
 		{
-			get => _isVideoPlaying;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isVideoPlaying, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("PlayPauseButtonText");
 			}
-		}
+		} = false;
 
 		public string PlayPauseButtonText => IsVideoPlaying ? "Pause" : "Play";
 		public bool CanPlayVideo => _videoReader != null;

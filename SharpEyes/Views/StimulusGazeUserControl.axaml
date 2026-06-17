@@ -89,7 +89,7 @@
                    Canvas.Left="{Binding GazeCircleLeft}"
                    Canvas.Top="{Binding GazeCircleTop}"/>
           <Panel Width="{Binding VideoWidth}" Height="{Binding VideoHeight}"
-                 IsHitTestVisible="False" IsVisible="{Binding IsGazeAtNaN}">
+                 IsHitTestVisible="False" IsVisible="{Binding !FrameHasGaze}">
             <TextBlock Text="No gaze data" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                        Margin="4" Foreground="Red" FontWeight="Bold"/>
           </Panel>

@@ -47,130 +47,117 @@ namespace SharpEyes.ViewModels
 				: null;
 
 		// == UI elements ==
-		private bool _isMovingGaze = false;
 		public bool IsMovingGaze
 		{
-			get => _isMovingGaze;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref _isMovingGaze, value);
-			}
-		}
+			get;
+			set { this.RaiseAndSetIfChanged(ref field, value); }
+		} = false;
 
 		// progress bar
-		private string _statusText = "Idle";
 		public string StatusText
 		{
-			get => _statusText;
-			set => this.RaiseAndSetIfChanged(ref _statusText, value);
-		}
-		private bool _isProgressBarVisible = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "Idle";
+
 		public bool IsProgressBarVisible
 		{
-			get => _isProgressBarVisible;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarVisible, value);
-		}
-		private bool _isProgressBarIndeterminate = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
+
 		public bool IsProgressBarIndeterminate
 		{
-			get => _isProgressBarIndeterminate;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
-		}
-		private bool _isLoadingGaze = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
+
 		public bool IsLoadingGaze
 		{
-			get => _isLoadingGaze;
-			set => this.RaiseAndSetIfChanged(ref _isLoadingGaze, value);
-		}
-		private double _progressBarValue = 0;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
+
 		public double ProgressBarValue
 		{
-			get => _progressBarValue;
-			set => this.RaiseAndSetIfChanged(ref _progressBarValue, value);
-		}
-		
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
+
 		// == video stuff ==
 		private VideoReader? videoReader = null;
 		private DispatcherTimer videoPlaybackTimer;
 		private Func<int, string> _timeFormatter;
 
-		private int _videoWidth = 1024;
 		public int VideoWidth
 		{
-			get => _videoWidth;
-			set => this.RaiseAndSetIfChanged(ref _videoWidth, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 1024;
 
-		private int _videoHeight = 768;
 		public int VideoHeight
 		{
-			get => _videoHeight;
-			set => this.RaiseAndSetIfChanged(ref _videoHeight, value);
-		}
-
-		private string _currentVideoTime = "0:00:00;00";
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 768;
 
 		public string CurrentVideoTime
 		{
-			get => _currentVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoTime, value);
-		}
-		private string _totalVideoTime = "0:00:00;00";
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "0:00:00;00";
 
 		public string TotalVideoTime
 		{
-			get => _totalVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoTime, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "0:00:00;00";
+
 		public string PlayPauseButtonText => IsVideoPlaying ? "Pause" : "Play";
-		private bool _isVideoPlaying = false;
 
 		public bool IsVideoPlaying
 		{
-			get => _isVideoPlaying;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isVideoPlaying, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("PlayPauseButtonText");
 			}
-		}
-		private int _currentVideoFrame = 0;
+		} = false;
+
 		public int CurrentVideoFrame
 		{
-			get => _currentVideoFrame;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoFrame, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private int _totalVideoFrames = 0;
 		public int TotalVideoFrames
 		{
-			get => _totalVideoFrames;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoFrames, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private Bitmap? _videoFrame = null;
 		public Bitmap? VideoFrame
 		{
-			get => _videoFrame;
-			set => this.RaiseAndSetIfChanged(ref _videoFrame, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = null;
 
 		// Gaze overlay info
 		internal NDArray? RawGazeLocations = null;
 		internal NDArray? FilteredGazeLocations = null;
 		internal NDArray? DisplayedGazeLocations => _isGazeFilterEnabled && ((object)FilteredGazeLocations != null) ? FilteredGazeLocations : RawGazeLocations;
 
-		private bool _isGazeLoaded = false;
 		public bool IsGazeLoaded
 		{
-			get => _isGazeLoaded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isGazeLoaded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("IsGazeEllipseVisible");
 				this.RaisePropertyChanged("HasTTLData");
 			}
-		}
+		} = false;
 
 		public bool FrameHasGaze
 		{
@@ -184,12 +171,11 @@ namespace SharpEyes.ViewModels
 
 		public bool IsGazeEllipseVisible => IsGazeLoaded && FrameHasGaze;
 
-		private bool _isTTL = false;
 		public bool IsTTL
 		{
-			get => _isTTL;
-			set => this.RaiseAndSetIfChanged(ref _isTTL, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
 		public bool HasTTLData => IsGazeLoaded && Recenterer.FindFirstTTLGazeIndex(DisplayedGazeLocations) != null;
 
@@ -206,12 +192,11 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private int _eyetrackingShiftFrameCount = 1;
 		public int EyetrackingShiftFrameCount
 		{
-			get => _eyetrackingShiftFrameCount;
-			set => this.RaiseAndSetIfChanged(ref _eyetrackingShiftFrameCount, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 1;
 
 		private int? dataEndFrame
 		{
@@ -276,19 +261,18 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private double _gazeStrokeThickness = 4.0;
 		public double GazeStrokeThickness
 		{
-			get => _gazeStrokeThickness;
-			set => this.RaiseAndSetIfChanged(ref _gazeStrokeThickness, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 4.0;
 
-		private double _gazeStrokeOpacity = 0.75;
 		public double GazeStrokeOpacity
 		{
-			get => _gazeStrokeOpacity;
-			set => this.RaiseAndSetIfChanged(ref _gazeStrokeOpacity, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0.75;
+
 		public Color GazeStrokeColor
 		{
 			get => GazeStrokeBrush.Color;
@@ -301,48 +285,42 @@ namespace SharpEyes.ViewModels
 
 		public SolidColorBrush GazeStrokeBrush { get; set; } = new SolidColorBrush(Colors.LimeGreen);
 
-		private int _eyetrackingFPS = 60;
 		public int EyetrackingFPS
 		{
-			get => _eyetrackingFPS;
-			set => this.RaiseAndSetIfChanged(ref _eyetrackingFPS, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 60;
 
-		private double _trailLength = 1.0;
 		public double TrailLength
 		{
-			get => _trailLength;
-			set => this.RaiseAndSetIfChanged(ref _trailLength, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 1.0;
 
-		private ObservableCollection<TrailGazePoint> _trailPoints;
 		public ObservableCollection<TrailGazePoint> TrailPoints
 		{
-			get => _trailPoints;
-			private set => this.RaiseAndSetIfChanged(ref _trailPoints, value);
+			get;
+			private set => this.RaiseAndSetIfChanged(ref field, value);
 		}
 
-		private ObservableCollection<VideoKeyFrame> _videoKeyFrames = new ObservableCollection<VideoKeyFrame>(new List<VideoKeyFrame>());
 		public ObservableCollection<VideoKeyFrame> VideoKeyFrames
 		{
-			get => _videoKeyFrames;
-			set => this.RaiseAndSetIfChanged(ref _videoKeyFrames, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = new ObservableCollection<VideoKeyFrame>(new List<VideoKeyFrame>());
 
 		// set some default keyframes when the data start is set?
-		private bool _setDefaultKeyFrames = false;
 		public bool SetDefaultKeyFrames
 		{
-			get => _setDefaultKeyFrames;
-			set => this.RaiseAndSetIfChanged(ref _setDefaultKeyFrames, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
-		private bool _isPlaybackEnabled = true;
 		public bool IsPlaybackEnabled
 		{
-			get => _isPlaybackEnabled;
-			set => this.RaiseAndSetIfChanged(ref _isPlaybackEnabled, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = true;
 
 		// Gaze filtering
 		private bool _isGazeFilterEnabled = Settings.Current.GazeFilterEnabled;
@@ -440,53 +418,49 @@ namespace SharpEyes.ViewModels
 			? "gaze locations"
 			: System.IO.Path.GetFileNameWithoutExtension(gazeFileName) + " corrected.npy";
 
-		private bool _isTemporalAlignmentExpanded = Settings.Current.StimulusTemporalAlignmentExpanded;
 		public bool IsTemporalAlignmentExpanded
 		{
-			get => _isTemporalAlignmentExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isTemporalAlignmentExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.StimulusTemporalAlignmentExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.StimulusTemporalAlignmentExpanded;
 
-		private bool _isGazeInfoExpanded = Settings.Current.StimulusGazeInfoExpanded;
 		public bool IsGazeInfoExpanded
 		{
-			get => _isGazeInfoExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isGazeInfoExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.StimulusGazeInfoExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.StimulusGazeInfoExpanded;
 
-		private bool _isGazeFilteringExpanded = Settings.Current.StimulusGazeFilteringExpanded;
 		public bool IsGazeFilteringExpanded
 		{
-			get => _isGazeFilteringExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isGazeFilteringExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.StimulusGazeFilteringExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.StimulusGazeFilteringExpanded;
 
-		private bool _isKeyframesExpanded = Settings.Current.StimulusKeyframesExpanded;
 		public bool IsKeyframesExpanded
 		{
-			get => _isKeyframesExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isKeyframesExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.StimulusKeyframesExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.StimulusKeyframesExpanded;
 
 		public StimulusGazeViewModel()
 		{
@@ -997,32 +971,28 @@ namespace SharpEyes.ViewModels
 
 	public class TrailGazePoint : ReactiveObject
 	{
-		private double _left;
 		public double Left
 		{
-			get => _left;
-			set => this.RaiseAndSetIfChanged(ref _left, value);
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
 		}
 
-		private double _top;
 		public double Top
 		{
-			get => _top;
-			set => this.RaiseAndSetIfChanged(ref _top, value);
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
 		}
 
-		private double _opacity;
 		public double Opacity
 		{
-			get => _opacity;
-			set => this.RaiseAndSetIfChanged(ref _opacity, value);
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
 		}
 
-		private bool _isVisible = false;
 		public bool IsVisible
 		{
-			get => _isVisible;
-			set => this.RaiseAndSetIfChanged(ref _isVisible, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 	}
 }

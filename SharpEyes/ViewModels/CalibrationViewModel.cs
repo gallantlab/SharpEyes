@@ -27,122 +27,107 @@ namespace SharpEyes.ViewModels
 
 		public ReactiveCommand<Unit, Unit> ForceRedrawCommand { get; set; }
 
-		private int _stimulusWidth = 1024;
 		public int StimulusWidth
 		{
-			get => _stimulusWidth;
-			set => this.RaiseAndSetIfChanged(ref _stimulusWidth, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 1024;
 
-		private int _stimulusHeight = 768;
 		public int StimulusHeight
 		{
-			get => _stimulusHeight;
-			set => this.RaiseAndSetIfChanged(ref _stimulusHeight, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 768;
 
-		private string _calibrationRMSError = "Mapping not yet computed";
 		public string CalibrationRMSError
 		{
-			get => _calibrationRMSError;
-			set => this.RaiseAndSetIfChanged(ref _calibrationRMSError, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "Mapping not yet computed";
 
-		private int _calibrationStartFrame = 1;
 		public int CalibrationStartFrame
 		{
-			get => _calibrationStartFrame;
-			set => this.RaiseAndSetIfChanged(ref _calibrationStartFrame, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 1;
 
-		private string _calibrationStartTimeStamp = "0:00:00.000";	
 		public string CalibrationStartTimeStamp
 		{
-			get => _calibrationStartTimeStamp;
-			set => this.RaiseAndSetIfChanged(ref _calibrationStartTimeStamp, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "0:00:00.000";
 
-		private double _calibrationDuration = 2.0;
 		public double CalibrationDuration
 		{
-			get => _calibrationDuration;
-			set => this.RaiseAndSetIfChanged(ref _calibrationDuration, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 2.0;
 
-		private double _calibrationDelay = 2.0;
 		public double CalibrationDelay
 		{
-			get => _calibrationDelay;
-			set => this.RaiseAndSetIfChanged(ref _calibrationDelay, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 2.0;
 
-		private double _pointDelay = 0.167;
 		public double PointDelay
 		{
-			get => _pointDelay;
-			set => this.RaiseAndSetIfChanged(ref _pointDelay, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0.167;
 
-		private int _eyetrackingFPS = 60;
 		public int EyetrackingFPS
 		{
-			get => _eyetrackingFPS;
-			set => this.RaiseAndSetIfChanged(ref _eyetrackingFPS, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 60;
 
-		private double _DPIUnscaleFactor = 1.0;
 		public double DPIUnscaleFactor
 		{
-			get => _DPIUnscaleFactor;
-			set => this.RaiseAndSetIfChanged(ref _DPIUnscaleFactor, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 1.0;
 
-		private ObservableCollection<Point> _calibrationPoints = new ObservableCollection<Point>();
 		public ObservableCollection<Point> CalibrationPoints
 		{
-			get => _calibrationPoints;
-			set => this.RaiseAndSetIfChanged(ref _calibrationPoints, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = new ObservableCollection<Point>();
 
 		// objects drawn on the screen to visualize things
-		private ObservableCollection<Shape> _shapesToDraw = new ObservableCollection<Shape>();
 
 		public ObservableCollection<Shape> ShapesToDraw
 		{
-			get => _shapesToDraw;
-			set => this.RaiseAndSetIfChanged(ref _shapesToDraw, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = new ObservableCollection<Shape>();
 
-		private PupilInfo _pupilInfo = null;
 		public PupilInfo PupilInfo
 		{
-			get => _pupilInfo;
-			set => this.RaiseAndSetIfChanged(ref _pupilInfo, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = null;
 
-		private bool _isCalibrationParametersExpanded = SharpEyes.Models.Settings.Current.CalibrationParametersExpanded;
 		public bool IsCalibrationParametersExpanded
 		{
-			get => _isCalibrationParametersExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isCalibrationParametersExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				SharpEyes.Models.Settings.Current.CalibrationParametersExpanded = value;
 				SharpEyes.Models.Settings.Current.Save();
 			}
-		}
+		} = SharpEyes.Models.Settings.Current.CalibrationParametersExpanded;
 
-		private bool _isCalibrationPointsExpanded = SharpEyes.Models.Settings.Current.CalibrationPointsExpanded;
 		public bool IsCalibrationPointsExpanded
 		{
-			get => _isCalibrationPointsExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isCalibrationPointsExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				SharpEyes.Models.Settings.Current.CalibrationPointsExpanded = value;
 				SharpEyes.Models.Settings.Current.Save();
 			}
-		}
+		} = SharpEyes.Models.Settings.Current.CalibrationPointsExpanded;
 
 		public CalibrationViewModel()
 		{

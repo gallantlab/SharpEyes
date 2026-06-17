@@ -190,37 +190,35 @@ namespace Eyetracking
 		private double[] dataValueX;
 		private double[] dataValueY;
 
-		private Nullable<double> _baseRadius = null;
 		public Nullable<double> baseRadius
 		{
-			get { return _baseRadius; }
+			get { return field; }
 			set
 			{
 				xInterpolator.baseRadius = yInterpolator.baseRadius = value;
-				_baseRadius = value;
+				field = value;
 			}
-		}
-		private int _numLayers = 5;
+		} = null;
+
 		public int numLayers
 		{
-			get { return _numLayers; }
+			get { return field; }
 			set
 			{
 				xInterpolator.numLayers = yInterpolator.numLayers = value;
-				_numLayers = value;
+				field = value;
 			}
-		}
+		} = 5;
 
-		private double _regularizer = 0;
 		public double regularizer
 		{
-			get { return _regularizer; }
+			get { return field; }
 			set
 			{
 				xInterpolator.regularizer = yInterpolator.regularizer = value;
-				_regularizer = value;
+				field = value;
 			}
-		}
+		} = 0;
 
 		public double RMSError { get; private set; }
 

@@ -28,8 +28,7 @@ namespace SharpEyes.Models
 
 	public class PythonEnvironmentManager
 	{
-		private static PythonEnvironmentManager? _instance;
-		public static PythonEnvironmentManager Instance => _instance ??= new PythonEnvironmentManager();
+		public static PythonEnvironmentManager Instance => field ??= new PythonEnvironmentManager();
 
 		public Settings Settings { get; private set; } = new Settings();
 		public bool IsInitialized { get; private set; } = false;

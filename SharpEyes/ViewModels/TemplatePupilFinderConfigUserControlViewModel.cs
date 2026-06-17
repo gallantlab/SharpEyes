@@ -28,35 +28,36 @@ namespace SharpEyes.ViewModels
 
 		// templates section
 		public bool AutoAddNewTemplate { get; set; } = true;
-		private int _currentTemplateIndex = 0;
+
 		public int CurrentTemplateIndex
 		{
-			get => _currentTemplateIndex;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _currentTemplateIndex, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("TemplateIndexText");
 			}
-		}
+		} = 0;
+
 		public int TotalTemplateCount => TemplatePupilFinder != null ? TemplatePupilFinder.NumTemplates : 0;
 		public string TemplateIndexText => String.Format("{0}/{1}", CurrentTemplateIndex + 1, TotalTemplateCount);
-		private Bitmap? templatePreviewImage = null;
+
 		public Bitmap? TemplatePreviewImage
 		{
-			get => templatePreviewImage;
-			set => this.RaiseAndSetIfChanged(ref templatePreviewImage, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = null;
 
 		// anti-templates section
 		public int CurrentAntiTemplateIndex { get; set; } = 0;
 		public int TotalAntiTemplateCount => TemplatePupilFinder != null ? TemplatePupilFinder.NumAntiTemplates : 0;
 		public string AntiTemplateIndexText => String.Format("{0}/{1}", CurrentAntiTemplateIndex + 1, TotalAntiTemplateCount);
-		private Bitmap? antiTemplatePreviewImage = null;
+
 		public Bitmap? AntiTemplatePreviewImage
 		{
-			get => antiTemplatePreviewImage;
-			set => this.RaiseAndSetIfChanged(ref antiTemplatePreviewImage, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = null;
 
 		// match options
 		public int SelectedMetricIndex { get; set; } = 3;
@@ -89,42 +90,39 @@ namespace SharpEyes.ViewModels
 
 		// view model hierarchy
 		public PupilFindingUserControlViewModel? Parent { get; private set; } = null;
-		
-		private bool _isTemplatesExpanded = SharpEyes.Models.Settings.Current.TemplatesExpanded;
+
 		public bool IsTemplatesExpanded
 		{
-			get => _isTemplatesExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isTemplatesExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				SharpEyes.Models.Settings.Current.TemplatesExpanded = value;
 				SharpEyes.Models.Settings.Current.Save();
 			}
-		}
+		} = SharpEyes.Models.Settings.Current.TemplatesExpanded;
 
-		private bool _isAntiTemplatesExpanded = SharpEyes.Models.Settings.Current.AntiTemplatesExpanded;
 		public bool IsAntiTemplatesExpanded
 		{
-			get => _isAntiTemplatesExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isAntiTemplatesExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				SharpEyes.Models.Settings.Current.AntiTemplatesExpanded = value;
 				SharpEyes.Models.Settings.Current.Save();
 			}
-		}
+		} = SharpEyes.Models.Settings.Current.AntiTemplatesExpanded;
 
-		private bool _isMatchingOptionsExpanded = SharpEyes.Models.Settings.Current.MatchingOptionsExpanded;
 		public bool IsMatchingOptionsExpanded
 		{
-			get => _isMatchingOptionsExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isMatchingOptionsExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				SharpEyes.Models.Settings.Current.MatchingOptionsExpanded = value;
 				SharpEyes.Models.Settings.Current.Save();
 			}
-		}
+		} = SharpEyes.Models.Settings.Current.MatchingOptionsExpanded;
 
 		public TemplatePupilFinderConfigUserControlViewModel()
 			:this(null)

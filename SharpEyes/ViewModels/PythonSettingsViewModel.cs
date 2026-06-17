@@ -74,12 +74,11 @@ namespace SharpEyes.ViewModels
 
 		// == Conda ==
 
-		private bool _isCondaAvailable = false;
 		public bool IsCondaAvailable
 		{
-			get => _isCondaAvailable;
-			private set => this.RaiseAndSetIfChanged(ref _isCondaAvailable, value);
-		}
+			get;
+			private set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
 		public ObservableCollection<CondaEnvironmentInfo> CondaEnvironments { get; } =
 			new ObservableCollection<CondaEnvironmentInfo>();
@@ -101,12 +100,11 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private string _newCondaEnvironmentName = String.Empty;
 		public string NewCondaEnvironmentName
 		{
-			get => _newCondaEnvironmentName;
-			set => this.RaiseAndSetIfChanged(ref _newCondaEnvironmentName, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = String.Empty;
 
 		public ReactiveCommand<Unit, Unit> RefreshCondaEnvironmentsCommand { get; }
 		public ReactiveCommand<Unit, Unit> CreateCondaEnvironmentCommand { get; }
@@ -116,58 +114,51 @@ namespace SharpEyes.ViewModels
 
 		public ReactiveCommand<Unit, Unit> DownloadBundledPythonCommand { get; }
 
-		private double _downloadProgress = 0;
 		public double DownloadProgress
 		{
-			get => _downloadProgress;
-			set => this.RaiseAndSetIfChanged(ref _downloadProgress, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private bool _isDownloadProgressVisible = false;
 		public bool IsDownloadProgressVisible
 		{
-			get => _isDownloadProgressVisible;
-			set => this.RaiseAndSetIfChanged(ref _isDownloadProgressVisible, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
 		// == Shared status ==
 
-		private string _statusText = String.Empty;
 		public string StatusText
 		{
-			get => _statusText;
-			set => this.RaiseAndSetIfChanged(ref _statusText, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = String.Empty;
 
 		// == Dependency status ==
 
-		private string _numPyStatusText = "unknown";
 		public string NumPyStatusText
 		{
-			get => _numPyStatusText;
-			set => this.RaiseAndSetIfChanged(ref _numPyStatusText, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "unknown";
 
-		private string _pillowStatusText = "unknown";
 		public string PillowStatusText
 		{
-			get => _pillowStatusText;
-			set => this.RaiseAndSetIfChanged(ref _pillowStatusText, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "unknown";
 
-		private string _motenStatusText = "unknown";
 		public string MotenStatusText
 		{
-			get => _motenStatusText;
-			set => this.RaiseAndSetIfChanged(ref _motenStatusText, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "unknown";
 
-		private string _torchStatusText = "unknown";
 		public string TorchStatusText
 		{
-			get => _torchStatusText;
-			set => this.RaiseAndSetIfChanged(ref _torchStatusText, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "unknown";
 
 		public ReactiveCommand<Unit, Unit> CheckDependenciesCommand { get; }
 		public ReactiveCommand<Unit, Unit> InstallMissingPackagesCommand { get; }
@@ -178,12 +169,11 @@ namespace SharpEyes.ViewModels
 
 		public ObservableCollection<PymotenBackend> AvailableBackends { get; } = new ObservableCollection<PymotenBackend>();
 
-		private int _selectedBackendIndex = -1;
 		public int SelectedBackendIndex
 		{
-			get => _selectedBackendIndex;
-			set => this.RaiseAndSetIfChanged(ref _selectedBackendIndex, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = -1;
 
 		public ReactiveCommand<Unit, Unit> ProbeBackendsCommand { get; }
 		public ReactiveCommand<Unit, Unit> MoveBackendUpCommand { get; }
@@ -191,12 +181,11 @@ namespace SharpEyes.ViewModels
 
 		// == Restart warning ==
 
-		private bool _restartRequiredVisible = false;
 		public bool RestartRequiredVisible
 		{
-			get => _restartRequiredVisible;
-			set => this.RaiseAndSetIfChanged(ref _restartRequiredVisible, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
 		public PythonSettingsViewModel()
 		{

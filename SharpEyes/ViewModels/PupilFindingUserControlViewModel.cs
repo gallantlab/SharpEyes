@@ -79,112 +79,103 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private bool _isPupilManuallyEdited = false;
 		public bool IsPupilManuallyEdited
 		{
-			get => _isPupilManuallyEdited;
+			get;
 			set
 			{
-				_isPupilManuallyEdited = value;
+				field = value;
 				if (value)
 					PupilStrokeColor = Colors.LimeGreen;
 			}
-		}
+		} = false;
 
 		// progress bar
-		private string _statusText = "Idle";
 		public string StatusText
 		{
-			get => _statusText;
-			set => this.RaiseAndSetIfChanged(ref _statusText, value);
-		}
-		private bool _isProgressBarVisible = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "Idle";
+
 		public bool IsProgressBarVisible
 		{
-			get => _isProgressBarVisible;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarVisible, value);
-		}
-		private bool _isProgressBarIndeterminate = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
+
 		public bool IsProgressBarIndeterminate
 		{
-			get => _isProgressBarIndeterminate;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
-		}
-		private double _progressBarValue = 0;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
+
 		public double ProgressBarValue
 		{
-			get => _progressBarValue;
-			set => this.RaiseAndSetIfChanged(ref _progressBarValue, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
 		// video playback
-		private int _videoWidth = 400;
 		public int VideoWidth
 		{
-			get => _videoWidth;
-			set => this.RaiseAndSetIfChanged(ref _videoWidth, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 400;
 
-		private int _videoHeight = 300;
 		public int VideoHeight
 		{
-			get => _videoHeight;
-			set => this.RaiseAndSetIfChanged(ref _videoHeight, value);
-		}
-
-		private string _currentVideoTime = "0:00:00;00";
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 300;
 
 		public string CurrentVideoTime
 		{
-			get => _currentVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoTime, value);
-		}
-		private string _totalVideoTime = "0:00:00;00";
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "0:00:00;00";
 
 		public string TotalVideoTime
 		{
-			get => _totalVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoTime, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "0:00:00;00";
+
 		public string PlayPauseButtonText => IsVideoPlaying ? "Pause" : "Play";
-		private bool _isVideoPlaying = false;
 
 		public bool IsVideoPlaying
 		{
-			get => _isVideoPlaying;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isVideoPlaying, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("PlayPauseButtonText");
 			}
-		}
-		private int _currentVideoFrame = 0;
+		} = false;
+
 		public int CurrentVideoFrame
 		{
-			get => _currentVideoFrame;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoFrame, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private int _totalVideoFrames = 0;
 		public int TotalVideoFrames
 		{
-			get => _totalVideoFrames;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoFrames, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private Bitmap? _videoFrame = null;
 		public Bitmap? VideoFrame
 		{
-			get => _videoFrame;
-			set => this.RaiseAndSetIfChanged(ref _videoFrame, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = null;
 
-		private Bitmap _framesProcessedPreviewImage = null;
 		public Bitmap FramesProcessedPreviewImage
 		{
-			get => _framesProcessedPreviewImage;
-			set => this.RaiseAndSetIfChanged(ref _framesProcessedPreviewImage, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = null;
+
 		public double FramesProcessedPreviewWidth { get; set; }
 
 		// pupil overlay info
@@ -236,58 +227,52 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private double _pupilConfidence = Double.NaN;
 		public double PupilConfidence
 		{
-			get => _pupilConfidence;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _pupilConfidence, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("PupilConfidenceText");
 			}
-		}
+		} = Double.NaN;
 
-		private int _pupilWindowLeft = 0;
 		public int PupilWindowLeft
 		{
-			get => _pupilWindowLeft;
-			set => this.RaiseAndSetIfChanged(ref _pupilWindowLeft, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private int _pupilWindowTop = 0;
 		public int PupilWindowTop
 		{
-			get => _pupilWindowTop;
-			set => this.RaiseAndSetIfChanged(ref _pupilWindowTop, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private int _pupilWindowWidth = 0;
 		public int PupilWindowWidth
 		{
-			get => _pupilWindowWidth;
-			set => this.RaiseAndSetIfChanged(ref _pupilWindowWidth, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private int _pupilWindowHeight = 0;
 		public int PupilWindowHeight
 		{
-			get => _pupilWindowHeight;
-			set => this.RaiseAndSetIfChanged(ref _pupilWindowHeight, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private double _pupilStrokeThickness = 4.0;
 		public double PupilStrokeThickness
 		{
-			get => _pupilStrokeThickness;
-			set => this.RaiseAndSetIfChanged(ref _pupilStrokeThickness, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 4.0;
 
-		private double _pupilStrokeOpacity = 0.75;
 		public double PupilStrokeOpacity
 		{
-			get => _pupilStrokeOpacity;
-			set => this.RaiseAndSetIfChanged(ref _pupilStrokeOpacity, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0.75;
+
 		public Color PupilStrokeColor
 		{
 			get => PupilStrokeBrush.Color;
@@ -312,23 +297,23 @@ namespace SharpEyes.ViewModels
 		public int PupilFinderTypeIndex { get; set; } = 0;
 		public PupilFinderType PupilFinderType => (PupilFinderType)PupilFinderTypeIndex;
 
-		private bool _isFindingPupils = false;
 		public bool IsFindingPupils
 		{
-			get => _isFindingPupils;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isFindingPupils, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("PupilFindingButtonText");
 			}
-		}
+		} = false;
+
 		public string PupilFindingButtonText => IsFindingPupils ? "Cancel" : "Find Pupils";
-		private bool _isDataDirty = false;
+
 		public bool IsDataDirty
 		{
-			get => _isDataDirty;
-			set => this.RaiseAndSetIfChanged(ref _isDataDirty, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
 		// confidence options - here because they can apply to all pupil finders
 		public bool StopOnLowConfidence { get; set; } = true;
@@ -339,81 +324,76 @@ namespace SharpEyes.ViewModels
 		public double BlinkRejectionPupilSigma { get; set; } = 2.0;
 
 		// Expander states
-		private bool _isPupilSizeExpanded = Settings.Current.PupilSizeExpanded;
 		public bool IsPupilSizeExpanded
 		{
-			get => _isPupilSizeExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isPupilSizeExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.PupilSizeExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.PupilSizeExpanded;
 
-		private bool _isConfidenceOptionsExpanded = Settings.Current.ConfidenceOptionsExpanded;
 		public bool IsConfidenceOptionsExpanded
 		{
-			get => _isConfidenceOptionsExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isConfidenceOptionsExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.ConfidenceOptionsExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.ConfidenceOptionsExpanded;
 
 		// Timestamps
-		private bool _showTimestampParsing = Settings.Current.TimestampParsingExpanded;
 
 		public bool ShowTimestampParsing
 		{
-			get => _showTimestampParsing;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _showTimestampParsing, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.TimestampParsingExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.TimestampParsingExpanded;
 
-		private bool _isImagePreFilteringExpanded = Settings.Current.ImagePreFilteringExpanded;
 		public bool IsImagePreFilteringExpanded
 		{
-			get => _isImagePreFilteringExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isImagePreFilteringExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.ImagePreFilteringExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.ImagePreFilteringExpanded;
 
-		private bool _isManualAdjustOptionsExpanded = Settings.Current.ManualAdjustOptionsExpanded;
 		public bool IsManualAdjustOptionsExpanded
 		{
-			get => _isManualAdjustOptionsExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isManualAdjustOptionsExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.ManualAdjustOptionsExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.ManualAdjustOptionsExpanded;
+
 		public bool AutoReadTimestamps => true;
 
 		// image pre-filtering
-		private bool _showFilteredImage = false;
 		public bool ShowFilteredImage
 		{
-			get => _showFilteredImage;
+			get;
 			set
 			{
 				if (pupilFinder != null)
 					pupilFinder.UpdateDisplays();
-				this.RaiseAndSetIfChanged(ref _showFilteredImage, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 			}
-		}
+		} = false;
 
 		public bool UseBilateralBlur { get; set; } = true;
 		public int BilateralBlurSize { get; set; } = 3;

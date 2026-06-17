@@ -24,19 +24,17 @@ namespace SharpEyes.Models
 	{
 		// == Parameters (user-adjustable, persisted) ==
 
-		private int _frameHeight = 360;
 		public int FrameHeight
 		{
-			get => _frameHeight;
-			set => _frameHeight = value;
-		}
+			get;
+			set => field = value;
+		} = 360;
 
-		private int _frameWidth = 480;
 		public int FrameWidth
 		{
-			get => _frameWidth;
-			set => _frameWidth = value;
-		}
+			get;
+			set => field = value;
+		} = 480;
 
 		private List<double> _spatialFrequencies = new List<double> { 0, 2, 4, 8, 16, 32 };
 		public List<double> SpatialFrequencies

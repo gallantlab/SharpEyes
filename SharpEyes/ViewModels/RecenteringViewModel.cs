@@ -45,109 +45,104 @@ namespace SharpEyes.ViewModels
 				: null;
 
 		// progress bar
-		private string _statusText = "Idle";
 		public string StatusText
 		{
-			get => _statusText;
-			set => this.RaiseAndSetIfChanged(ref _statusText, value);
-		}
-		private bool _isProgressBarVisible = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "Idle";
+
 		public bool IsProgressBarVisible
 		{
-			get => _isProgressBarVisible;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarVisible, value);
-		}
-		private bool _isProgressBarIndeterminate = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
+
 		public bool IsProgressBarIndeterminate
 		{
-			get => _isProgressBarIndeterminate;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
-		}
-		private bool _isLoadingGaze = false;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
+
 		public bool IsLoadingGaze
 		{
-			get => _isLoadingGaze;
-			set => this.RaiseAndSetIfChanged(ref _isLoadingGaze, value);
-		}
-		private double _progressBarValue = 0;
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
+
 		public double ProgressBarValue
 		{
-			get => _progressBarValue;
-			set => this.RaiseAndSetIfChanged(ref _progressBarValue, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
 		// == video stuff ==
 		private VideoReader? videoReader = null;
 		private DispatcherTimer videoPlaybackTimer;
 		private Func<int, string> _timeFormatter;
 
-		private int _videoWidth = 1024;
 		public int VideoWidth
 		{
-			get => _videoWidth;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _videoWidth, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("RecenteringCanvasWidth");
 				this.RaisePropertyChanged("RecenteringImageLeft");
 			}
-		}
+		} = 1024;
 
-		private int _videoHeight = 768;
 		public int VideoHeight
 		{
-			get => _videoHeight;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _videoHeight, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("RecenteringCanvasHeight");
 				this.RaisePropertyChanged("RecenteringImageTop");
 			}
-		}
+		} = 768;
 
-		private string _currentVideoTime = "0:00:00;00";
 		public string CurrentVideoTime
 		{
-			get => _currentVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoTime, value);
-		}
-		private string _totalVideoTime = "0:00:00;00";
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "0:00:00;00";
+
 		public string TotalVideoTime
 		{
-			get => _totalVideoTime;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoTime, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = "0:00:00;00";
+
 		public string PlayPauseButtonText => IsVideoPlaying ? "Pause" : "Play";
-		private bool _isVideoPlaying = false;
+
 		public bool IsVideoPlaying
 		{
-			get => _isVideoPlaying;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isVideoPlaying, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("PlayPauseButtonText");
 			}
-		}
-		private int _currentVideoFrame = 0;
+		} = false;
+
 		public int CurrentVideoFrame
 		{
-			get => _currentVideoFrame;
-			set => this.RaiseAndSetIfChanged(ref _currentVideoFrame, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private int _totalVideoFrames = 0;
 		public int TotalVideoFrames
 		{
-			get => _totalVideoFrames;
-			set => this.RaiseAndSetIfChanged(ref _totalVideoFrames, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private Bitmap? _videoFrame = null;
 		public Bitmap? VideoFrame
 		{
-			get => _videoFrame;
-			set => this.RaiseAndSetIfChanged(ref _videoFrame, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = null;
 
 		// Gaze overlay info
 		private NDArray? gazeLocations = null;
@@ -175,38 +170,35 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private bool _isGazeLoaded = false;
 		public bool IsGazeLoaded
 		{
-			get => _isGazeLoaded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isGazeLoaded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("IsGazeEllipseVisible");
 				this.RaisePropertyChanged("ExportEnabled");
 				this.RaisePropertyChanged("HasTTLData");
 			}
-		}
+		} = false;
 
-		private bool _isGazeAtNaN = false;
 		public bool IsGazeAtNaN
 		{
-			get => _isGazeAtNaN;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isGazeAtNaN, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("IsGazeEllipseVisible");
 			}
-		}
+		} = false;
 
 		public bool IsGazeEllipseVisible => IsGazeLoaded && !IsGazeAtNaN;
 
-		private bool _isTTL = false;
 		public bool IsTTL
 		{
-			get => _isTTL;
-			set => this.RaiseAndSetIfChanged(ref _isTTL, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
 		private double _gazeX = 0;
 		private double _gazeY = 0;
@@ -248,84 +240,75 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private double _gazeStrokeThickness = 4.0;
 		public double GazeStrokeThickness
 		{
-			get => _gazeStrokeThickness;
-			set => this.RaiseAndSetIfChanged(ref _gazeStrokeThickness, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 4.0;
 
-		private double _gazeStrokeOpacity = 0.75;
 		public double GazeStrokeOpacity
 		{
-			get => _gazeStrokeOpacity;
-			set => this.RaiseAndSetIfChanged(ref _gazeStrokeOpacity, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0.75;
 
 		public SolidColorBrush GazeStrokeBrush { get; set; } = new SolidColorBrush(Colors.LimeGreen);
 
-		private int _eyetrackingFPS = 60;
 		public int EyetrackingFPS
 		{
-			get => _eyetrackingFPS;
-			set => this.RaiseAndSetIfChanged(ref _eyetrackingFPS, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 60;
 
-		private double _trailLength = 1.0;
 		public double TrailLength
 		{
-			get => _trailLength;
-			set => this.RaiseAndSetIfChanged(ref _trailLength, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 1.0;
 
-		private ObservableCollection<TrailGazePoint> _trailPoints;
 		public ObservableCollection<TrailGazePoint> TrailPoints
 		{
-			get => _trailPoints;
-			private set => this.RaiseAndSetIfChanged(ref _trailPoints, value);
+			get;
+			private set => this.RaiseAndSetIfChanged(ref field, value);
 		}
 
-		private bool _isPlaybackEnabled = true;
 		public bool IsPlaybackEnabled
 		{
-			get => _isPlaybackEnabled;
-			set => this.RaiseAndSetIfChanged(ref _isPlaybackEnabled, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = true;
 
 		public bool CanPlayVideo => videoReader != null;
 		public bool ExportEnabled => IsGazeLoaded && videoReader != null;
 
 		public bool HasTTLData => IsGazeLoaded && Recenterer.FindFirstTTLGazeIndex(gazeLocations) != null;
 
-		private bool _startFromFirstTTL = true;
 		public bool StartFromFirstTTL
 		{
-			get => _startFromFirstTTL;
-			set => this.RaiseAndSetIfChanged(ref _startFromFirstTTL, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = true;
 
 		// == Gaze coordinate space (the space the gaze data is expressed in) ==
-		private int _gazeSpaceWidth = 1024;
 		public int GazeSpaceWidth
 		{
-			get => _gazeSpaceWidth;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _gazeSpaceWidth, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("RecenteringImageLeft");
 			}
-		}
+		} = 1024;
 
-		private int _gazeSpaceHeight = 768;
 		public int GazeSpaceHeight
 		{
-			get => _gazeSpaceHeight;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _gazeSpaceHeight, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("RecenteringImageTop");
 			}
-		}
+		} = 768;
 
 		// == Recentered canvas layout ==
 		public int RecenteringCanvasWidth => VideoWidth * 2;
@@ -336,12 +319,11 @@ namespace SharpEyes.ViewModels
 		public double RecenteringImageTop  => VideoHeight - GazeY * (double)VideoHeight / GazeSpaceHeight;
 
 		// == Export parameters ==
-		private double _frameScale = 0.125;
 		public double FrameScale
 		{
-			get => _frameScale;
-			set => this.RaiseAndSetIfChanged(ref _frameScale, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0.125;
 
 		private double _padValue = 0.1;
 		public double PadValue
@@ -363,50 +345,45 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private bool _flipColors = false;
 		public bool FlipColors
 		{
-			get => _flipColors;
-			set => this.RaiseAndSetIfChanged(ref _flipColors, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = false;
 
-		private int _selectedExportFormatIndex = 0;
 		public int SelectedExportFormatIndex
 		{
-			get => _selectedExportFormatIndex;
-			set => this.RaiseAndSetIfChanged(ref _selectedExportFormatIndex, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private int _selectedExportContentIndex = 0;
 		public int SelectedExportContentIndex
 		{
-			get => _selectedExportContentIndex;
-			set => this.RaiseAndSetIfChanged(ref _selectedExportContentIndex, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 
-		private bool _isGazeInfoExpanded = Settings.Current.RecenteringGazeInfoExpanded;
 		public bool IsGazeInfoExpanded
 		{
-			get => _isGazeInfoExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isGazeInfoExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.RecenteringGazeInfoExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.RecenteringGazeInfoExpanded;
 
-		private bool _isExportExpanded = Settings.Current.RecenteringExportExpanded;
 		public bool IsExportExpanded
 		{
-			get => _isExportExpanded;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isExportExpanded, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				Settings.Current.RecenteringExportExpanded = value;
 				Settings.Current.Save();
 			}
-		}
+		} = Settings.Current.RecenteringExportExpanded;
 
 		public RecenteringViewModel()
 		{

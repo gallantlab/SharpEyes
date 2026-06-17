@@ -8,11 +8,10 @@ namespace SharpEyes.ViewModels
 		public ObservableCollection<string> Categories { get; } =
 			new ObservableCollection<string> { "General", "Python" };
 
-		private int _selectedCategoryIndex = 0;
 		public int SelectedCategoryIndex
 		{
-			get => _selectedCategoryIndex;
-			set => this.RaiseAndSetIfChanged(ref _selectedCategoryIndex, value);
-		}
+			get;
+			set => this.RaiseAndSetIfChanged(ref field, value);
+		} = 0;
 	}
 }
