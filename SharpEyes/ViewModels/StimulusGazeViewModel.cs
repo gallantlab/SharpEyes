@@ -681,6 +681,9 @@ namespace SharpEyes.ViewModels
 		// after gaze is manually edited, updates it.
 		public void UpdateGaze()
 		{
+			if ((object)RawGazeLocations == null || dataFrame == null)
+				return;
+
 			double deltaX = GazeX - RawGazeLocations[dataFrame, 0];
 			double deltaY = GazeY - RawGazeLocations[dataFrame, 1];
 
