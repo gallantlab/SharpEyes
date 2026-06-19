@@ -310,17 +310,24 @@ namespace SharpEyes.ViewModels
 			CurrentVideoTime = _timeFormatter(videoReader.CurrentFrameNumber);
 			if (dataStartFrame != null)
 			{
-				double gazeXValue = (double)GazeData[dataFrame, 0];
-				double gazeYValue = (double)GazeData[dataFrame, 1];
-				if (Double.IsNaN(gazeXValue) || Double.IsNaN(gazeYValue))
+				if ((object)GazeData == null || dataFrame >= GazeData.Shape[0])
 				{
 					IsGazeAtNaN = true;
 				}
 				else
 				{
-					IsGazeAtNaN = false;
-					GazeX = gazeXValue;
-					GazeY = gazeYValue;
+					double gazeXValue = (double)GazeData[dataFrame, 0];
+					double gazeYValue = (double)GazeData[dataFrame, 1];
+					if (Double.IsNaN(gazeXValue) || Double.IsNaN(gazeYValue))
+					{
+						IsGazeAtNaN = true;
+					}
+					else
+					{
+						IsGazeAtNaN = false;
+						GazeX = gazeXValue;
+						GazeY = gazeYValue;
+					}
 				}
 				IsTTL = CheckTTLInVideoFrame(CurrentVideoFrame);
 				UpdateTrailPoints();
