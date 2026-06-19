@@ -283,11 +283,12 @@ namespace SharpEyes.ViewModels
 		// after gaze is manually edited, updates it.
 		public void UpdateGaze()
 		{
-			if ((object)RawGazeLocations == null || dataFrame == null)
+			NDArray? gazeLocations = DisplayedGazeLocations;
+			if ((object)gazeLocations == null || dataFrame == null)
 				return;
 
-			double deltaX = GazeX - RawGazeLocations[dataFrame, 0];
-			double deltaY = GazeY - RawGazeLocations[dataFrame, 1];
+			double deltaX = GazeX - gazeLocations[dataFrame, 0];
+			double deltaY = GazeY - gazeLocations[dataFrame, 1];
 
 			AddKeyFrame();
 
@@ -300,14 +301,14 @@ namespace SharpEyes.ViewModels
 				for (int i = PreviousDataKeyFrame.Value; i < dataFrame; i++)
 				{
 					multiplier = (double)(i - PreviousDataKeyFrame.Value) / numFrames;
-					RawGazeLocations[i, 0] += multiplier * deltaX;
-					RawGazeLocations[i, 1] += multiplier * deltaY;
+					gazeLocations[i, 0] += multiplier * deltaX;
+					gazeLocations[i, 1] += multiplier * deltaY;
 				}
 			}
 
 			// update all following data frames with this delta
-			RawGazeLocations[new Slice(dataFrame.Value, null), 0] += deltaX;
-			RawGazeLocations[new Slice(dataFrame.Value, null), 1] += deltaY;
+			gazeLocations[new Slice(dataFrame.Value, null), 0] += deltaX;
+			gazeLocations[new Slice(dataFrame.Value, null), 1] += deltaY;
 		}
 
 		public void AddKeyFrame()
@@ -332,7 +333,7 @@ namespace SharpEyes.ViewModels
 				}
 
 				VideoKeyFrames.Add(new VideoKeyFrame(frame, index, videoReader.FramesToTimecode(frame),
-					RawGazeLocations[index, 0], RawGazeLocations[index, 1]));
+					DisplayedGazeLocations[index, 0], DisplayedGazeLocations[index, 1]));
 				VideoKeyFrames =
 					new ObservableCollection<VideoKeyFrame>(VideoKeyFrames.OrderBy((keyframe) => keyframe.VideoFrame));
 			}
