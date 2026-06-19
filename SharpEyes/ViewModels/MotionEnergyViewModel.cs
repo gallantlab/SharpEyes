@@ -109,54 +109,21 @@ namespace SharpEyes.ViewModels
 		}
 	}
 
-	public class MotionEnergyViewModel : ViewModelBase
+	public class MotionEnergyViewModel : VideoPlayerViewModelBase
 	{
-		public ReactiveCommand<Unit, Unit> LoadVideoCommand { get; }
-		public ReactiveCommand<Unit, Unit>? PlayPauseCommand { get; } = null;
-		public ReactiveCommand<Unit, Unit>? PreviousFrameCommand { get; } = null;
-		public ReactiveCommand<Unit, Unit>? NextFrameCommand { get; } = null;
 		public ReactiveCommand<Unit, Unit> RestoreVideoDefaultsCommand { get; }
 		public ReactiveCommand<Unit, Unit> RestoreFilterDefaultsCommand { get; }
-
-		public string StatusText
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = "Idle";
-
-		public bool IsProgressBarVisible
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = false;
-
-		public bool IsProgressBarIndeterminate
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = false;
-
-		public double ProgressBarValue
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = 0;
 
 		private readonly MotionEnergyFeatures motionEnergyFeatures = new MotionEnergyFeatures();
 		private Settings settings = Settings.Load();
 
-		private VideoReader? _videoReader = null;
-		private Func<int, string> _timeFormatter;
-		private DispatcherTimer _videoPlaybackTimer;
 
-		private int _videoWidth = 1024;
-
-		public int VideoWidth
+		public override int VideoWidth
 		{
-			get => _videoWidth;
+			get => base.VideoWidth;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _videoWidth, value);
+				base.VideoWidth = value;
 				this.RaisePropertyChanged("CanvasWidth");
 				this.RaisePropertyChanged("ImageLeft");
 				this.RaisePropertyChanged("ImageWidth");
@@ -166,14 +133,12 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private int _videoHeight = 768;
-
-		public int VideoHeight
+		public override int VideoHeight
 		{
-			get => _videoHeight;
+			get => base.VideoHeight;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _videoHeight, value);
+				base.VideoHeight = value;
 				this.RaisePropertyChanged("CanvasHeight");
 				this.RaisePropertyChanged("ImageTop");
 				this.RaisePropertyChanged("ImageHeight");
@@ -221,7 +186,7 @@ namespace SharpEyes.ViewModels
 				this.RaisePropertyChanged("ImageTop");
 				this.RaisePropertyChanged("ImageWidth");
 				this.RaisePropertyChanged("ImageHeight");
-				if (_videoReader != null) UpdateDisplay();
+				if (videoReader != null) UpdateDisplay();
 			}
 		}
 
@@ -727,49 +692,6 @@ namespace SharpEyes.ViewModels
 
 		public string ComputeFeaturesButtonText => _isComputingFeatures ? "Cancel" : "Compute features";
 
-		public Bitmap? VideoFrame
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = null;
-
-		public int CurrentVideoFrame
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = 0;
-
-		public int TotalVideoFrames
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = 0;
-
-		public string CurrentVideoTime
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = "0:00:00;00";
-
-		public string TotalVideoTime
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = "0:00:00;00";
-
-		public bool IsVideoPlaying
-		{
-			get;
-			set
-			{
-				this.RaiseAndSetIfChanged(ref field, value);
-				this.RaisePropertyChanged("PlayPauseButtonText");
-			}
-		} = false;
-
-		public string PlayPauseButtonText => IsVideoPlaying ? "Pause" : "Play";
-		public bool CanPlayVideo => _videoReader != null;
-
 		public MotionEnergyViewModel()
 		{
 			_padPercent = settings.MotionEnergyPadPercent;
@@ -803,13 +725,7 @@ namespace SharpEyes.ViewModels
 
 			RestoreVideoDefaultsCommand = ReactiveCommand.Create(RestoreVideoDefaults);
 			RestoreFilterDefaultsCommand = ReactiveCommand.Create(RestoreFilterDefaults);
-			LoadVideoCommand = ReactiveCommand.Create(LoadVideo);
-			PlayPauseCommand = ReactiveCommand.Create(PlayPause);
-			PreviousFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(-1); });
-			NextFrameCommand = ReactiveCommand.Create(() => { ChangeFrame(1); });
 			_updateDisplayDelegate = UpdateDisplayRecentered;
-			_videoPlaybackTimer = new DispatcherTimer();
-			_videoPlaybackTimer.Tick += VideoTimerTick;
 			AddSpatialFrequencyCommand = ReactiveCommand.Create(() =>
 			{
 				SpatialFrequencies.Add(_newSpatialFrequency);
@@ -948,10 +864,10 @@ namespace SharpEyes.ViewModels
 			motionEnergyFeatures.FrameHeight = (int)(_videoHeight * _padPercent / 100 * _frameScale);
 		}
 
-		public void LoadFromRecentering(VideoReader videoReader, NDArray gazeLocations, string? gazeFileName, GazeFilterSettings? gazeFilterSettings, int dataStartFrame, int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight)
+		public void LoadFromRecentering(VideoReader reader, NDArray gazeLocations, string? gazeFileName, GazeFilterSettings? gazeFilterSettings, int dataStartFrame, int eyetrackingFPS, int gazeSpaceWidth, int gazeSpaceHeight)
 		{
 			if (IsVideoPlaying) PlayPause();
-			_videoReader = videoReader;
+			videoReader = reader;
 			_gazeLocations = gazeLocations;
 			_gazeFileName = gazeFileName;
 			_gazeFilterSettings = gazeFilterSettings;
@@ -959,11 +875,11 @@ namespace SharpEyes.ViewModels
 			_eyetrackingFPS = eyetrackingFPS;
 			_gazeSpaceWidth = gazeSpaceWidth;
 			_gazeSpaceHeight = gazeSpaceHeight;
-			VideoWidth = videoReader.width;
-			VideoHeight = videoReader.height;
-			_videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)videoReader.fps);
-			TotalVideoFrames = videoReader.frameCount;
-			VideoFps = videoReader.fps;
+			VideoWidth = reader.width;
+			VideoHeight = reader.height;
+			videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)reader.fps);
+			TotalVideoFrames = reader.frameCount;
+			VideoFps = reader.fps;
 			IsLoadedFromRecentering = true;
 			this.RaisePropertyChanged("CanPlayVideo");
 			_updateDisplayDelegate = _isPreview ? UpdateDisplayRecenteredPreview : UpdateDisplayRecentered;
@@ -972,77 +888,30 @@ namespace SharpEyes.ViewModels
 			UpdateDisplay();
 		}
 
-		public async void LoadVideo()
+		public override async void LoadVideo()
 		{
-			Avalonia.Controls.OpenFileDialog openFileDialog = new Avalonia.Controls.OpenFileDialog()
-			{
-				Title = "Load stimulus video"
-			};
-			openFileDialog.Filters.Add(new Avalonia.Controls.FileDialogFilter()
-			{
-				Name = "Videos",
-				Extensions = { "avi", "mkv", "mp4", "m4v" }
-			});
-			string[] fileName = await openFileDialog.ShowAsync(MainWindow);
-			if (fileName == null || fileName.Length == 0) return;
+			string? fileName = await PromptForVideoAsync();
+			if (fileName == null) return;
 
-			_videoReader = new VideoReader(fileName[0]);
-			_videoReader.ReadFrame();
-			_videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)_videoReader.fps);
-			TotalVideoFrames = _videoReader.frameCount;
-			VideoWidth = _videoReader.width;
-			VideoHeight = _videoReader.height;
-			VideoFps = _videoReader.fps;
-			_gazeSpaceWidth = _videoReader.width;
-			_gazeSpaceHeight = _videoReader.height;
+			OpenVideoReader(fileName);
+			VideoWidth = videoReader.width;
+			VideoHeight = videoReader.height;
+			VideoFps = videoReader.fps;
+			_gazeSpaceWidth = videoReader.width;
+			_gazeSpaceHeight = videoReader.height;
 			_dataStartFrame = 0;
-			_eyetrackingFPS = (int)_videoReader.fps;
-			NDArray centeredGaze = new NDArray(NPTypeCode.Double, Shape.Matrix(_videoReader.frameCount, 2));
-			for (int frameIndex = 0; frameIndex < _videoReader.frameCount; frameIndex++)
+			_eyetrackingFPS = (int)videoReader.fps;
+			NDArray centeredGaze = new NDArray(NPTypeCode.Double, Shape.Matrix(videoReader.frameCount, 2));
+			for (int frameIndex = 0; frameIndex < videoReader.frameCount; frameIndex++)
 			{
-				centeredGaze[frameIndex, 0] = (double)_videoReader.width / 2.0;
-				centeredGaze[frameIndex, 1] = (double)_videoReader.height / 2.0;
+				centeredGaze[frameIndex, 0] = (double)videoReader.width / 2.0;
+				centeredGaze[frameIndex, 1] = (double)videoReader.height / 2.0;
 			}
 			_gazeLocations = centeredGaze;
 			IsLoadedFromRecentering = true;
-			this.RaisePropertyChanged("CanPlayVideo");
 			_updateDisplayDelegate = _isPreview ? UpdateDisplayRecenteredPreview : UpdateDisplayRecentered;
 			ResetDynamicState();
 			UpdateTimecodeDisplay();
-			UpdateDisplay();
-		}
-
-		public void PlayPause()
-		{
-			if (IsVideoPlaying)
-				_videoPlaybackTimer.Stop();
-			else
-				_videoPlaybackTimer.Start();
-			IsVideoPlaying = !IsVideoPlaying;
-		}
-
-		public void ChangeFrame(int delta)
-		{
-			if (_videoReader != null)
-				ShowFrame(_videoReader.CurrentFrameNumber + delta);
-		}
-
-		public void VideoTimerTick(object? sender, EventArgs e)
-		{
-			if (_videoReader.CurrentFrameNumber >= _videoReader.frameCount - 1)
-				PlayPause();
-			_videoReader.ReadFrame();
-			UpdateDisplay();
-		}
-
-		public void ShowFrame()
-		{
-			ShowFrame(CurrentVideoFrame);
-		}
-
-		public void ShowFrame(int frame)
-		{
-			_videoReader.CurrentFrameNumber = frame;
 			UpdateDisplay();
 		}
 
@@ -1517,7 +1386,7 @@ namespace SharpEyes.ViewModels
 
 		private async Task ComputeFeatures()
 		{
-			if (_videoReader == null || (object)_gazeLocations == null || _dataStartFrame == null) return;
+			if (videoReader == null || (object)_gazeLocations == null || _dataStartFrame == null) return;
 
 			CancellationTokenSource tokenSource = new CancellationTokenSource();
 			_computeFeaturesTokenSource = tokenSource;
@@ -1532,7 +1401,7 @@ namespace SharpEyes.ViewModels
 				IsProgressBarIndeterminate = false;
 				ProgressBarValue = 0;
 				Recenterer recenterer = new Recenterer(
-					_videoReader, _gazeLocations, _dataStartFrame.Value,
+					videoReader, _gazeLocations, _dataStartFrame.Value,
 					false, _eyetrackingFPS, _gazeSpaceWidth, _gazeSpaceHeight,
 					_frameScale, _padValue, false);
 				IProgress<double> frameProgress = new Progress<double>(value => ProgressBarValue = value);
@@ -1604,7 +1473,7 @@ namespace SharpEyes.ViewModels
 				// Save to disk
 				SaveFileDialog saveDialog = new SaveFileDialog() { Title = "Save motion energy features" };
 				saveDialog.Filters.Add(new FileDialogFilter() { Name = "NumPy arrays", Extensions = { "npy" } });
-				saveDialog.InitialFileName = System.IO.Path.GetFileNameWithoutExtension(_videoReader.videoFileName) + " motion energy.npy";
+				saveDialog.InitialFileName = System.IO.Path.GetFileNameWithoutExtension(videoReader.videoFileName) + " motion energy.npy";
 				string? savePath = await saveDialog.ShowAsync(MainWindow);
 				if (savePath != null)
 				{
@@ -1614,10 +1483,10 @@ namespace SharpEyes.ViewModels
 					string saveBaseName = System.IO.Path.GetFileNameWithoutExtension(savePath);
 
 					System.Text.StringBuilder textContent = new System.Text.StringBuilder();
-					textContent.AppendLine(String.Format("Stimulus video: {0}", _videoReader.videoFileName));
-					textContent.AppendLine(String.Format("Stimulus video frame rate: {0} FPS", _videoReader.fps));
-					textContent.AppendLine(String.Format("Stimulus video frame size: {0} x {1}", _videoReader.width, _videoReader.height));
-					textContent.AppendLine(String.Format("Stimulus video duration: {0} ({1} frames)", _videoReader.FramesToTimecode(_videoReader.frameCount), _videoReader.frameCount));
+					textContent.AppendLine(String.Format("Stimulus video: {0}", videoReader.videoFileName));
+					textContent.AppendLine(String.Format("Stimulus video frame rate: {0} FPS", videoReader.fps));
+					textContent.AppendLine(String.Format("Stimulus video frame size: {0} x {1}", videoReader.width, videoReader.height));
+					textContent.AppendLine(String.Format("Stimulus video duration: {0} ({1} frames)", videoReader.FramesToTimecode(videoReader.frameCount), videoReader.frameCount));
 					textContent.AppendLine();
 					textContent.AppendLine(String.Format("Gaze file: {0}", _gazeFileName ?? "none"));
 					textContent.AppendLine();
@@ -1650,11 +1519,11 @@ namespace SharpEyes.ViewModels
 					textContent.AppendLine(String.Format("  Pad value: {0}", _padValue));
 					textContent.AppendLine(String.Format("  Frame scale: {0}", _frameScale));
 					textContent.AppendLine(String.Format("  Output frame size: {0} x {1}",
-						(int)(_videoReader.width * _padPercent / 100.0 * _frameScale),
-						(int)(_videoReader.height * _padPercent / 100.0 * _frameScale)));
+						(int)(videoReader.width * _padPercent / 100.0 * _frameScale),
+						(int)(videoReader.height * _padPercent / 100.0 * _frameScale)));
 					textContent.AppendLine(String.Format("  Video frame in output size: {0} x {1}",
-						(int)(_videoReader.width * _frameScale),
-						(int)(_videoReader.height * _frameScale)));
+						(int)(videoReader.width * _frameScale),
+						(int)(videoReader.height * _frameScale)));
 					textContent.AppendLine(String.Format("  Video FPS: {0}", _videoFps));
 					textContent.AppendLine(String.Format("  Spatial frequencies: {0}", String.Join(", ", SpatialFrequencies)));
 					textContent.AppendLine(String.Format("  Temporal frequencies: {0}", String.Join(", ", TemporalFrequencies)));
@@ -1881,8 +1750,8 @@ namespace SharpEyes.ViewModels
 					videoPath = await PromptForFile("Locate the stimulus video", "Videos", "avi", "mkv", "mp4", "m4v");
 					if (videoPath == null) { StatusText = "Load cancelled: no stimulus video selected."; return; }
 				}
-				VideoReader videoReader = new VideoReader(videoPath);
-				videoReader.ReadFrame();
+				VideoReader loadedVideoReader = new VideoReader(videoPath);
+				loadedVideoReader.ReadFrame();
 
 				// Load the gaze data, or synthesize centered gaze when none was used.
 				// Resolve relative to the info file's folder before prompting, for portability.
@@ -1954,10 +1823,10 @@ namespace SharpEyes.ViewModels
 				_eyetrackingFPS = meta.EyetrackingFPS;
 				_gazeSpaceWidth = meta.GazeSpaceWidth;
 				_gazeSpaceHeight = meta.GazeSpaceHeight;
-				VideoWidth = videoReader.width;
-				VideoHeight = videoReader.height;
-				_videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)videoReader.fps);
-				TotalVideoFrames = videoReader.frameCount;
+				VideoWidth = loadedVideoReader.width;
+				VideoHeight = loadedVideoReader.height;
+				videoPlaybackTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / (double)loadedVideoReader.fps);
+				TotalVideoFrames = loadedVideoReader.frameCount;
 				IsLoadedFromRecentering = true;
 				_updateDisplayDelegate = _isPreview ? UpdateDisplayRecenteredPreview : UpdateDisplayRecentered;
 
@@ -1988,7 +1857,7 @@ namespace SharpEyes.ViewModels
 					StatusText = String.Format("Loaded motion energy: {0} frames x {1} features",
 						features.Shape[0], features.Shape[1]);
 				
-				_videoReader = videoReader;
+				videoReader = loadedVideoReader;
 				this.RaisePropertyChanged("CanPlayVideo");
 				UpdateTimecodeDisplay();
 				UpdateDisplay();
@@ -2008,20 +1877,8 @@ namespace SharpEyes.ViewModels
 		{
 			int videoFramesElapsed = videoFrame - _dataStartFrame.Value;
 			if (videoFramesElapsed < 0) return 0;
-			double videoElapsedTime = (double)videoFramesElapsed / _videoReader.fps;
+			double videoElapsedTime = (double)videoFramesElapsed / videoReader.fps;
 			return (int)(videoElapsedTime * _eyetrackingFPS);
-		}
-
-		public void UpdateTimecodeDisplay()
-		{
-			if (_videoReader == null)
-				return;
-			if (Settings.Current.ShowFrameNumber)
-				_timeFormatter = frame => String.Format("Frame {0}", frame);
-			else
-				_timeFormatter = _videoReader.FramesToTimecode;
-			CurrentVideoTime = _timeFormatter(_videoReader.CurrentFrameNumber);
-			TotalVideoTime = _timeFormatter(_videoReader.frameCount - 1);
 		}
 
 		private Action _updateDisplayDelegate;
@@ -2029,7 +1886,7 @@ namespace SharpEyes.ViewModels
 		// draws recentered image with UI controls
 		private void UpdateDisplayRecentered()
 		{
-			VideoFrame = _videoReader.GetFrameForDisplay();
+			VideoFrame = videoReader.GetFrameForDisplay();
 			int dataIndex = Math.Clamp(VideoTimeToDataIndex(CurrentVideoFrame), 0, _gazeLocations.Shape[0] - 1);
 			double gazeXValue = (double)_gazeLocations[dataIndex, 0];
 			double gazeYValue = (double)_gazeLocations[dataIndex, 1];
@@ -2052,7 +1909,7 @@ namespace SharpEyes.ViewModels
 			int scaledWidth  = Math.Max(1, (int)(_videoWidth  * _frameScale));
 			int scaledHeight = Math.Max(1, (int)(_videoHeight * _frameScale));
 			using Mat translationMatrix = Recenterer.GetTranslationMatrix(gazeXValue, gazeYValue, _gazeSpaceWidth, _gazeSpaceHeight, _frameScale);
-			using Mat processedFrame = Recenterer.ProcessFrame(_videoReader.cvFrame,
+			using Mat processedFrame = Recenterer.ProcessFrame(videoReader.cvFrame,
 				scaledWidth, scaledHeight, scaledWidth * 2, scaledHeight * 2, _padValue * 255.0, translationMatrix);
 			MemoryStream imageStream = processedFrame.ToMemoryStream(".bmp");
 			imageStream.Seek(0, SeekOrigin.Begin);
@@ -2062,14 +1919,14 @@ namespace SharpEyes.ViewModels
 		// displays raw video that fills the canvas
 		private void UpdateDisplayRaw()
 		{
-			VideoFrame = _videoReader.GetFrameForDisplay();
+			VideoFrame = videoReader.GetFrameForDisplay();
 		}
 
-		public void UpdateDisplay()
+		public override void UpdateDisplay()
 		{
 			_updateDisplayDelegate?.Invoke();
-			CurrentVideoFrame = _videoReader.CurrentFrameNumber;
-			CurrentVideoTime = _timeFormatter(_videoReader.CurrentFrameNumber);
+			CurrentVideoFrame = videoReader.CurrentFrameNumber;
+			CurrentVideoTime = _timeFormatter(videoReader.CurrentFrameNumber);
 			UpdateDynamicOpacities();
 		}
 	}
