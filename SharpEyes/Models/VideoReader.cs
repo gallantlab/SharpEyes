@@ -114,6 +114,11 @@ namespace SharpEyes.Models
 		/// <returns></returns>
 		public virtual Bitmap GetFrameForDisplay(bool filtered = false)
 		{
+			if (cvFrame == null || cvFrame.Empty())
+			{
+				return bitmapFrame;
+			}
+
 			MemoryStream imageStream = cvFrame.ToMemoryStream(".bmp");
 
 			imageStream.Seek(0, SeekOrigin.Begin);
