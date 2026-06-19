@@ -39,7 +39,10 @@ namespace SharpEyes.ViewModels
 		// Gaze overlay info
 		internal NDArray? RawGazeLocations = null;
 		internal NDArray? FilteredGazeLocations = null;
-		internal NDArray? DisplayedGazeLocations => _isGazeFilterEnabled && ((object)FilteredGazeLocations != null) ? FilteredGazeLocations : RawGazeLocations;
+
+		internal NDArray? DisplayedGazeLocations => _isGazeFilterEnabled && ((object)FilteredGazeLocations != null)
+			? FilteredGazeLocations
+			: RawGazeLocations;
 
 		protected override NDArray? GazeData => DisplayedGazeLocations;
 
@@ -81,7 +84,9 @@ namespace SharpEyes.ViewModels
 			}
 		}
 
-		private ObservableCollection<VideoKeyFrame> _videoKeyFrames = new ObservableCollection<VideoKeyFrame>(new List<VideoKeyFrame>());
+		private ObservableCollection<VideoKeyFrame> _videoKeyFrames =
+			new ObservableCollection<VideoKeyFrame>(new List<VideoKeyFrame>());
+
 		public ObservableCollection<VideoKeyFrame> VideoKeyFrames
 		{
 			get;
@@ -97,6 +102,7 @@ namespace SharpEyes.ViewModels
 
 		// Gaze filtering
 		private bool _isGazeFilterEnabled = Settings.Current.GazeFilterEnabled;
+
 		public bool IsGazeFilterEnabled
 		{
 			get => _isGazeFilterEnabled;
@@ -111,6 +117,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private int _filterWindowSize = Settings.Current.GazeFilterWindowSize;
+
 		public int FilterWindowSize
 		{
 			get => _filterWindowSize;
@@ -123,6 +130,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private bool _filterPupilSize = Settings.Current.GazeFilterPupilSize;
+
 		public bool FilterPupilSize
 		{
 			get => _filterPupilSize;
@@ -136,6 +144,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private bool _enableOutlierRemoval = Settings.Current.GazeFilterEnableOutlierRemoval;
+
 		public bool EnableOutlierRemoval
 		{
 			get => _enableOutlierRemoval;
@@ -149,6 +158,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private double _outlierThresholdX = Settings.Current.GazeFilterOutlierThresholdX;
+
 		public double OutlierThresholdX
 		{
 			get => _outlierThresholdX;
@@ -161,6 +171,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private double _outlierThresholdY = Settings.Current.GazeFilterOutlierThresholdY;
+
 		public double OutlierThresholdY
 		{
 			get => _outlierThresholdY;
@@ -173,6 +184,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		private double _outlierThresholdRadius = Settings.Current.GazeFilterOutlierThresholdRadius;
+
 		public double OutlierThresholdRadius
 		{
 			get => _outlierThresholdRadius;
@@ -302,6 +314,7 @@ namespace SharpEyes.ViewModels
 					RawGazeLocations[i, 1] += multiplier * deltaY;
 				}
 			}
+
 			// update all following data frames with this delta
 			RawGazeLocations[new Slice(dataFrame.Value, null), 0] += deltaX;
 			RawGazeLocations[new Slice(dataFrame.Value, null), 1] += deltaY;
@@ -329,8 +342,9 @@ namespace SharpEyes.ViewModels
 				}
 
 				VideoKeyFrames.Add(new VideoKeyFrame(frame, index, videoReader.FramesToTimecode(frame),
-															RawGazeLocations[index, 0], RawGazeLocations[index, 1]));
-				VideoKeyFrames = new ObservableCollection<VideoKeyFrame>(VideoKeyFrames.OrderBy((keyframe) => keyframe.VideoFrame));
+					RawGazeLocations[index, 0], RawGazeLocations[index, 1]));
+				VideoKeyFrames =
+					new ObservableCollection<VideoKeyFrame>(VideoKeyFrames.OrderBy((keyframe) => keyframe.VideoFrame));
 			}
 		}
 
@@ -343,6 +357,7 @@ namespace SharpEyes.ViewModels
 					if (VideoKeyFrames[i] < CurrentVideoFrame)
 						return VideoKeyFrames[i].VideoFrame;
 				}
+
 				return null;
 			}
 		}
@@ -367,6 +382,7 @@ namespace SharpEyes.ViewModels
 					if (VideoKeyFrames[i] > CurrentVideoFrame)
 						return VideoKeyFrames[i].VideoFrame;
 				}
+
 				return null;
 			}
 		}
@@ -434,8 +450,9 @@ namespace SharpEyes.ViewModels
 			VideoKeyFrames.Clear();
 			if (SetDefaultKeyFrames)
 			{
-				AddKeyFrame(dataStartFrame.Value);	// start of data
-				AddKeyFrame(dataStartFrame.Value + videoReader.fps * 37 * 2);	// end of eyetracking calibration in driving
+				AddKeyFrame(dataStartFrame.Value); // start of data
+				AddKeyFrame(dataStartFrame.Value +
+				            videoReader.fps * 37 * 2); // end of eyetracking calibration in driving
 				if (dataEndFrame >= videoReader.frameCount)
 					AddKeyFrame(videoReader.frameCount - 1);
 				else AddKeyFrame(dataEndFrame.Value - 1);
@@ -456,7 +473,8 @@ namespace SharpEyes.ViewModels
 				OutlierThresholdY = _outlierThresholdY,
 				OutlierThresholdRadius = _outlierThresholdRadius
 			};
-			RecenteringViewModel.LoadFromStimulusGaze(videoFilePath, DisplayedGazeLocations, dataStartFrame.Value, EyetrackingFPS, filterSettings, gazeFileName);
+			RecenteringViewModel.LoadFromStimulusGaze(videoFilePath, DisplayedGazeLocations, dataStartFrame.Value,
+				EyetrackingFPS, filterSettings, gazeFileName);
 			SwitchToRecenteringTab?.Invoke();
 		}
 
@@ -525,32 +543,5 @@ namespace SharpEyes.ViewModels
 			if (videoReader != null)
 				UpdateDisplay();
 		}
-	}
-
-	public class TrailGazePoint : ReactiveObject
-	{
-		public double Left
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		}
-
-		public double Top
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		}
-
-		public double Opacity
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		}
-
-		public bool IsVisible
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = false;
 	}
 }
