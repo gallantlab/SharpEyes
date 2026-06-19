@@ -40,9 +40,17 @@ namespace SharpEyes.ViewModels
 		internal NDArray? RawGazeLocations = null;
 		internal NDArray? FilteredGazeLocations = null;
 
-		internal NDArray? DisplayedGazeLocations => _isGazeFilterEnabled && ((object)FilteredGazeLocations != null)
+		// the filtered or raw gaze, before manual keyframe corrections are applied
+		private NDArray? GazeBaseline => _isGazeFilterEnabled && ((object)FilteredGazeLocations != null)
 			? FilteredGazeLocations
 			: RawGazeLocations;
+
+		// the gaze that is displayed and saved: the baseline with keyframe corrections applied
+		internal NDArray? CorrectedGazeLocations = null;
+
+		internal NDArray? DisplayedGazeLocations => (object)CorrectedGazeLocations != null
+			? CorrectedGazeLocations
+			: GazeBaseline;
 
 		protected override NDArray? GazeData => DisplayedGazeLocations;
 
@@ -114,7 +122,10 @@ namespace SharpEyes.ViewModels
 				if (value)
 					ApplyFilter();
 				else
+				{
+					RebuildCorrectedGaze();
 					RebuildTTLMarkerCache();
+				}
 			}
 		}
 
@@ -267,6 +278,7 @@ namespace SharpEyes.ViewModels
 			IsGazeLoaded = false;
 			RawGazeLocations = null;
 			FilteredGazeLocations = null;
+			CorrectedGazeLocations = null;
 			VideoKeyFrames.Clear();
 			GazeX = 0;
 			GazeY = 0;
@@ -283,40 +295,45 @@ namespace SharpEyes.ViewModels
 		// after gaze is manually edited, updates it.
 		public void UpdateGaze()
 		{
-			NDArray? gazeLocations = DisplayedGazeLocations;
-			if ((object)gazeLocations == null || dataFrame == null)
+			if ((object)DisplayedGazeLocations == null || dataFrame == null)
 				return;
 
-			double deltaX = GazeX - gazeLocations[dataFrame, 0];
-			double deltaY = GazeY - gazeLocations[dataFrame, 1];
-
-			AddKeyFrame();
-
-			// if there is a keyframe before, ramp the delta from the previous keyframe
-			// to this new keyframe
-			if (PreviousDataKeyFrame.HasValue)
-			{
-				int numFrames = dataFrame.Value - PreviousDataKeyFrame.Value;
-				double multiplier;
-				for (int i = PreviousDataKeyFrame.Value; i < dataFrame; i++)
-				{
-					multiplier = (double)(i - PreviousDataKeyFrame.Value) / numFrames;
-					gazeLocations[i, 0] += multiplier * deltaX;
-					gazeLocations[i, 1] += multiplier * deltaY;
-				}
-			}
-
-			// update all following data frames with this delta
-			gazeLocations[new Slice(dataFrame.Value, null), 0] += deltaX;
-			gazeLocations[new Slice(dataFrame.Value, null), 1] += deltaY;
+			AddKeyFrame(CurrentVideoFrame, GazeX, GazeY);
+			UpdateCorrectedGazeAround(dataFrame.Value);
 		}
 
+		/// <summary>
+		/// Adds a keyframe at the current video frame, recording the displayed gaze position.
+		/// </summary>
 		public void AddKeyFrame()
 		{
 			AddKeyFrame(CurrentVideoFrame);
 		}
 
+		/// <summary>
+		/// Adds a keyframe at the given video frame, recording the currently displayed gaze position
+		/// at that frame.
+		/// </summary>
+		/// <param name="frame">Video frame at which to add the keyframe</param>
 		public void AddKeyFrame(int frame)
+		{
+			if (!(dataStartFrame.HasValue && (frame >= dataStartFrame.Value) &&
+			      (frame <= dataEndFrame)))
+				return;
+			if ((object)DisplayedGazeLocations == null)
+				return;
+			int index = VideoTimeToDataIndex(frame);
+			AddKeyFrame(frame, (double)DisplayedGazeLocations[index, 0], (double)DisplayedGazeLocations[index, 1]);
+		}
+
+		/// <summary>
+		/// Adds a keyframe at the given video frame with an explicit gaze position, replacing any
+		/// existing keyframe at the same data index. The keyframe list is kept sorted by video frame.
+		/// </summary>
+		/// <param name="frame">Video frame at which to add the keyframe</param>
+		/// <param name="gazeX">Screen-space X of the gaze at the keyframe</param>
+		/// <param name="gazeY">Screen-space Y of the gaze at the keyframe</param>
+		public void AddKeyFrame(int frame, double gazeX, double gazeY)
 		{
 			if (dataStartFrame.HasValue && (frame >= dataStartFrame.Value) &&
 			    (frame <= dataEndFrame))
@@ -333,9 +350,127 @@ namespace SharpEyes.ViewModels
 				}
 
 				VideoKeyFrames.Add(new VideoKeyFrame(frame, index, videoReader.FramesToTimecode(frame),
-					DisplayedGazeLocations[index, 0], DisplayedGazeLocations[index, 1]));
+					gazeX, gazeY));
 				VideoKeyFrames =
 					new ObservableCollection<VideoKeyFrame>(VideoKeyFrames.OrderBy((keyframe) => keyframe.VideoFrame));
+			}
+		}
+
+		/// <summary>
+		/// Rebuilds the corrected gaze array from the baseline and keyframes. Frames before the first
+		/// keyframe stay at the baseline, the correction is linearly interpolated between consecutive
+		/// keyframes, and the last keyframe's correction is held flat to the end of the data.
+		/// </summary>
+		private void RebuildCorrectedGaze()
+		{
+			NDArray? baseline = GazeBaseline;
+			if ((object)baseline == null)
+			{
+				CorrectedGazeLocations = null;
+				return;
+			}
+
+			NDArray corrected = baseline.Clone() as NDArray;
+			if (VideoKeyFrames.Count > 0)
+			{
+				// interpolate the correction between each pair of consecutive keyframes
+				for (int keyFrameIndex = 0; keyFrameIndex < VideoKeyFrames.Count - 1; keyFrameIndex++)
+					ApplyInterpolatedSegment(baseline, corrected, VideoKeyFrames[keyFrameIndex],
+						VideoKeyFrames[keyFrameIndex + 1]);
+
+				// hold the last keyframe's correction flat to the end of the data
+				ApplyFlatTail(baseline, corrected, VideoKeyFrames[VideoKeyFrames.Count - 1]);
+			}
+
+			CorrectedGazeLocations = corrected;
+		}
+
+		/// <summary>
+		/// Updates only the corrected-gaze segments adjacent to the keyframe at the given data index,
+		/// after that keyframe was added or moved. Recomputes the segment from the previous keyframe and
+		/// the segment to the next keyframe, or the flat tail if it is the last keyframe.
+		/// </summary>
+		/// <param name="dataIndex">Data index of the keyframe that changed</param>
+		private void UpdateCorrectedGazeAround(int dataIndex)
+		{
+			NDArray? baseline = GazeBaseline;
+			if ((object)baseline == null || (object)CorrectedGazeLocations == null)
+			{
+				RebuildCorrectedGaze();
+				return;
+			}
+
+			int keyFramePosition = -1;
+			for (int i = 0; i < VideoKeyFrames.Count; i++)
+				if (VideoKeyFrames[i].DataIndex == dataIndex)
+				{
+					keyFramePosition = i;
+					break;
+				}
+			if (keyFramePosition < 0)
+			{
+				RebuildCorrectedGaze();
+				return;
+			}
+
+			VideoKeyFrame editedKeyFrame = VideoKeyFrames[keyFramePosition];
+
+			// recompute the segment behind the edited keyframe
+			if (keyFramePosition > 0)
+				ApplyInterpolatedSegment(baseline, CorrectedGazeLocations,
+					VideoKeyFrames[keyFramePosition - 1], editedKeyFrame);
+
+			// recompute the segment ahead of the edited keyframe, or the flat tail if it is last
+			if (keyFramePosition < VideoKeyFrames.Count - 1)
+				ApplyInterpolatedSegment(baseline, CorrectedGazeLocations,
+					editedKeyFrame, VideoKeyFrames[keyFramePosition + 1]);
+			else
+				ApplyFlatTail(baseline, CorrectedGazeLocations, editedKeyFrame);
+		}
+
+		/// <summary>
+		/// Writes the baseline plus a linearly interpolated correction into the corrected array over the
+		/// half-open range from the first keyframe's data index to the second keyframe's data index. The
+		/// correction ramps from the start keyframe's offset to the end keyframe's offset.
+		/// </summary>
+		/// <param name="baseline">Baseline gaze the correction is added to</param>
+		/// <param name="corrected">Corrected gaze array written into</param>
+		/// <param name="startKeyFrame">Keyframe at the start of the segment</param>
+		/// <param name="endKeyFrame">Keyframe at the end of the segment</param>
+		private void ApplyInterpolatedSegment(NDArray baseline, NDArray corrected,
+			VideoKeyFrame startKeyFrame, VideoKeyFrame endKeyFrame)
+		{
+			int startIndex = startKeyFrame.DataIndex;
+			int endIndex = endKeyFrame.DataIndex;
+			double startDeltaX = startKeyFrame.GazeX - (double)baseline[startIndex, 0];
+			double startDeltaY = startKeyFrame.GazeY - (double)baseline[startIndex, 1];
+			double endDeltaX = endKeyFrame.GazeX - (double)baseline[endIndex, 0];
+			double endDeltaY = endKeyFrame.GazeY - (double)baseline[endIndex, 1];
+			int numFrames = endIndex - startIndex;
+			for (int i = startIndex; i < endIndex; i++)
+			{
+				double multiplier = numFrames == 0 ? 0.0 : (double)(i - startIndex) / numFrames;
+				corrected[i, 0] = (double)baseline[i, 0] + startDeltaX + multiplier * (endDeltaX - startDeltaX);
+				corrected[i, 1] = (double)baseline[i, 1] + startDeltaY + multiplier * (endDeltaY - startDeltaY);
+			}
+		}
+
+		/// <summary>
+		/// Writes the baseline plus the keyframe's correction held flat from the keyframe's data index to
+		/// the end of the data.
+		/// </summary>
+		/// <param name="baseline">Baseline gaze the correction is added to</param>
+		/// <param name="corrected">Corrected gaze array written into</param>
+		/// <param name="keyFrame">Keyframe whose correction is held flat to the end</param>
+		private void ApplyFlatTail(NDArray baseline, NDArray corrected, VideoKeyFrame keyFrame)
+		{
+			int startIndex = keyFrame.DataIndex;
+			double deltaX = keyFrame.GazeX - (double)baseline[startIndex, 0];
+			double deltaY = keyFrame.GazeY - (double)baseline[startIndex, 1];
+			for (int i = startIndex; i < baseline.Shape[0]; i++)
+			{
+				corrected[i, 0] = (double)baseline[i, 0] + deltaX;
+				corrected[i, 1] = (double)baseline[i, 1] + deltaY;
 			}
 		}
 
@@ -406,12 +541,18 @@ namespace SharpEyes.ViewModels
 				EyetrackingFPS = capturedSampleRate;
 			IsGazeLoaded = true;
 			gazeFileName = fileName;
-			if (videoReader != null)
-				SetCurrentAsDataStart();
 			if (_isGazeFilterEnabled)
 				await ApplyFilter();
 			else
+			{
+				RebuildCorrectedGaze();
 				RebuildTTLMarkerCache();
+			}
+			if (videoReader != null)
+			{
+				SetCurrentAsDataStart();
+				UpdateDisplay();
+			}
 			IsLoadingGaze = false;
 		}
 
@@ -450,6 +591,8 @@ namespace SharpEyes.ViewModels
 					AddKeyFrame(videoReader.frameCount - 1);
 				else AddKeyFrame(dataEndFrame.Value - 1);
 			}
+
+			RebuildCorrectedGaze();
 		}
 
 		public void SendToRecentering()
@@ -527,6 +670,7 @@ namespace SharpEyes.ViewModels
 				OutlierThresholdY,
 				OutlierThresholdRadius));
 			FilteredGazeLocations = result;
+			RebuildCorrectedGaze();
 			RebuildTTLMarkerCache();
 
 			IsProgressBarVisible = false;

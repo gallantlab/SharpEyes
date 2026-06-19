@@ -51,18 +51,17 @@ namespace SharpEyes.ViewModels
 		/// <summary>Hook for subclasses to raise additional properties that depend on IsGazeLoaded.</summary>
 		protected virtual void OnGazeLoadedChanged() { }
 
-		private bool _isGazeAtNaN = false;
-		public bool IsGazeAtNaN
+		public bool FrameHasGaze
 		{
-			get => _isGazeAtNaN;
+			get;
 			set
 			{
-				this.RaiseAndSetIfChanged(ref _isGazeAtNaN, value);
+				this.RaiseAndSetIfChanged(ref field, value);
 				this.RaisePropertyChanged("IsGazeEllipseVisible");
 			}
-		}
+		} = true;
 
-		public bool IsGazeEllipseVisible => IsGazeLoaded && !IsGazeAtNaN;
+		public bool IsGazeEllipseVisible => IsGazeLoaded && FrameHasGaze;
 
 		private bool _isTTL = false;
 		public bool IsTTL
@@ -312,7 +311,7 @@ namespace SharpEyes.ViewModels
 			{
 				if ((object)GazeData == null || dataFrame >= GazeData.Shape[0])
 				{
-					IsGazeAtNaN = true;
+					FrameHasGaze = false;
 				}
 				else
 				{
@@ -320,11 +319,11 @@ namespace SharpEyes.ViewModels
 					double gazeYValue = (double)GazeData[dataFrame, 1];
 					if (Double.IsNaN(gazeXValue) || Double.IsNaN(gazeYValue))
 					{
-						IsGazeAtNaN = true;
+						FrameHasGaze = false;
 					}
 					else
 					{
-						IsGazeAtNaN = false;
+						FrameHasGaze = true;
 						GazeX = gazeXValue;
 						GazeY = gazeYValue;
 					}
@@ -334,7 +333,7 @@ namespace SharpEyes.ViewModels
 			}
 			else
 			{
-				IsGazeAtNaN = false;
+				FrameHasGaze = true;
 				IsTTL = false;
 				foreach (TrailGazePoint point in TrailPoints)
 					point.IsVisible = false;
