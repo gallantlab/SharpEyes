@@ -113,6 +113,8 @@ namespace SharpEyes.ViewModels
 				Settings.Current.Save();
 				if (value)
 					ApplyFilter();
+				else
+					RebuildTTLMarkerCache();
 			}
 		}
 
@@ -278,18 +280,6 @@ namespace SharpEyes.ViewModels
 			SaveGazeCommand = null;
 		}
 
-		/// <summary>
-		/// For a given index in the data, get the corresponding video frame
-		/// </summary>
-		/// <param name="dataIndex">index in eyetracking data</param>
-		/// <returns>video frame number</returns>
-		private int DataIndexToVideoTime(int dataIndex)
-		{
-			double dataElapsedTime = (double)dataIndex / EyetrackingFPS; // in seconds
-			int dataElapsedFrames = (int)Math.Round(dataElapsedTime * videoReader.fps);
-			return dataStartFrame.Value + dataElapsedFrames;
-		}
-
 		// after gaze is manually edited, updates it.
 		public void UpdateGaze()
 		{
@@ -419,6 +409,8 @@ namespace SharpEyes.ViewModels
 				SetCurrentAsDataStart();
 			if (_isGazeFilterEnabled)
 				await ApplyFilter();
+			else
+				RebuildTTLMarkerCache();
 			IsLoadingGaze = false;
 		}
 
@@ -534,6 +526,7 @@ namespace SharpEyes.ViewModels
 				OutlierThresholdY,
 				OutlierThresholdRadius));
 			FilteredGazeLocations = result;
+			RebuildTTLMarkerCache();
 
 			IsProgressBarVisible = false;
 			IsProgressBarIndeterminate = false;

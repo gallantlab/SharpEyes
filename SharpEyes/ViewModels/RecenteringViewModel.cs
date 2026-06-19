@@ -223,6 +223,7 @@ namespace SharpEyes.ViewModels
 			EyetrackingFPS = eyetrackingFPS;
 			gazeFilterSettings = filterSettings;
 			IsGazeLoaded = true;
+			RebuildTTLMarkerCache();
 			UpdateDisplay();
 		}
 
@@ -270,6 +271,7 @@ namespace SharpEyes.ViewModels
 			{
 				dataStartFrame = videoReader.CurrentFrameNumber;
 				this.RaisePropertyChanged("DataStartFrame");
+				RebuildTTLMarkerCache();
 			}
 		}
 

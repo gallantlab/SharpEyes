@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              xmlns:vm="clr-namespace:SharpEyes.ViewModels"
+             xmlns:uc="clr-namespace:SharpEyes.Views"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              x:Class="SharpEyes.Views.RecenteringUserControl">
   <Design.DataContext>
@@ -94,6 +95,10 @@
 
       <!--Video playback controls and display-->
       <StackPanel Orientation="Vertical" Grid.Row="2">
+        <uc:TTLMarkerBar Height="6" HorizontalAlignment="Stretch" Margin="1 0 5 -32"
+                         Positions="{Binding TTLMarkerPositions}"
+                         DataExtentStart="{Binding DataExtentStartFraction}"
+                         DataExtentEnd="{Binding DataExtentEndFraction}"/>
         <Slider Name="VideoTimeSlider" Margin="0 0 4 4" Minimum="0" IsEnabled="{Binding CanPlayVideo}"
                 Maximum="{Binding TotalVideoFrames}" Value="{Binding CurrentVideoFrame}"/>
         <Panel>

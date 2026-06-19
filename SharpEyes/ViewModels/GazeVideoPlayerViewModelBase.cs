@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
@@ -71,6 +72,50 @@ namespace SharpEyes.ViewModels
 		}
 
 		public bool HasTTLData => IsGazeLoaded && Recenterer.FindFirstTTLGazeIndex(GazeData) != null;
+
+		// == TTL scrubber markers ==
+		// Cached gaze-data indices that carry a TTL pulse. These index into the gaze
+		// array and are independent of the gaze-to-video alignment, so they are rebuilt
+		// only when the gaze data itself changes, not when the alignment is shifted.
+		private List<int> ttlGazeIndices = new List<int>();
+
+		private IReadOnlyList<double> _ttlMarkerPositions = Array.Empty<double>();
+
+		/// <summary>
+		/// Positions of the TTL pulses along the video scrubber, as fractions in [0, 1]
+		/// of the total video duration under the current alignment. Recomputed whenever
+		/// the display updates so the markers track alignment shifts.
+		/// </summary>
+		public IReadOnlyList<double> TTLMarkerPositions
+		{
+			get => _ttlMarkerPositions;
+			private set => this.RaiseAndSetIfChanged(ref _ttlMarkerPositions, value);
+		}
+
+		private double _dataExtentStartFraction = 0.0;
+
+		/// <summary>
+		/// Start of the eyetracking data along the video scrubber, as a fraction in [0, 1]
+		/// of the total video duration under the current alignment.
+		/// </summary>
+		public double DataExtentStartFraction
+		{
+			get => _dataExtentStartFraction;
+			private set => this.RaiseAndSetIfChanged(ref _dataExtentStartFraction, value);
+		}
+
+		private double _dataExtentEndFraction = 0.0;
+
+		/// <summary>
+		/// End of the eyetracking data along the video scrubber, as a fraction in [0, 1] of
+		/// the total video duration under the current alignment. Equals the start fraction
+		/// when there is no data to mark.
+		/// </summary>
+		public double DataExtentEndFraction
+		{
+			get => _dataExtentEndFraction;
+			private set => this.RaiseAndSetIfChanged(ref _dataExtentEndFraction, value);
+		}
 
 		// == Gaze marker ==
 		private double _gazeX = 0;
@@ -190,6 +235,63 @@ namespace SharpEyes.ViewModels
 			return (int)(videoElapsedTime * EyetrackingFPS);
 		}
 
+		/// <summary>
+		/// For a given index in the gaze data, gets the corresponding video frame under
+		/// the current alignment (data start frame and eyetracking sample rate). This is
+		/// the inverse of <see cref="VideoTimeToDataIndex"/>.
+		/// </summary>
+		/// <param name="dataIndex">index in eyetracking data</param>
+		/// <returns>video frame number</returns>
+		protected int DataIndexToVideoTime(int dataIndex)
+		{
+			double dataElapsedTime = (double)dataIndex / EyetrackingFPS; // in seconds
+			int dataElapsedFrames = (int)Math.Round(dataElapsedTime * videoReader.fps);
+			return dataStartFrame.Value + dataElapsedFrames;
+		}
+
+		/// <summary>
+		/// Rescans the current gaze data for TTL pulses and caches their gaze-data
+		/// indices, then refreshes the scrubber marker positions. Call this whenever the
+		/// array returned by <see cref="GazeData"/> is replaced (gaze load or filter
+		/// swap); the cache is alignment-independent, so shifting the alignment does not
+		/// require a rescan.
+		/// </summary>
+		protected void RebuildTTLMarkerCache()
+		{
+			ttlGazeIndices = Recenterer.FindAllTTLGazeIndices(GazeData);
+			UpdateTTLMarkerPositions();
+		}
+
+		/// <summary>
+		/// Recomputes the scrubber marker positions from the cached TTL gaze indices under
+		/// the current alignment. Markers that fall outside the video are dropped. Sets an
+		/// empty list when there is no alignment or video loaded.
+		/// </summary>
+		private void UpdateTTLMarkerPositions()
+		{
+			if (dataStartFrame == null || videoReader == null || TotalVideoFrames <= 0)
+			{
+				TTLMarkerPositions = Array.Empty<double>();
+				DataExtentStartFraction = 0.0;
+				DataExtentEndFraction = 0.0;
+				return;
+			}
+			List<double> positions = new List<double>(ttlGazeIndices.Count);
+			foreach (int ttlGazeIndex in ttlGazeIndices)
+			{
+				double fraction = (double)DataIndexToVideoTime(ttlGazeIndex) / TotalVideoFrames;
+				if (fraction >= 0.0 && fraction <= 1.0)
+					positions.Add(fraction);
+			}
+			TTLMarkerPositions = positions;
+
+			DataExtentStartFraction = Math.Clamp((double)dataStartFrame.Value / TotalVideoFrames, 0.0, 1.0);
+			int dataEndVideoFrame = (object)GazeData != null
+				? DataIndexToVideoTime(GazeData.Shape[0])
+				: dataStartFrame.Value;
+			DataExtentEndFraction = Math.Clamp((double)dataEndVideoFrame / TotalVideoFrames, 0.0, 1.0);
+		}
+
 		protected bool CheckTTLInVideoFrame(int videoFrame)
 		{
 			if ((object)GazeData == null || GazeData.Shape[1] < 4) return false;
@@ -230,6 +332,7 @@ namespace SharpEyes.ViewModels
 				foreach (TrailGazePoint point in TrailPoints)
 					point.IsVisible = false;
 			}
+			UpdateTTLMarkerPositions();
 		}
 
 		protected void UpdateTrailPoints()
@@ -271,8 +374,7 @@ namespace SharpEyes.ViewModels
 		{
 			int? firstTTLGazeIndex = Recenterer.FindFirstTTLGazeIndex(GazeData);
 			if (firstTTLGazeIndex == null || videoReader == null || dataStartFrame == null) return;
-			double gazeElapsedTime = (double)firstTTLGazeIndex.Value / EyetrackingFPS;
-			int videoFrame = dataStartFrame.Value + (int)(gazeElapsedTime * videoReader.fps);
+			int videoFrame = DataIndexToVideoTime(firstTTLGazeIndex.Value);
 			videoFrame = Math.Clamp(videoFrame, 0, videoReader.frameCount - 1);
 			ShowFrame(videoFrame);
 		}

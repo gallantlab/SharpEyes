@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -45,6 +46,30 @@ namespace SharpEyes.Models
 				if ((double)gazeLocations[i, 3] != 0.0)
 					return i;
 			return null;
+		}
+
+		/// <summary>
+		/// Finds the start index of every TTL pulse, identified by a non-zero value in the
+		/// fourth column. A single pulse spans several consecutive samples, so only the
+		/// rising edge of each run is recorded to avoid reporting one pulse many times.
+		/// Returns an empty list when there is no gaze data or the data has no TTL column.
+		/// </summary>
+		/// <param name="gazeLocations">eyetracking gaze locations to scan</param>
+		/// <returns>list of gaze-data indices at the start of each TTL pulse</returns>
+		public static List<int> FindAllTTLGazeIndices(NDArray gazeLocations)
+		{
+			List<int> ttlGazeIndices = new List<int>();
+			if ((object)gazeLocations == null || gazeLocations.Shape[1] < 4)
+				return ttlGazeIndices;
+			bool previousWasTTL = false;
+			for (int i = 0; i < gazeLocations.Shape[0]; i++)
+			{
+				bool currentIsTTL = (double)gazeLocations[i, 3] != 0.0;
+				if (currentIsTTL && !previousWasTTL)
+					ttlGazeIndices.Add(i);
+				previousWasTTL = currentIsTTL;
+			}
+			return ttlGazeIndices;
 		}
 		
 		/// <summary>
