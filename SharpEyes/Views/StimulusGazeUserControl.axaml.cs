@@ -13,7 +13,7 @@ namespace SharpEyes.Views
 	{
 		private bool areThumbEventsAttached = false;
 		private bool isDraggingVideoSlider = false;
-		private bool isMouseDownOnVideoCanvas = true;
+		private bool isMouseDownOnVideoCanvas = false;
 		private StimulusGazeViewModel? viewModel => (StimulusGazeViewModel)this.DataContext;
 		public StimulusGazeUserControl()
 		{
