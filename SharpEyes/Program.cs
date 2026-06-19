@@ -15,7 +15,6 @@ namespace SharpEyes
 		[STAThread]
 		public static void Main(string[] args)
 		{
-			Console.SetOut(TextWriter.Null);
 			AppBuilder builder = BuildAvaloniaApp();
 #if !DEBUG
 			try
@@ -28,6 +27,7 @@ namespace SharpEyes
 					window.GlobalExceptionHandler(e);
 			}
 #else
+			Console.SetOut(TextWriter.Null);
 			builder.StartWithClassicDesktopLifetime(args);
 #endif
 		}
