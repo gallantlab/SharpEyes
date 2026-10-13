@@ -234,7 +234,7 @@
           <!--Interpolator-->
           <Expander Margin="4 2" IsExpanded="{Binding IsInterpolatorExpanded}" Header="Interpolator"
                     VerticalAlignment="Top">
-            <StackPanel>
+            <StackPanel Name="InterpolatorPanel">
               <ToggleSwitch OnContent="Legacy Rbf convention" OffContent="RBFInterpolator convention" HorizontalAlignment="Left"
                             IsChecked="{Binding UseLegacyConvention}"/>
               <TextBlock Margin="4 4 4 0">Kernels</TextBlock>
@@ -274,7 +274,7 @@
           <!--Timing search-->
           <Expander Margin="4 2" IsExpanded="{Binding IsSearchExpanded}" Header="Timing search"
                     VerticalAlignment="Top">
-            <StackPanel>
+            <StackPanel Name="TimingSearchPanel">
               <StackPanel Orientation="Horizontal">
                 <TextBlock VerticalAlignment="Center" Width="120">Delay min (s)</TextBlock>
                 <NumericUpDown Name="SearchDelayMinUpDown" Margin="4 " Width="150"

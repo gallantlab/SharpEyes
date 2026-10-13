@@ -126,9 +126,105 @@ namespace SharpEyes.ViewModels
 		/// </summary>
 		public void CommitCalibrationSettings()
 		{
+			SaveCalibrationSettings();
 			if (!areCalibrationSettingsDirty) return;
 			areCalibrationSettingsDirty = false;
 			RefreshCalibrationFixations();
+		}
+
+		/// <summary>
+		/// Writes the calibration, preprocessing, interpolator, search, and calibration point settings to the settings file.
+		/// </summary>
+		private void SaveCalibrationSettings()
+		{
+			Settings settings = Settings.Current;
+			settings.CalibrationBlinkConfidenceThreshold = BlinkConfidenceThreshold;
+			settings.CalibrationStimulusWidth = StimulusWidth;
+			settings.CalibrationStimulusHeight = StimulusHeight;
+			settings.CalibrationDelay = CalibrationDelay;
+			settings.CalibrationDuration = CalibrationDuration;
+			settings.CalibrationPointDelay = PointDelay;
+			settings.CalibrationEndSkip = EndSkip;
+			settings.CalibrationEyetrackingFPS = EyetrackingFPS;
+			settings.CalibrationDPIUnscaleFactor = DPIUnscaleFactor;
+			settings.CalibrationFilterEnabled = IsFilterEnabled;
+			settings.CalibrationFilterWindowSize = FilterWindowSize;
+			settings.CalibrationFilterPupilSize = FilterPupilSize;
+			settings.CalibrationEnableOutlierRemoval = EnableOutlierRemoval;
+			settings.CalibrationOutlierThresholdX = OutlierThresholdX;
+			settings.CalibrationOutlierThresholdY = OutlierThresholdY;
+			settings.CalibrationOutlierThresholdRadius = OutlierThresholdRadius;
+			settings.CalibrationUseVarianceThreshold = UseVarianceThreshold;
+			settings.CalibrationVarianceThresholdPercentile = VarianceThresholdPercentile;
+			settings.CalibrationUseLegacyConvention = UseLegacyConvention;
+			settings.CalibrationSelectedKernels = KernelOptions.Where(option => option.IsSelected).Select(option => option.Kernel.ToString()).ToList();
+			settings.CalibrationUseDefaultEpsilon = UseDefaultEpsilon;
+			settings.CalibrationEpsilon = Epsilon;
+			settings.CalibrationSmoothnessMin = SmoothnessMin;
+			settings.CalibrationSmoothnessMax = SmoothnessMax;
+			settings.CalibrationSmoothnessCount = SmoothnessCount;
+			settings.CalibrationLogSpaceSmoothness = LogSpaceSmoothness;
+			settings.CalibrationSearchDelayMin = SearchDelayMin;
+			settings.CalibrationSearchDelayMax = SearchDelayMax;
+			settings.CalibrationSearchDelayStep = SearchDelayStep;
+			settings.CalibrationSearchDurationMin = SearchDurationMin;
+			settings.CalibrationSearchDurationMax = SearchDurationMax;
+			settings.CalibrationSearchDurationStep = SearchDurationStep;
+			settings.CalibrationPoints = CalibrationPoints.Select(point => new SavedPoint { X = point.X, Y = point.Y }).ToList();
+			settings.Save();
+		}
+
+		/// <summary>
+		/// Reads the calibration, preprocessing, interpolator, search, and calibration point settings from the settings
+		/// file, leaving the calibration start untouched.
+		/// </summary>
+		private void LoadCalibrationSettings()
+		{
+			Settings settings = Settings.Current;
+			BlinkConfidenceThreshold = settings.CalibrationBlinkConfidenceThreshold;
+			StimulusWidth = settings.CalibrationStimulusWidth;
+			StimulusHeight = settings.CalibrationStimulusHeight;
+			CalibrationDelay = settings.CalibrationDelay;
+			CalibrationDuration = settings.CalibrationDuration;
+			PointDelay = settings.CalibrationPointDelay;
+			EndSkip = settings.CalibrationEndSkip;
+			EyetrackingFPS = settings.CalibrationEyetrackingFPS;
+			DPIUnscaleFactor = settings.CalibrationDPIUnscaleFactor;
+			IsFilterEnabled = settings.CalibrationFilterEnabled;
+			FilterWindowSize = settings.CalibrationFilterWindowSize;
+			FilterPupilSize = settings.CalibrationFilterPupilSize;
+			EnableOutlierRemoval = settings.CalibrationEnableOutlierRemoval;
+			OutlierThresholdX = settings.CalibrationOutlierThresholdX;
+			OutlierThresholdY = settings.CalibrationOutlierThresholdY;
+			OutlierThresholdRadius = settings.CalibrationOutlierThresholdRadius;
+			UseVarianceThreshold = settings.CalibrationUseVarianceThreshold;
+			VarianceThresholdPercentile = settings.CalibrationVarianceThresholdPercentile;
+			UseLegacyConvention = settings.CalibrationUseLegacyConvention;
+			UseDefaultEpsilon = settings.CalibrationUseDefaultEpsilon;
+			Epsilon = settings.CalibrationEpsilon;
+			SmoothnessMin = settings.CalibrationSmoothnessMin;
+			SmoothnessMax = settings.CalibrationSmoothnessMax;
+			SmoothnessCount = settings.CalibrationSmoothnessCount;
+			LogSpaceSmoothness = settings.CalibrationLogSpaceSmoothness;
+			SearchDelayMin = settings.CalibrationSearchDelayMin;
+			SearchDelayMax = settings.CalibrationSearchDelayMax;
+			SearchDelayStep = settings.CalibrationSearchDelayStep;
+			SearchDurationMin = settings.CalibrationSearchDurationMin;
+			SearchDurationMax = settings.CalibrationSearchDurationMax;
+			SearchDurationStep = settings.CalibrationSearchDurationStep;
+			CalibrationPoints.Clear();
+			if (settings.CalibrationPoints != null && settings.CalibrationPoints.Count > 0)
+			{
+				foreach (SavedPoint point in settings.CalibrationPoints)
+					CalibrationPoints.Add(new Point(point.X, point.Y));
+			}
+			else
+			{
+				CalibrationParameters defaults = CalibrationParameters.GetDefault35PointCalibrationParameters();
+				foreach (CalibrationIndex index in defaults.calibrationSequence)
+					CalibrationPoints.Add(defaults.calibrationPoints[index.Index]);
+			}
+			areCalibrationSettingsDirty = false;
 		}
 
 		/// <summary>
@@ -664,11 +760,7 @@ namespace SharpEyes.ViewModels
 
 			VideoWidth = 640;
 			VideoHeight = 480;
-			RebuildKernelOptions();
-
-			CalibrationParameters defaults = CalibrationParameters.GetDefault35PointCalibrationParameters();
-			foreach (CalibrationIndex index in defaults.calibrationSequence)
-				CalibrationPoints.Add(defaults.calibrationPoints[index.Index]);
+			LoadCalibrationSettings();
 
 			ForceRedraw();
 		}
@@ -1032,6 +1124,7 @@ namespace SharpEyes.ViewModels
 			CalibrationPoints.Clear();
 			foreach (CalibrationIndex index in generated.calibrationSequence)
 				CalibrationPoints.Add(generated.calibrationPoints[index.Index]);
+			SaveCalibrationSettings();
 			RefreshCalibrationFixations();
 		}
 
@@ -1102,9 +1195,13 @@ namespace SharpEyes.ViewModels
 		/// </summary>
 		private void RebuildKernelOptions()
 		{
+			List<string>? savedSelection = Settings.Current.CalibrationSelectedKernels;
 			ObservableCollection<KernelOption> options = new ObservableCollection<KernelOption>();
 			foreach (RBFKernel kernel in UseLegacyConvention ? RBFMapping.LegacyKernels : RBFMapping.NewKernels)
-				options.Add(new KernelOption(kernel, DefaultSelectedKernels.Contains(kernel)));
+			{
+				bool isSelected = savedSelection != null ? savedSelection.Contains(kernel.ToString()) : DefaultSelectedKernels.Contains(kernel);
+				options.Add(new KernelOption(kernel, isSelected));
+			}
 			KernelOptions = options;
 		}
 
@@ -1312,6 +1409,7 @@ namespace SharpEyes.ViewModels
 			CalibrationPoints.Clear();
 			foreach (CalibrationFixation fixation in parameters.Fixations)
 				CalibrationPoints.Add(new Point(fixation.ScreenX, fixation.ScreenY));
+			SaveCalibrationSettings();
 		}
 
 		/// <summary>

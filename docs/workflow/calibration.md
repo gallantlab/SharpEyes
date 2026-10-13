@@ -72,7 +72,7 @@ We ported the scipy code and mirror both the legacy `RFB` and new `RBFInterpolat
 
 ### Preprocessing
 
-These settings are applied to the calibration traces before the points are aggregated, and to the traces being mapped.
+Filtering applied to the pupil traces before we compute the RBFs.
 
 | Control | Description |
 |---|---|

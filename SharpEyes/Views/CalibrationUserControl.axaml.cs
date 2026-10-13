@@ -13,7 +13,7 @@ namespace SharpEyes.Views
 		public CalibrationUserControl()
 		{
 			InitializeComponent();
-			foreach (StackPanel panel in new StackPanel[] { DataSettingsPanel, CalibrationParametersPanel, PreprocessingPanel })
+			foreach (StackPanel panel in new StackPanel[] { DataSettingsPanel, CalibrationParametersPanel, PreprocessingPanel, InterpolatorPanel, TimingSearchPanel })
 			{
 				panel.AddHandler(LostFocusEvent, OnSettingAccepted);
 				panel.AddHandler(KeyDownEvent, OnSettingKeyDown);

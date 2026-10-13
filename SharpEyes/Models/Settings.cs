@@ -7,6 +7,18 @@ namespace SharpEyes.Models
 {
 	public enum PythonSourceMode { System, Conda, Bundled }
 
+	/// <summary>
+	/// A screen position stored in the settings file.
+	/// </summary>
+	public class SavedPoint
+	{
+		[XmlAttribute]
+		public double X { get; set; } = 0;
+
+		[XmlAttribute]
+		public double Y { get; set; } = 0;
+	}
+
 	[XmlRoot("Settings")]
 	public class Settings
 	{
@@ -112,6 +124,55 @@ namespace SharpEyes.Models
 		public double GazeFilterOutlierThresholdX { get; set; } = 95;
 		public double GazeFilterOutlierThresholdY { get; set; } = 95;
 		public double GazeFilterOutlierThresholdRadius { get; set; } = 95;
+
+		// Calibration tab - data and timing, except the calibration start which depends on the video
+		public double CalibrationBlinkConfidenceThreshold { get; set; } = 0.6;
+		public int CalibrationStimulusWidth { get; set; } = 1024;
+		public int CalibrationStimulusHeight { get; set; } = 768;
+		public double CalibrationDelay { get; set; } = 2.0;
+		public double CalibrationDuration { get; set; } = 2.0;
+		public double CalibrationPointDelay { get; set; } = 0.167;
+		public double CalibrationEndSkip { get; set; } = 0;
+		public int CalibrationEyetrackingFPS { get; set; } = 60;
+		public double CalibrationDPIUnscaleFactor { get; set; } = 1.0;
+
+		// Calibration tab - preprocessing
+		public bool CalibrationFilterEnabled { get; set; } = true;
+		public int CalibrationFilterWindowSize { get; set; } = 15;
+		public bool CalibrationFilterPupilSize { get; set; } = true;
+		public bool CalibrationEnableOutlierRemoval { get; set; } = false;
+		public double CalibrationOutlierThresholdX { get; set; } = 95;
+		public double CalibrationOutlierThresholdY { get; set; } = 95;
+		public double CalibrationOutlierThresholdRadius { get; set; } = 95;
+		public bool CalibrationUseVarianceThreshold { get; set; } = false;
+		public double CalibrationVarianceThresholdPercentile { get; set; } = 90;
+
+		// Calibration tab - interpolator
+		public bool CalibrationUseLegacyConvention { get; set; } = true;
+
+		[XmlArray("CalibrationSelectedKernels")]
+		[XmlArrayItem("string")]
+		public List<string> CalibrationSelectedKernels { get; set; } = null;
+
+		public bool CalibrationUseDefaultEpsilon { get; set; } = true;
+		public double CalibrationEpsilon { get; set; } = 1.0;
+		public double CalibrationSmoothnessMin { get; set; } = 0;
+		public double CalibrationSmoothnessMax { get; set; } = 10;
+		public int CalibrationSmoothnessCount { get; set; } = 100;
+		public bool CalibrationLogSpaceSmoothness { get; set; } = false;
+
+		// Calibration tab - timing search
+		public double CalibrationSearchDelayMin { get; set; } = 1.98;
+		public double CalibrationSearchDelayMax { get; set; } = 2.41;
+		public double CalibrationSearchDelayStep { get; set; } = 0.01;
+		public double CalibrationSearchDurationMin { get; set; } = 1.98;
+		public double CalibrationSearchDurationMax { get; set; } = 2.21;
+		public double CalibrationSearchDurationStep { get; set; } = 0.01;
+
+		// Calibration tab - calibration points in presentation order; null for the default 35 point grid
+		[XmlArray("CalibrationPoints")]
+		[XmlArrayItem("Point")]
+		public List<SavedPoint> CalibrationPoints { get; set; } = null;
 
 		public static Settings Current { get; private set; }
 
