@@ -128,12 +128,6 @@ namespace SharpEyes.ViewModels
 
 		// == Shared status ==
 
-		public string StatusText
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = String.Empty;
-
 		// == Dependency status ==
 
 		public string NumPyStatusText
@@ -192,6 +186,7 @@ namespace SharpEyes.ViewModels
 			Settings settings = _manager.Settings;
 			_selectedSourceModeIndex = (int)settings.PythonSourceMode;
 			_systemPythonExecutablePath = settings.SystemPythonExecutablePath;
+			StatusText = String.Empty;
 
 			BrowseCommand = ReactiveCommand.CreateFromTask(Browse);
 			SetupSystemPythonCommand = ReactiveCommand.CreateFromTask(SetupSystemPython);

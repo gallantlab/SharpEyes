@@ -106,6 +106,58 @@ namespace SharpEyes.Models
 			PythonEngine.BeginAllowThreads();
 		}
 
+		/// <summary>
+		/// Checks that the configured Python source exists on disk.
+		/// </summary>
+		/// <returns>A message describing what is missing, or null when the source is usable.</returns>
+		public string? GetConfiguredSourceProblem()
+		{
+			switch (Settings.PythonSourceMode)
+			{
+				case PythonSourceMode.Bundled:
+					if (!IsBundledPythonDownloaded())
+						return "Bundled Python is not installed. Download it in Settings.";
+					break;
+				case PythonSourceMode.System:
+					if (!File.Exists(Settings.SystemPythonExecutablePath))
+						return String.Format("Python executable not found: {0}", Settings.SystemPythonExecutablePath);
+					break;
+				case PythonSourceMode.Conda:
+					if (!Directory.Exists(Settings.CondaEnvironmentPath))
+						return String.Format("Conda environment not found: {0}", Settings.CondaEnvironmentPath);
+					break;
+			}
+			return null;
+		}
+
+		/// <summary>
+		/// Initializes pythonnet if it has not been initialized, reporting progress and failures through the callback.
+		/// </summary>
+		/// <param name="reportStatus">Receives status messages for display.</param>
+		/// <returns>True when the interpreter is initialized.</returns>
+		public async Task<bool> EnsureInitialized(Action<string> reportStatus)
+		{
+			if (IsInitialized) return true;
+			string? problem = GetConfiguredSourceProblem();
+			if (problem != null)
+			{
+				reportStatus(problem);
+				return false;
+			}
+			reportStatus("Initializing Python...");
+			try
+			{
+				await Task.Run(() => Initialize());
+				reportStatus("Python initialized.");
+				return true;
+			}
+			catch (Exception exception)
+			{
+				reportStatus(String.Format("Failed to initialize Python: {0}", exception.Message));
+				return false;
+			}
+		}
+
 		private string GetPythonHome()
 		{
 			switch (Settings.PythonSourceMode)

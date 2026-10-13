@@ -49,6 +49,11 @@ namespace SharpEyes.ViewModels
 			calibrationViewModel = new CalibrationViewModel();
 			recenteringViewModel = new RecenteringViewModel();
 			motionEnergyViewModel = new MotionEnergyViewModel();
+			pupilFindingUserControlViewModel.CalibrationViewModel = calibrationViewModel;
+			pupilFindingUserControlViewModel.SwitchToCalibrationTab = () => SelectedTabIndex = 1;
+			calibrationViewModel.PupilFindingViewModel = pupilFindingUserControlViewModel;
+			calibrationViewModel.StimulusGazeViewModel = stimulusGazeViewModel;
+			calibrationViewModel.SwitchToStimulusGazeTab = () => SelectedTabIndex = 2;
 			stimulusGazeViewModel.RecenteringViewModel = recenteringViewModel;
 			stimulusGazeViewModel.SwitchToRecenteringTab = () => SelectedTabIndex = 3;
 			recenteringViewModel.MotionEnergyViewModel = motionEnergyViewModel;

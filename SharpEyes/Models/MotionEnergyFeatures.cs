@@ -169,27 +169,10 @@ namespace SharpEyes.Models
 					dynamic motenBackend = Py.Import("moten.backend");
 					motenBackend.set_backend(Backend);
 
-					dynamic np = Py.Import("numpy");
-					dynamic ctypes = Py.Import("ctypes");
-					dynamic npCtypeslib = Py.Import("numpy.ctypeslib");
-
 					// Pin the C# array and create a numpy view into it (zero-copy),
 					// then immediately copy into a new numpy array before releasing the pin
 					byte[] rawData = frames.Data<byte>().ToArray();
-					GCHandle handle = GCHandle.Alloc(rawData, GCHandleType.Pinned);
-					dynamic npArray;
-					try
-					{
-						long ptr = handle.AddrOfPinnedObject().ToInt64();
-						dynamic cArrayType = ctypes.c_uint8 * rawData.Length;
-						dynamic cArray = cArrayType.from_address(ptr);
-						npArray = npCtypeslib.as_array(cArray).copy()
-							.reshape(nFrames, height, width).__truediv__(255.0f);
-					}
-					finally
-					{
-						handle.Free();
-					}
+					dynamic npArray = NumpyInterop.CopyToNumpy(rawData, "c_uint8", nFrames, height, width).__truediv__(255.0f);
 
 					try
 					{
@@ -255,29 +238,13 @@ namespace SharpEyes.Models
 			using (Py.GIL())
 			{
 				dynamic np = Py.Import("numpy");
-				dynamic ctypes = Py.Import("ctypes");
-				dynamic npCtypeslib = Py.Import("numpy.ctypeslib");
 
 				dynamic loaded = np.load(path);
-				// Ascontiguousarray guarantees the reshape(-1) below is a contiguous view
-				dynamic result = np.ascontiguousarray(loaded.astype(np.float32));
-				nFrames = (int)result.shape[0];
-				nFeatures = (int)result.shape[1];
+				nFrames = (int)loaded.shape[0];
+				nFeatures = (int)loaded.shape[1];
 
 				resultData = new float[nFrames * nFeatures];
-				GCHandle outputHandle = GCHandle.Alloc(resultData, GCHandleType.Pinned);
-				try
-				{
-					long outputPtr = outputHandle.AddrOfPinnedObject().ToInt64();
-					dynamic outputCArrayType = ctypes.c_float * resultData.Length;
-					dynamic outputCArray = outputCArrayType.from_address(outputPtr);
-					dynamic outputNpArray = npCtypeslib.as_array(outputCArray);
-					np.copyto(outputNpArray, result.reshape(-1));
-				}
-				finally
-				{
-					outputHandle.Free();
-				}
+				NumpyInterop.CopyToManaged(loaded, resultData, "c_float", "float32");
 			}
 			return new NDArray(resultData).reshape(nFrames, nFeatures);
 		}
@@ -315,30 +282,15 @@ namespace SharpEyes.Models
 					dynamic motenBackend = Py.Import("moten.backend");
 					motenBackend.set_backend(Backend);
 
-					dynamic np = Py.Import("numpy");
-					dynamic ctypes = Py.Import("ctypes");
-					dynamic npCtypeslib = Py.Import("numpy.ctypeslib");
 					// C# reads the features back as float32 for visualization only.
-					dynamic result = ((dynamic)_lastFeatures).astype(np.float32);
+					dynamic result = (dynamic)_lastFeatures;
 					int nFeatures = (int)result.shape[1];
 					int nFrames = (int)result.shape[0];
 
 					// Pin the C# float array and copy numpy result directly into it,
 					// avoiding the intermediate Python bytes object and cross-boundary marshal
 					var resultData = new float[nFrames * nFeatures];
-					GCHandle outputHandle = GCHandle.Alloc(resultData, GCHandleType.Pinned);
-					try
-					{
-						long outputPtr = outputHandle.AddrOfPinnedObject().ToInt64();
-						dynamic outputCArrayType = ctypes.c_float * resultData.Length;
-						dynamic outputCArray = outputCArrayType.from_address(outputPtr);
-						dynamic outputNpArray = npCtypeslib.as_array(outputCArray);
-						np.copyto(outputNpArray, result.reshape(-1));
-					}
-					finally
-					{
-						outputHandle.Free();
-					}
+					NumpyInterop.CopyToManaged(result, resultData, "c_float", "float32");
 					return new NDArray(resultData).reshape(nFrames, nFeatures);
 				}
 			}

@@ -68,6 +68,11 @@ namespace SharpEyes.Models
 		// Expander open/close states - CalibrationUserControl
 		public bool CalibrationParametersExpanded { get; set; } = true;
 		public bool CalibrationPointsExpanded { get; set; } = true;
+		public bool CalibrationDataExpanded { get; set; } = true;
+		public bool CalibrationPreprocessingExpanded { get; set; } = false;
+		public bool CalibrationInterpolatorExpanded { get; set; } = true;
+		public bool CalibrationSearchExpanded { get; set; } = false;
+		public bool CalibrationResultsExpanded { get; set; } = true;
 
 		// Expander open/close states - MotionEnergyUserControl
 		public bool MotionEnergyFrameParametersExpanded { get; set; } = true;

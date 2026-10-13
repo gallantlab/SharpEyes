@@ -274,10 +274,10 @@ namespace SharpEyes.ViewModels
 		public override async void LoadVideo()
 		{
 			// reset gaze stuff
+			// we now allow some of the gaze stuff to be kept on video load
+			// because the clibration tab can send gaze stuff over
+			// and then we load the video for the gaze after
 			dataStartFrame = null;
-			IsGazeLoaded = false;
-			RawGazeLocations = null;
-			FilteredGazeLocations = null;
 			CorrectedGazeLocations = null;
 			VideoKeyFrames.Clear();
 			GazeX = 0;
@@ -536,9 +536,34 @@ namespace SharpEyes.ViewModels
 				loadedGaze = GazeLoader.Load(fileName, out int sampleRate);
 				capturedSampleRate = sampleRate;
 			});
+			await ApplyLoadedGaze(loadedGaze, capturedSampleRate, fileName);
+			IsLoadingGaze = false;
+		}
+
+		/// <summary>
+		/// Takes gaze locations mapped by the calibration tab as the loaded gaze data.
+		/// </summary>
+		/// <param name="gazeLocations">An (nSamples x columns) array with screen X and Y in the first two columns.</param>
+		/// <param name="eyetrackingFPS">Sample rate of the gaze locations.</param>
+		public async void LoadFromCalibration(NDArray gazeLocations, int eyetrackingFPS)
+		{
+			IsLoadingGaze = true;
+			await ApplyLoadedGaze(gazeLocations, eyetrackingFPS, null);
+			IsLoadingGaze = false;
+		}
+
+		/// <summary>
+		/// Installs newly loaded gaze locations: applies the sample rate when one is known, runs the gaze filter
+		/// if enabled, and aligns the data start to the current video frame when a video is open.
+		/// </summary>
+		/// <param name="loadedGaze">The gaze locations to install.</param>
+		/// <param name="sampleRate">Sample rate of the gaze locations, or zero when unknown.</param>
+		/// <param name="fileName">Path the gaze was loaded from, or null when it did not come from a file.</param>
+		private async Task ApplyLoadedGaze(NDArray loadedGaze, int sampleRate, string? fileName)
+		{
 			RawGazeLocations = loadedGaze;
-			if (capturedSampleRate > 0)
-				EyetrackingFPS = capturedSampleRate;
+			if (sampleRate > 0)
+				EyetrackingFPS = sampleRate;
 			IsGazeLoaded = true;
 			gazeFileName = fileName;
 			if (_isGazeFilterEnabled)
@@ -553,7 +578,6 @@ namespace SharpEyes.ViewModels
 				SetCurrentAsDataStart();
 				UpdateDisplay();
 			}
-			IsLoadingGaze = false;
 		}
 
 		public async void SaveGaze()

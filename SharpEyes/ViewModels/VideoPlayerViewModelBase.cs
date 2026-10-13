@@ -29,53 +29,6 @@ namespace SharpEyes.ViewModels
 		protected DispatcherTimer videoPlaybackTimer;
 		protected Func<int, string> _timeFormatter;
 
-		// == Progress bar ==
-		private string _statusText = "Idle";
-		public string StatusText
-		{
-			get => _statusText;
-			set => this.RaiseAndSetIfChanged(ref _statusText, value);
-		}
-
-		private bool _isProgressBarVisible = false;
-		public bool IsProgressBarVisible
-		{
-			get => _isProgressBarVisible;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarVisible, value);
-		}
-
-		private bool _isProgressBarIndeterminate = false;
-		public bool IsProgressBarIndeterminate
-		{
-			get => _isProgressBarIndeterminate;
-			set => this.RaiseAndSetIfChanged(ref _isProgressBarIndeterminate, value);
-		}
-
-		private double _progressBarValue = 0;
-		public double ProgressBarValue
-		{
-			get => _progressBarValue;
-			set => this.RaiseAndSetIfChanged(ref _progressBarValue, value);
-		}
-
-		// == Video dimensions ==
-		// Backing fields are protected so subclasses can read them in their layout
-		// computations; the setters are virtual so subclasses can raise their own
-		// derived layout properties when the size changes.
-		protected int _videoWidth = 1024;
-		public virtual int VideoWidth
-		{
-			get => _videoWidth;
-			set => this.RaiseAndSetIfChanged(ref _videoWidth, value);
-		}
-
-		protected int _videoHeight = 768;
-		public virtual int VideoHeight
-		{
-			get => _videoHeight;
-			set => this.RaiseAndSetIfChanged(ref _videoHeight, value);
-		}
-
 		// == Playback state ==
 		private string _currentVideoTime = "0:00:00;00";
 		public string CurrentVideoTime

@@ -43,6 +43,11 @@ namespace SharpEyes.ViewModels
 		public ReactiveCommand<Unit, Unit>? ReadTimestampsCommand { get; } = null;
 		public ReactiveCommand<Unit, Unit>? LoadTimestampsCommand { get; } = null;
 		public ReactiveCommand<Unit, Unit>? SaveDataCommand { get; private set; } = null;
+		public ReactiveCommand<Unit, Unit>? SendToCalibrationCommand { get; private set; } = null;
+
+		// == Calibration tab, wired by the main window view model ==
+		public CalibrationViewModel? CalibrationViewModel { get; set; } = null;
+		public Action? SwitchToCalibrationTab { get; set; } = null;
 
 		// == UI elements ==
 		private EditingState _editingState = EditingState.None;
@@ -91,42 +96,8 @@ namespace SharpEyes.ViewModels
 		} = false;
 
 		// progress bar
-		public string StatusText
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = "Idle";
-
-		public bool IsProgressBarVisible
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = false;
-
-		public bool IsProgressBarIndeterminate
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = false;
-
-		public double ProgressBarValue
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = 0;
 
 		// video playback
-		public int VideoWidth
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = 400;
-
-		public int VideoHeight
-		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = 300;
 
 		public string CurrentVideoTime
 		{
@@ -451,6 +422,8 @@ namespace SharpEyes.ViewModels
 
 		public PupilFindingUserControlViewModel()
 		{
+			VideoWidth = 400;
+			VideoHeight = 300;
 			TemplatePupilFinderConfigUserControlViewModel = new TemplatePupilFinderConfigUserControlViewModel(this);
 
 			videoPlaybackTimer = new DispatcherTimer(DispatcherPriority.Render);
@@ -464,6 +437,18 @@ namespace SharpEyes.ViewModels
 			NextFrameCommand = ReactiveCommand.Create(NextFrame);
 			PlayPauseCommand = ReactiveCommand.Create(PlayPause);
 			SaveDataCommand = ReactiveCommand.Create(SaveData);
+			SendToCalibrationCommand = ReactiveCommand.Create(SendToCalibration);
+		}
+
+		/// <summary>
+		/// Hands the found pupils, timestamps, frame rate, and video size to the calibration tab and switches to it.
+		/// </summary>
+		public void SendToCalibration()
+		{
+			if (CalibrationViewModel == null || pupilFinder == null || (object)pupilFinder.pupilLocations == null)
+				return;
+			CalibrationViewModel.LoadFromPupilFinding(pupilFinder);
+			SwitchToCalibrationTab?.Invoke();
 		}
 
 		private void VideoTimerTick(object? sender, EventArgs e)

@@ -113,7 +113,7 @@ namespace Eyetracking
 		/// adjustment was made.
 		/// </summary>
 		public NDArray pupilLocations { get; protected set; } = null;
-		private NDArray timeStamps = null;
+		public NDArray timeStamps { get; private set; } = null;
 		protected Mat grayFrame = new Mat();
 		protected Mat filteringFrame = new Mat();   // helper for filtering
 		protected Mat filteredFrame = new Mat();	// processed frame in which to find Pupils

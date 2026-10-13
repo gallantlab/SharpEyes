@@ -915,51 +915,6 @@ namespace SharpEyes.ViewModels
 			UpdateDisplay();
 		}
 
-		public async void InitializePython()
-		{
-			if (PythonEnvironmentManager.Instance.IsInitialized) return;
-			Settings pythonSettings = PythonEnvironmentManager.Instance.Settings;
-			switch (pythonSettings.PythonSourceMode)
-			{
-				case PythonSourceMode.Bundled:
-					if (!PythonEnvironmentManager.Instance.IsBundledPythonDownloaded())
-					{
-						StatusText = "Bundled Python is not installed. Download it in Settings.";
-						return;
-					}
-					break;
-				case PythonSourceMode.System:
-					if (!File.Exists(pythonSettings.SystemPythonExecutablePath))
-					{
-						StatusText = String.Format("Python executable not found: {0}", pythonSettings.SystemPythonExecutablePath);
-						return;
-					}
-					break;
-				case PythonSourceMode.Conda:
-					if (!Directory.Exists(pythonSettings.CondaEnvironmentPath))
-					{
-						StatusText = String.Format("Conda environment not found: {0}", pythonSettings.CondaEnvironmentPath);
-						return;
-					}
-					break;
-			}
-			StatusText = "Initializing Python...";
-			IsProgressBarVisible = true;
-			try
-			{
-				await Task.Run(() => PythonEnvironmentManager.Instance.Initialize());
-				StatusText = "Python initialized.";
-			}
-			catch (Exception exception)
-			{
-				StatusText = String.Format("Failed to initialize Python: {0}", exception.Message);
-			}
-			finally
-			{
-				IsProgressBarVisible = false;
-			}
-		}
-
 		/// <summary>
 		/// Builds a mapping from each unique spatial envelope size to a stroke-thickness
 		/// rank. The envelopes are sorted ascending and assigned ranks starting at one, so

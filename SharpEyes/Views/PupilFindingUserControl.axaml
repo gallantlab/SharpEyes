@@ -45,6 +45,9 @@
                 IsEnabled="{Binding IsDataDirty}">
           Save Data
         </Button>
+        <TextBlock VerticalAlignment="Center" Margin="4">|</TextBlock>
+        <Button Name="SendToCalibrationButton" Margin="4" Command="{Binding SendToCalibrationCommand}"
+                IsEnabled="{Binding CanFindPupils}">Send to Calibration</Button>
       </StackPanel>
 
       <!--Video video box-->

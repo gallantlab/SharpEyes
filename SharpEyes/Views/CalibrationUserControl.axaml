@@ -8,7 +8,12 @@
   <Design.DataContext>
     <vm:CalibrationViewModel/>
   </Design.DataContext>
-  <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="4" ShowGridLines="True">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.highError">
+      <Setter Property="Foreground" Value="Red"/>
+    </Style>
+  </UserControl.Styles>
+  <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="4">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="*"/>
       <ColumnDefinition Width="350"/>
@@ -18,43 +23,80 @@
       <RowDefinition Height="36"/>
     </Grid.RowDefinitions>
 
-    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ShowGridLines="True" Grid.Row="0" Grid.Column="0">
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="0" Grid.Column="0">
       <Grid.RowDefinitions>
-        <RowDefinition Height="48"/>
+        <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
         <RowDefinition Height="96"/>
       </Grid.RowDefinitions>
 
-      <!--Top button row-->
-      <StackPanel Orientation="Horizontal" Grid.Row="0">
-        <Button Name="LoadCalibrationPupilButton" Margin="4" Command="{Binding LoadCalibrationPupilsCommand}"
-                HotKey="Ctrl+O">Load Calibration Pupils</Button>
-        <Button Name="ImportCalibrationPupilButton" Margin="4" Command="{Binding ImportCalibrationPupilsCommand}"
-                HotKey="Ctrl+I">Use Pupil Finding for Calibration</Button>
-        <TextBlock VerticalAlignment="Center" Margin="4">|</TextBlock>
-        <Button Name="LoadPupilToConvertButton" Margin="4"
-                Command="{Binding LoadPupilsToConvertCommand}"
-                HotKey="Ctrl+L">Load Pupils to Map to Gaze</Button>
+      <!--Top button rows-->
+      <StackPanel Orientation="Vertical" Grid.Row="0">
+        <StackPanel Orientation="Horizontal">
+          <Button Name="LoadCalibrationPupilButton" Margin="4" Command="{Binding LoadCalibrationPupilsCommand}"
+                  HotKey="Ctrl+O">Load Pupil Traces for Calibration</Button>
           <Button Name="ConvertPupilFindingPupilsButton" Margin="4"
-                  Command="{Binding ConvertPupilFinderCommand}"
-                  HotKey="Ctrl+M">Map Pupil Finder to Gaze</Button>
+                  Command="{Binding ConvertPupilFinderCommand}" IsEnabled="{Binding HasMapping}"
+                  HotKey="Ctrl+M">Map Traces to Gaze</Button>
+          <TextBlock VerticalAlignment="Center" Margin="4">|</TextBlock>
+          <Button Name="LoadPupilToConvertButton" Margin="4"
+                  Command="{Binding LoadPupilsToConvertCommand}" IsEnabled="{Binding HasMapping}"
+                  HotKey="Ctrl+L">Convert other pupil traces</Button>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+          <Button Name="SaveCalibrationButton" Margin="4" Command="{Binding SaveCalibrationCommand}"
+                  IsEnabled="{Binding HasMapping}">Save Pupil-to-Gaze Mapping</Button>
+          <Button Name="LoadCalibrationButton" Margin="4" Command="{Binding LoadCalibrationCommand}">Load Pupil-to-Gaze Mapping</Button>
+          <TextBlock VerticalAlignment="Center" Margin="4">|</TextBlock>
+          <Button Name="SaveGazeButton" Margin="4" Command="{Binding SaveGazeCommand}"
+                  IsEnabled="{Binding HasMappedGaze}">Save Gaze</Button>
+          <Button Name="SendToStimulusGazeButton" Margin="4" Command="{Binding SendToStimulusGazeCommand}"
+                  IsEnabled="{Binding HasMappedGaze}">Send Gaze to Stimulus &amp; Gaze</Button>
+        </StackPanel>
       </StackPanel>
 
-      <!--Calibration visualization box-->
+      <!--Calibration visualization box, in pupil video space-->
       <Viewbox Grid.Row="1" Stretch="Uniform">
-        <Canvas Name="DisplayCanvas" Width="{Binding StimulusWidth}" Height="{Binding StimulusHeight}"
-                Background="Transparent">
-        </Canvas>
+        <ItemsControl Name="DisplayCanvas" Items="{Binding ShapesToDraw}"
+                      Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <Canvas Background="Transparent"/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        </ItemsControl>
       </Viewbox>
 
       <StackPanel Orientation="Vertical" Grid.Row="2" Margin="4" VerticalAlignment="Center">
 
-        <Button Name="ComputeMappingButton" Height="32" VerticalContentAlignment="Center" Margin="4"
-                HorizontalAlignment="Center" VerticalAlignment="Center" 
-                Command="{Binding ComputeMappingCommand}">Compute Mapping</Button>
+        <DockPanel LastChildFill="False">
+          <!--State markers-->
+          <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Margin="4 0 12 0">
+              <Ellipse Width="12" Height="12" VerticalAlignment="Center" Fill="{Binding CalibrationPupilsMarkerBrush}"/>
+              <TextBlock Margin="4 0 0 0" VerticalAlignment="Center">Calibration pupils</TextBlock>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="4 0 12 0">
+              <Ellipse Width="12" Height="12" VerticalAlignment="Center" Fill="{Binding MappingMarkerBrush}"/>
+              <TextBlock Margin="4 0 0 0" VerticalAlignment="Center">Mapping</TextBlock>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="4 0 12 0">
+              <Ellipse Width="12" Height="12" VerticalAlignment="Center" Fill="{Binding PupilsToMapMarkerBrush}"/>
+              <TextBlock Margin="4 0 0 0" VerticalAlignment="Center">Pupils to map</TextBlock>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="4 0 12 0">
+              <Ellipse Width="12" Height="12" VerticalAlignment="Center" Fill="{Binding GazeMarkerBrush}"/>
+              <TextBlock Margin="4 0 0 0" VerticalAlignment="Center">Gaze</TextBlock>
+            </StackPanel>
+          </StackPanel>
 
-        <TextBlock Name="CurrentVideoTimeTextBlock" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4"
-                   Text="{Binding CalibrationRMSError}"/>
+          <Button DockPanel.Dock="Right" Name="ComputeMappingButton" Height="32" VerticalContentAlignment="Center" Margin="4"
+                  HorizontalAlignment="Right" VerticalAlignment="Center" IsEnabled="{Binding HasCalibrationPupils}"
+                  Command="{Binding ComputeMappingCommand}">Compute Mapping</Button>
+        </DockPanel>
+
+        <TextBlock Name="CurrentVideoTimeTextBlock" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4"
+                   Classes.highError="{Binding IsRMSErrorHigh}" Text="{Binding CalibrationRMSError}"/>
       </StackPanel>
 
 
@@ -62,7 +104,7 @@
     <!--Status bar-->
     <DockPanel Grid.Row="4" Grid.Column="0" LastChildFill="True" VerticalAlignment="Center">
       <TextBlock DockPanel.Dock="Left" Name="StatusTextBlock" Text="{Binding StatusText}" ToolTip.Tip="{Binding StatusText}"/>
-      <ProgressBar Name="StatusProgressBar" Margin="4 0 4 0" Minimum="0" Maximum="100" IsIndeterminate="{Binding IsProgressbarIndeterminate}"
+      <ProgressBar Name="StatusProgressBar" Margin="4 0 4 0" Minimum="0" Maximum="100" IsIndeterminate="{Binding IsProgressBarIndeterminate}"
                    Value="{Binding ProgressBarValue}" IsVisible="{Binding IsProgressBarVisible}"/>
     </DockPanel>
     <!--Calibration info stuff-->
@@ -70,17 +112,48 @@
 
       <ScrollViewer DockPanel.Dock="Top" Margin="2">
         <StackPanel>
-          <!--Gaze marker info-->
+          <!--Data-->
+          <Expander Margin="4 2" IsExpanded="{Binding IsDataExpanded}" Header="Data"
+                    VerticalAlignment="Top">
+            <StackPanel DockPanel.Dock="Top">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Video width</TextBlock>
+                <NumericUpDown Name="VideoWidthUpDown" Margin="4 " Width="150"
+                               Value="{Binding VideoWidth}" Increment="1" Minimum="1"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Video height</TextBlock>
+                <NumericUpDown Name="VideoHeightUpDown" Margin="4 " Width="150"
+                               Value="{Binding VideoHeight}" Increment="1" Minimum="1"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Blink confidence</TextBlock>
+                <NumericUpDown Name="BlinkConfidenceUpDown" Margin="4 " Width="150"
+                               Value="{Binding BlinkConfidenceThreshold}" Increment="0.01" Minimum="0" Maximum="2"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Stimulus width</TextBlock>
+                <NumericUpDown Name="StimulusWidthUpDown" Margin="4 " Width="150"
+                               Value="{Binding StimulusWidth}" Increment="1" Minimum="1"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Stimulus height</TextBlock>
+                <NumericUpDown Name="StimulusHeightUpDown" Margin="4 " Width="150"
+                               Value="{Binding StimulusHeight}" Increment="1" Minimum="1"/>
+              </StackPanel>
+            </StackPanel>
+          </Expander>
+          <!--Calibration timing-->
           <Expander Margin="4 2" IsExpanded="{Binding IsCalibrationParametersExpanded}" Header="Calibration Parameters"
                     VerticalAlignment="Top">
             <StackPanel DockPanel.Dock="Top">
               <ToggleSwitch OnContent="Use timestamp for start time" OffContent="Use timestamp for start time"
                             HorizontalAlignment="Left" Name="UseTimestampSwitch"
-                            IsChecked="False"/>
+                            IsChecked="{Binding UseTimestampForStart}"/>
               <StackPanel Orientation="Horizontal" IsVisible="{Binding !#UseTimestampSwitch.IsChecked}">
                 <TextBlock VerticalAlignment="Center" Width="120">Start frame</TextBlock>
                 <NumericUpDown Name="CalibrationStartUpDown" Margin="4 " Width="150"
-                               Value="{Binding CalibrationStartFrame}" Increment="1" Minimum="1"/>
+                               Value="{Binding CalibrationStartFrame}" Increment="1" Minimum="0"/>
               </StackPanel>
               <StackPanel Orientation="Horizontal" IsVisible="{Binding #UseTimestampSwitch.IsChecked}">
                 <TextBlock VerticalAlignment="Center" Width="120">Start timestamp</TextBlock>
@@ -103,6 +176,11 @@
                                Value="{Binding PointDelay}" Increment="0.001" Minimum="0"/>
               </StackPanel>
               <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">End skip (s)</TextBlock>
+                <NumericUpDown Name="EndSkipUpDown" Margin="4 " Width="150"
+                               Value="{Binding EndSkip}" Increment="0.001" Minimum="0"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
                 <TextBlock VerticalAlignment="Center" Width="120">Eyetracking FPS</TextBlock>
                 <NumericUpDown Name="EyetrackingFPSUpDown" Margin="4 " Width="150"
                                Value="{Binding EyetrackingFPS}" Increment="1" Minimum="0"/>
@@ -114,10 +192,156 @@
               </StackPanel>
             </StackPanel>
           </Expander>
+          <!--Preprocessing-->
+          <Expander Margin="4 2" IsExpanded="{Binding IsPreprocessingExpanded}" Header="Preprocessing"
+                    VerticalAlignment="Top">
+            <StackPanel>
+              <ToggleSwitch OnContent="Median filter" OffContent="Median filter" HorizontalAlignment="Left"
+                            IsChecked="{Binding IsFilterEnabled}"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Window (frames)</TextBlock>
+                <NumericUpDown Name="FilterWindowUpDown" Margin="4 " Width="150"
+                               Value="{Binding FilterWindowSize}" Increment="2" Minimum="1"/>
+              </StackPanel>
+              <ToggleSwitch OnContent="Filter pupil size" OffContent="Filter pupil size" HorizontalAlignment="Left"
+                            IsChecked="{Binding FilterPupilSize}"/>
+              <ToggleSwitch OnContent="Remove outliers" OffContent="Remove outliers" HorizontalAlignment="Left"
+                            IsChecked="{Binding EnableOutlierRemoval}"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">X percentile</TextBlock>
+                <NumericUpDown Name="OutlierXUpDown" Margin="4 " Width="150"
+                               Value="{Binding OutlierThresholdX}" Increment="1" Minimum="0" Maximum="100"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Y percentile</TextBlock>
+                <NumericUpDown Name="OutlierYUpDown" Margin="4 " Width="150"
+                               Value="{Binding OutlierThresholdY}" Increment="1" Minimum="0" Maximum="100"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Radius percentile</TextBlock>
+                <NumericUpDown Name="OutlierRadiusUpDown" Margin="4 " Width="150"
+                               Value="{Binding OutlierThresholdRadius}" Increment="1" Minimum="0" Maximum="100"/>
+              </StackPanel>
+              <ToggleSwitch OnContent="Drop unsteady points" OffContent="Drop unsteady points" HorizontalAlignment="Left"
+                            IsChecked="{Binding UseVarianceThreshold}"/>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Variance percentile</TextBlock>
+                <NumericUpDown Name="VariancePercentileUpDown" Margin="4 " Width="150"
+                               Value="{Binding VarianceThresholdPercentile}" Increment="1" Minimum="0" Maximum="100"/>
+              </StackPanel>
+            </StackPanel>
+          </Expander>
+          <!--Interpolator-->
+          <Expander Margin="4 2" IsExpanded="{Binding IsInterpolatorExpanded}" Header="Interpolator"
+                    VerticalAlignment="Top">
+            <StackPanel>
+              <ToggleSwitch OnContent="Legacy Rbf convention" OffContent="RBFInterpolator convention" HorizontalAlignment="Left"
+                            IsChecked="{Binding UseLegacyConvention}"/>
+              <TextBlock Margin="4 4 4 0">Kernels</TextBlock>
+              <ItemsControl Items="{Binding KernelOptions}" Margin="4 0">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <ToggleSwitch OnContent="Default shape parameter" OffContent="Default shape parameter" HorizontalAlignment="Left"
+                            Name="DefaultEpsilonSwitch" IsChecked="{Binding UseDefaultEpsilon}"/>
+              <StackPanel Orientation="Horizontal" IsVisible="{Binding !#DefaultEpsilonSwitch.IsChecked}">
+                <TextBlock VerticalAlignment="Center" Width="120">Shape parameter</TextBlock>
+                <NumericUpDown Name="EpsilonUpDown" Margin="4 " Width="150"
+                               Value="{Binding Epsilon}" Increment="0.001" Minimum="0"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Smoothness min</TextBlock>
+                <NumericUpDown Name="SmoothnessMinUpDown" Margin="4 " Width="150"
+                               Value="{Binding SmoothnessMin}" Increment="0.001"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Smoothness max</TextBlock>
+                <NumericUpDown Name="SmoothnessMaxUpDown" Margin="4 " Width="150"
+                               Value="{Binding SmoothnessMax}" Increment="0.1"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Smoothness count</TextBlock>
+                <NumericUpDown Name="SmoothnessCountUpDown" Margin="4 " Width="150"
+                               Value="{Binding SmoothnessCount}" Increment="1" Minimum="1"/>
+              </StackPanel>
+              <ToggleSwitch OnContent="Log spaced smoothness" OffContent="Log spaced smoothness" HorizontalAlignment="Left"
+                            IsChecked="{Binding LogSpaceSmoothness}"/>
+            </StackPanel>
+          </Expander>
+          <!--Timing search-->
+          <Expander Margin="4 2" IsExpanded="{Binding IsSearchExpanded}" Header="Timing search"
+                    VerticalAlignment="Top">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Delay min (s)</TextBlock>
+                <NumericUpDown Name="SearchDelayMinUpDown" Margin="4 " Width="150"
+                               Value="{Binding SearchDelayMin}" Increment="0.01" Minimum="0"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Delay max (s)</TextBlock>
+                <NumericUpDown Name="SearchDelayMaxUpDown" Margin="4 " Width="150"
+                               Value="{Binding SearchDelayMax}" Increment="0.01" Minimum="0"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Delay step (s)</TextBlock>
+                <NumericUpDown Name="SearchDelayStepUpDown" Margin="4 " Width="150"
+                               Value="{Binding SearchDelayStep}" Increment="0.001" Minimum="0.001"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Duration min (s)</TextBlock>
+                <NumericUpDown Name="SearchDurationMinUpDown" Margin="4 " Width="150"
+                               Value="{Binding SearchDurationMin}" Increment="0.01" Minimum="0"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Duration max (s)</TextBlock>
+                <NumericUpDown Name="SearchDurationMaxUpDown" Margin="4 " Width="150"
+                               Value="{Binding SearchDurationMax}" Increment="0.01" Minimum="0"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Duration step (s)</TextBlock>
+                <NumericUpDown Name="SearchDurationStepUpDown" Margin="4 " Width="150"
+                               Value="{Binding SearchDurationStep}" Increment="0.001" Minimum="0.001"/>
+              </StackPanel>
+              <Button Margin="4" Name="SearchTimingButton" Command="{Binding SearchTimingCommand}"
+                      IsEnabled="{Binding HasCalibrationPupils}">Search delay and duration</Button>
+            </StackPanel>
+          </Expander>
+          <!--Results-->
+          <Expander Margin="4 2" IsExpanded="{Binding IsResultsExpanded}" Header="Results"
+                    VerticalAlignment="Top">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Kernel</TextBlock>
+                <TextBlock VerticalAlignment="Center" Margin="4" Text="{Binding FittedKernel}"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Smoothness</TextBlock>
+                <TextBlock VerticalAlignment="Center" Margin="4" Text="{Binding FittedSmoothness}"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Width="120">Shape parameter</TextBlock>
+                <TextBlock VerticalAlignment="Center" Margin="4" Text="{Binding FittedEpsilon}"/>
+              </StackPanel>
+              <DataGrid Name="CalibrationNodesDataGrid" Margin="4" AutoGenerateColumns="False" IsReadOnly="True"
+                        Items="{Binding CalibrationNodes}">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="#" Binding="{Binding Index}"/>
+                  <DataGridTextColumn Header="Pupil X" Binding="{Binding PupilX, StringFormat={}{0:F1}}"/>
+                  <DataGridTextColumn Header="Pupil Y" Binding="{Binding PupilY, StringFormat={}{0:F1}}"/>
+                  <DataGridTextColumn Header="Error (px)" Binding="{Binding Error, StringFormat={}{0:F1}}"/>
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+          </Expander>
+          <!--Calibration points-->
           <Expander Margin="4 2" IsExpanded="{Binding IsCalibrationPointsExpanded}" Header="Calibration points"
                     VerticalAlignment="Top">
               <StackPanel>
-                  <Button Margin="4" Name="ForceRedrawButton" Click="ForceRedrawButton_OnClick">Force redraw points</Button>
+                  <Button Margin="4" Name="RegeneratePointsButton" Command="{Binding RegeneratePointsCommand}">Regenerate points from stimulus size</Button>
+                  <Button Margin="4" Name="ForceRedrawButton" Command="{Binding ForceRedrawCommand}">Force redraw points</Button>
                   <DataGrid Name="CalibrationPointsDataGrid" Margin="4" AutoGenerateColumns="False" Items="{Binding CalibrationPoints}">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="X" Binding="{Binding X}"/>
