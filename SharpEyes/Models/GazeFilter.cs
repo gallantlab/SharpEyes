@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using NumSharp;
 
@@ -23,7 +24,8 @@ namespace Eyetracking
 		/// Mirrors the logic from PupilFinder.FilterPupils in the Python eyetracking library.
 		/// </summary>
 		public static NDArray Filter(NDArray gazeLocations, int windowSize, bool filterPupilSize,
-			bool enableOutlierRemoval, double outlierThresholdX, double outlierThresholdY, double outlierThresholdRadius)
+			bool enableOutlierRemoval, double outlierThresholdX, double outlierThresholdY, double outlierThresholdRadius,
+			CancellationToken cancellationToken = default)
 		{
 			int frameCount = gazeLocations.Shape[0];
 			int columnCount = gazeLocations.Shape[1];
@@ -34,8 +36,12 @@ namespace Eyetracking
 
 			int columnsToMedianFilter = (filterPupilSize && columnCount > 2) ? 3 : 2;
 			for (int column = 0; column < columnsToMedianFilter && column < columnCount; column++)
+			{
+				cancellationToken.ThrowIfCancellationRequested();
 				WriteColumn(filtered, column, BidirectionalMedianFilter(ExtractColumn(filtered, column, frameCount), windowSize));
+			}
 
+			cancellationToken.ThrowIfCancellationRequested();
 			if (enableOutlierRemoval)
 			{
 				double[] thresholds = new double[] { outlierThresholdX, outlierThresholdY, outlierThresholdRadius };

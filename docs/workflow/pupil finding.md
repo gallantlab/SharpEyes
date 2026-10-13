@@ -16,6 +16,7 @@ The left half of the window is the video player. The right half is the controls 
 6. Click **Add current as template** to save the current frame's pupil region as a custom template. When a custom template is added, the idealized default templates are cleared. Accumulating 70–100 templates per video is typical. Check **Auto add** to automatically add each manually-edited frame as a template.
 7. Continue through the video, pausing to correct errors as needed. The color bar on the top of the video slider shows progress: pink regions have not been processed, green regions have.
 8. Save with File → Save. Timestamps and pupil positions are stored as numpy arrays. Templates are stored as a `.dat` file (a renamed zip file containing the template images). If **Auto save** is checked in the controls panel, these are saved automatically whenever pupil finding is paused.
+9. Click **Send to Calibration** to pass the pupil positions, timestamps, frame rate, and video size to the [Calibration](calibration.md) tab.
 
 When templates from early in the video stop working well for later sections, use the **Use templates** dropdown to tell SharpEyes to use only the N most recent templates.
 
@@ -50,6 +51,8 @@ When templates from early in the video stop working well for later sections, use
 | Open video | Opens an eyetracking video |
 | Draw window | Enter draw-window mode to select a sub-patch of the video to search for pupils. Click again to exit. SharpEyes also auto-exits when a window is drawn. |
 | Move pupil | Enter edit-pupil mode. Click and drag the pupil to move it; scroll to change pupil size. |
+| Save Data | Saves the timestamps, pupil positions, and templates |
+| Send to Calibration | Passes the pupil positions, timestamps, frame rate, and video size to the [Calibration](calibration.md) tab |
 
 ### Video player
 

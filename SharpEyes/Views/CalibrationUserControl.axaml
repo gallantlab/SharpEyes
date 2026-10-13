@@ -115,7 +115,7 @@
           <!--Data-->
           <Expander Margin="4 2" IsExpanded="{Binding IsDataExpanded}" Header="Data"
                     VerticalAlignment="Top">
-            <StackPanel DockPanel.Dock="Top">
+            <StackPanel DockPanel.Dock="Top" Name="DataSettingsPanel">
               <StackPanel Orientation="Horizontal">
                 <TextBlock VerticalAlignment="Center" Width="120">Video width</TextBlock>
                 <NumericUpDown Name="VideoWidthUpDown" Margin="4 " Width="150"
@@ -146,7 +146,7 @@
           <!--Calibration timing-->
           <Expander Margin="4 2" IsExpanded="{Binding IsCalibrationParametersExpanded}" Header="Calibration Parameters"
                     VerticalAlignment="Top">
-            <StackPanel DockPanel.Dock="Top">
+            <StackPanel DockPanel.Dock="Top" Name="CalibrationParametersPanel">
               <ToggleSwitch OnContent="Use timestamp for start time" OffContent="Use timestamp for start time"
                             HorizontalAlignment="Left" Name="UseTimestampSwitch"
                             IsChecked="{Binding UseTimestampForStart}"/>
@@ -195,7 +195,7 @@
           <!--Preprocessing-->
           <Expander Margin="4 2" IsExpanded="{Binding IsPreprocessingExpanded}" Header="Preprocessing"
                     VerticalAlignment="Top">
-            <StackPanel>
+            <StackPanel Name="PreprocessingPanel">
               <ToggleSwitch OnContent="Median filter" OffContent="Median filter" HorizontalAlignment="Left"
                             IsChecked="{Binding IsFilterEnabled}"/>
               <StackPanel Orientation="Horizontal">
@@ -325,8 +325,8 @@
                 <TextBlock VerticalAlignment="Center" Width="120">Shape parameter</TextBlock>
                 <TextBlock VerticalAlignment="Center" Margin="4" Text="{Binding FittedEpsilon}"/>
               </StackPanel>
-              <DataGrid Name="CalibrationNodesDataGrid" Margin="4" AutoGenerateColumns="False" IsReadOnly="True"
-                        Items="{Binding CalibrationNodes}">
+              <DataGrid Name="CalibrationFixationsDataGrid" Margin="4" AutoGenerateColumns="False" IsReadOnly="True"
+                        Items="{Binding CalibrationFixations}">
                 <DataGrid.Columns>
                   <DataGridTextColumn Header="#" Binding="{Binding Index}"/>
                   <DataGridTextColumn Header="Pupil X" Binding="{Binding PupilX, StringFormat={}{0:F1}}"/>

@@ -6,10 +6,10 @@ using System.Xml.Serialization;
 namespace Eyetracking
 {
 	/// <summary>
-	/// One calibration node: the aggregated pupil position for a presented calibration point, the screen position
+	/// One calibration fixation: the aggregated pupil position for a presented calibration point, the screen position
 	/// of that point, and the fitted mapping's leave-one-out residual there.
 	/// </summary>
-	public class CalibrationNode
+	public class CalibrationFixation
 	{
 		[XmlAttribute]
 		public int Index { get; set; } = 0;
@@ -24,7 +24,7 @@ namespace Eyetracking
 		public double ResidualY { get; set; } = Double.NaN;
 
 		/// <summary>
-		/// Whether the node has a pupil position and takes part in the fit.
+		/// Whether the fixation has a pupil position and takes part in the fit.
 		/// </summary>
 		[XmlIgnore]
 		public bool IsValid => !Double.IsNaN(PupilX) && !Double.IsNaN(PupilY);
@@ -36,12 +36,12 @@ namespace Eyetracking
 		public double Error => Math.Sqrt(ResidualX * ResidualX + ResidualY * ResidualY);
 
 		/// <summary>
-		/// Copies the node.
+		/// Copies the fixation.
 		/// </summary>
-		/// <returns>A node with the same values.</returns>
-		public CalibrationNode Clone()
+		/// <returns>A fixation with the same values.</returns>
+		public CalibrationFixation Clone()
 		{
-			return (CalibrationNode)MemberwiseClone();
+			return (CalibrationFixation)MemberwiseClone();
 		}
 	}
 
@@ -58,13 +58,13 @@ namespace Eyetracking
 	}
 
 	/// <summary>
-	/// Everything that defines a fitted pupil-to-screen mapping and the settings that produced its nodes,
+	/// Everything that defines a fitted pupil-to-screen mapping and the settings that produced its fixations,
 	/// serialized to XML so a calibration can be saved and refitted later.
 	/// </summary>
 	[XmlRoot("GazeCalibration")]
 	public class GazeCalibrationParameters
 	{
-		// == Timing used to aggregate the nodes ==
+		// == Timing used to aggregate the fixations ==
 		public bool UseTimestampForStart { get; set; } = false;
 		public int CalibrationStartFrame { get; set; } = 0;
 		public string CalibrationStartTimeStamp { get; set; } = "0:00:00.000";
@@ -95,9 +95,9 @@ namespace Eyetracking
 		public double Epsilon { get; set; } = 1;
 		public double RMSError { get; set; } = Double.NaN;
 
-		[XmlArray("Nodes")]
-		[XmlArrayItem("Node")]
-		public List<CalibrationNode> Nodes { get; set; } = new List<CalibrationNode>();
+		[XmlArray("Fixations")]
+		[XmlArrayItem("Fixation")]
+		public List<CalibrationFixation> Fixations { get; set; } = new List<CalibrationFixation>();
 
 		[XmlArray("CoefficientsX")]
 		[XmlArrayItem("double")]

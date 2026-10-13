@@ -17,10 +17,8 @@
 **What do I do with the data SharpEyes saves out?**
 
 It depends on how far through the workflow you go. 
-The [Pupil Finding](workflow/pupil%20finding.md) tab saves pupil positions and timestamps as numpy arrays, 
-which can be loaded into the [Calibration](workflow/calibration.md) tab or passed to the `SharpEyesCalibrator` class 
-in the [Eyetracking](https://github.com/gallantlab/Eyetracking) Python repo for external calibration. That can then be brought back to SharpEyes.
-
+The [Pupil Finding](workflow/pupil%20finding.md) tab finds the pupils in raw videos.
+The [Calibration](workflow/calibration.md) tab computes the mapping from eye video space to gaze position in screen space.
 The [Stimulus & Gaze](workflow/stimulus%20and%20gaze.md) tab can load gaze positions in numpy, CSV, or Eyelink formats for viewing and editing. 
 The [Recentering](workflow/recentering.md) tab exports retinotopic frames as PNG files or a numpy array. 
 The [Motion-Energy](workflow/motion%20energy.md) tab saves a numpy array of features, 

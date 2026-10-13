@@ -20,7 +20,7 @@ SharpEyes is organized into five tabs, each corresponding to a stage of processi
 
 **Pupil Finding** — Takes a raw eyetracking video and finds the pupil location in every frame. Uses a semi-automatic model-free template matching algorithm, and results are hand-editable.
 
-**Calibration** — (Yet to be implemented) Maps from pupil position in video space to gaze in stimulus display space.
+**Calibration** — Maps from pupil position in video space to gaze in stimulus display space. Takes the pupil traces of a calibration sequence, fits a radial basis function mapping with hyperparameters chosen by leave-one-out cross-validation, and applies it to pupil traces to produce gaze. Mappings can be saved and reloaded.
 
 **Stimulus & Gaze** — (Start here if you already have gaze location in screen space) Check gaze location overlaid on the stimulus. Allows filtering of the gaze traces and and manual editing of individual gaze positions. Reads numpy arrays, CSV, and Eyelink EDF files / converted text files.
 

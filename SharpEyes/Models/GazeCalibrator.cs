@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using NumSharp;
 
@@ -8,7 +9,7 @@ namespace Eyetracking
 {
 	/// <summary>
 	/// Maps pupil positions in eye video space to gaze positions in screen space with a radial basis function
-	/// fitted on calibration points. Preprocessing and aggregation of the calibration nodes happen here; the
+	/// fitted on calibration points. Preprocessing and aggregation of the calibration fixations happen here; the
 	/// fitting and mapping are done by <see cref="RBFMapping"/>.
 	/// </summary>
 	public class GazeCalibrator
@@ -31,14 +32,17 @@ namespace Eyetracking
 		/// <param name="pupils">An (nFrames x columns) pupil array with X, Y, radius, and confidence columns.</param>
 		/// <param name="blinkConfidenceThreshold">Frames with confidence below this are treated as blinks.</param>
 		/// <param name="filterSettings">Median filter and outlier removal settings.</param>
+		/// <param name="cancellationToken">Interrupts the preprocessing.</param>
 		/// <returns>A new double array of the same shape.</returns>
-		public static NDArray PreprocessPupils(NDArray pupils, double blinkConfidenceThreshold, GazeFilterSettings filterSettings)
+		public static NDArray PreprocessPupils(NDArray pupils, double blinkConfidenceThreshold, GazeFilterSettings filterSettings,
+			CancellationToken cancellationToken = default)
 		{
 			NDArray processed = filterSettings.IsEnabled
 				? GazeFilter.Filter(pupils, filterSettings.MedianFilterWindowSize, filterSettings.FilterPupilSize,
 					filterSettings.EnableOutlierRemoval, filterSettings.OutlierThresholdX, filterSettings.OutlierThresholdY,
-					filterSettings.OutlierThresholdRadius)
+					filterSettings.OutlierThresholdRadius, cancellationToken)
 				: CopyAsDouble(pupils);
+			cancellationToken.ThrowIfCancellationRequested();
 			int columnCount = processed.Shape[1];
 			if (columnCount < 4) return processed;
 			int frameCount = processed.Shape[0];
@@ -64,12 +68,14 @@ namespace Eyetracking
 		/// <param name="pointDelaySeconds">Seconds skipped at the start of each point for the saccade.</param>
 		/// <param name="endSkipSeconds">Seconds skipped at the end of each point.</param>
 		/// <param name="fps">Frame rate of the pupil array.</param>
-		/// <returns>One node per screen point, with NaN pupil positions where no frame was valid.</returns>
-		public static CalibrationNode[] AggregateCalibrationNodes(NDArray pupils, double[,] screenPoints, int onsetFrame, double delaySeconds,
-			double durationSeconds, double pointDelaySeconds, double endSkipSeconds, double fps)
+		/// <param name="cancellationToken">Interrupts the aggregation.</param>
+		/// <returns>One fixation per screen point, with NaN pupil positions where no frame was valid.</returns>
+		public static CalibrationFixation[] AggregateCalibrationFixations(NDArray pupils, double[,] screenPoints, int onsetFrame, double delaySeconds,
+			double durationSeconds, double pointDelaySeconds, double endSkipSeconds, double fps, CancellationToken cancellationToken = default)
 		{
 			ExtractPositions(pupils, out double[] pupilX, out double[] pupilY);
-			return AggregateCalibrationNodes(pupilX, pupilY, screenPoints, onsetFrame, delaySeconds, durationSeconds, pointDelaySeconds, endSkipSeconds, fps);
+			return AggregateCalibrationFixations(pupilX, pupilY, screenPoints, onsetFrame, delaySeconds, durationSeconds, pointDelaySeconds, endSkipSeconds, fps,
+				cancellationToken);
 		}
 
 		/// <summary>
@@ -85,18 +91,20 @@ namespace Eyetracking
 		/// <param name="pointDelaySeconds">Seconds skipped at the start of each point for the saccade.</param>
 		/// <param name="endSkipSeconds">Seconds skipped at the end of each point.</param>
 		/// <param name="fps">Frame rate of the pupil positions.</param>
-		/// <returns>One node per screen point, with NaN pupil positions where no frame was valid.</returns>
-		public static CalibrationNode[] AggregateCalibrationNodes(double[] pupilX, double[] pupilY, double[,] screenPoints, int onsetFrame,
-			double delaySeconds, double durationSeconds, double pointDelaySeconds, double endSkipSeconds, double fps)
+		/// <param name="cancellationToken">Interrupts the aggregation.</param>
+		/// <returns>One fixation per screen point, with NaN pupil positions where no frame was valid.</returns>
+		public static CalibrationFixation[] AggregateCalibrationFixations(double[] pupilX, double[] pupilY, double[,] screenPoints, int onsetFrame,
+			double delaySeconds, double durationSeconds, double pointDelaySeconds, double endSkipSeconds, double fps, CancellationToken cancellationToken = default)
 		{
 			int frameCount = pupilX.Length;
 			int pointCount = screenPoints.GetLength(0);
 			int firstFrame = onsetFrame + (int)(delaySeconds * fps);
 			int startOffset = (int)(fps * pointDelaySeconds);
 			int endOffset = (int)(fps * endSkipSeconds);
-			CalibrationNode[] nodes = new CalibrationNode[pointCount];
+			CalibrationFixation[] fixations = new CalibrationFixation[pointCount];
 			for (int point = 0; point < pointCount; point++)
 			{
+				cancellationToken.ThrowIfCancellationRequested();
 				int start = Math.Max(0, (int)(point * durationSeconds * fps + firstFrame + startOffset));
 				int end = Math.Min(frameCount, (int)((point + 1) * durationSeconds * fps + firstFrame - endOffset));
 				List<double> xPositions = new List<double>();
@@ -109,7 +117,7 @@ namespace Eyetracking
 					xPositions.Add(x);
 					yPositions.Add(y);
 				}
-				CalibrationNode node = new CalibrationNode
+				CalibrationFixation fixation = new CalibrationFixation
 				{
 					Index = point,
 					ScreenX = screenPoints[point, 0],
@@ -117,42 +125,71 @@ namespace Eyetracking
 				};
 				if (xPositions.Count > 0)
 				{
-					node.PupilStandardDeviationX = StandardDeviation(xPositions);
-					node.PupilStandardDeviationY = StandardDeviation(yPositions);
-					node.PupilX = PupilInfo.Median(xPositions);
-					node.PupilY = PupilInfo.Median(yPositions);
+					fixation.PupilStandardDeviationX = StandardDeviation(xPositions);
+					fixation.PupilStandardDeviationY = StandardDeviation(yPositions);
+					fixation.PupilX = PupilInfo.Median(xPositions);
+					fixation.PupilY = PupilInfo.Median(yPositions);
 				}
-				nodes[point] = node;
+				fixations[point] = fixation;
 			}
-			return nodes;
+			return fixations;
 		}
 
 		/// <summary>
-		/// Invalidates nodes whose pupil standard deviation on either axis is above the given percentile of the
-		/// standard deviations across the valid nodes.
+		/// Preprocesses a pupil trace, aggregates the calibration fixations from it, and drops unsteady fixations when a
+		/// variance percentile is given.
 		/// </summary>
-		/// <param name="nodes">Nodes to filter in place.</param>
-		/// <param name="percentile">Percentile in the range 0 to 100.</param>
-		public static void ApplyVarianceThreshold(CalibrationNode[] nodes, double percentile)
+		/// <param name="pupils">Raw (nFrames x columns) pupil array.</param>
+		/// <param name="screenPoints">(nPoints x 2) screen positions in presentation order.</param>
+		/// <param name="onsetFrame">Frame index at which the calibration sequence started.</param>
+		/// <param name="delaySeconds">Seconds from the onset to the first point.</param>
+		/// <param name="durationSeconds">Seconds each point is shown.</param>
+		/// <param name="pointDelaySeconds">Seconds skipped at the start of each point for the saccade.</param>
+		/// <param name="endSkipSeconds">Seconds skipped at the end of each point.</param>
+		/// <param name="fps">Frame rate of the pupil array.</param>
+		/// <param name="blinkConfidenceThreshold">Frames with confidence below this are treated as blinks.</param>
+		/// <param name="filterSettings">Median filter and outlier removal settings.</param>
+		/// <param name="variancePercentile">Variance threshold percentile, or null to apply none.</param>
+		/// <param name="cancellationToken">Interrupts the preprocessing and aggregation.</param>
+		/// <returns>One fixation per screen point.</returns>
+		public static CalibrationFixation[] BuildCalibrationFixations(NDArray pupils, double[,] screenPoints, int onsetFrame, double delaySeconds,
+			double durationSeconds, double pointDelaySeconds, double endSkipSeconds, double fps, double blinkConfidenceThreshold,
+			GazeFilterSettings filterSettings, double? variancePercentile, CancellationToken cancellationToken = default)
 		{
-			double[] xDeviations = nodes.Where(node => node.IsValid).Select(node => node.PupilStandardDeviationX).ToArray();
-			double[] yDeviations = nodes.Where(node => node.IsValid).Select(node => node.PupilStandardDeviationY).ToArray();
+			NDArray processed = PreprocessPupils(pupils, blinkConfidenceThreshold, filterSettings, cancellationToken);
+			CalibrationFixation[] fixations = AggregateCalibrationFixations(processed, screenPoints, onsetFrame, delaySeconds, durationSeconds, pointDelaySeconds, endSkipSeconds, fps,
+				cancellationToken);
+			if (variancePercentile.HasValue)
+				ApplyVarianceThreshold(fixations, variancePercentile.Value);
+			return fixations;
+		}
+
+		/// <summary>
+		/// Invalidates fixations whose pupil standard deviation on either axis is above the given percentile of the
+		/// standard deviations across the valid fixations.
+		/// </summary>
+		/// <param name="fixations">Fixations to filter in place.</param>
+		/// <param name="percentile">Percentile in the range 0 to 100.</param>
+		public static void ApplyVarianceThreshold(CalibrationFixation[] fixations, double percentile)
+		{
+			double[] xDeviations = fixations.Where(fixation => fixation.IsValid).Select(fixation => fixation.PupilStandardDeviationX).ToArray();
+			double[] yDeviations = fixations.Where(fixation => fixation.IsValid).Select(fixation => fixation.PupilStandardDeviationY).ToArray();
 			if (xDeviations.Length == 0) return;
 			double xLimit = Percentile(xDeviations, percentile);
 			double yLimit = Percentile(yDeviations, percentile);
-			foreach (CalibrationNode node in nodes)
+			foreach (CalibrationFixation fixation in fixations)
 			{
-				if (!node.IsValid) continue;
-				if (node.PupilStandardDeviationX > xLimit || node.PupilStandardDeviationY > yLimit)
+				if (!fixation.IsValid) continue;
+				if (fixation.PupilStandardDeviationX > xLimit || fixation.PupilStandardDeviationY > yLimit)
 				{
-					node.PupilX = Double.NaN;
-					node.PupilY = Double.NaN;
+					fixation.PupilX = Double.NaN;
+					fixation.PupilY = Double.NaN;
 				}
 			}
 		}
 
 		/// <summary>
-		/// Aggregates the nodes for every delay and duration combination into one NaN-padded stack, with the
+		/// Aggregates the fixations for every delay and duration combination into one NaN-padded stack, with the
 		/// combination index equal to delayIndex * durations.Length + durationIndex.
 		/// </summary>
 		/// <param name="pupils">Preprocessed (nFrames x columns) pupil array.</param>
@@ -175,14 +212,14 @@ namespace Eyetracking
 			{
 				int delayIndex = combination / durations.Length;
 				int durationIndex = combination % durations.Length;
-				CalibrationNode[] nodes = AggregateCalibrationNodes(pupilX, pupilY, screenPoints, onsetFrame, delays[delayIndex], durations[durationIndex],
+				CalibrationFixation[] fixations = AggregateCalibrationFixations(pupilX, pupilY, screenPoints, onsetFrame, delays[delayIndex], durations[durationIndex],
 					pointDelaySeconds, endSkipSeconds, fps);
 				if (variancePercentile.HasValue)
-					ApplyVarianceThreshold(nodes, variancePercentile.Value);
+					ApplyVarianceThreshold(fixations, variancePercentile.Value);
 				for (int point = 0; point < pointCount; point++)
 				{
-					stack[combination, point, 0] = nodes[point].PupilX;
-					stack[combination, point, 1] = nodes[point].PupilY;
+					stack[combination, point, 0] = fixations[point].PupilX;
+					stack[combination, point, 1] = fixations[point].PupilY;
 				}
 			});
 			return stack;
@@ -191,25 +228,25 @@ namespace Eyetracking
 		// == Fitting and mapping ==
 
 		/// <summary>
-		/// Fits the mapping on the valid nodes, keeps the model for mapping, and records the fitted parameters,
+		/// Fits the mapping on the valid fixations, keeps the model for mapping, and records the fitted parameters,
 		/// updating <see cref="Parameters"/> in place when it exists.
 		/// </summary>
-		/// <param name="nodes">Calibration nodes; invalid ones are left out of the fit.</param>
+		/// <param name="fixations">Calibration fixations; invalid ones are left out of the fit.</param>
 		/// <param name="kernel">The kernel.</param>
 		/// <param name="smoothness">Smoothing parameter.</param>
 		/// <param name="useLegacyConvention">Whether to use the legacy Rbf convention rather than RBFInterpolator's.</param>
 		/// <param name="epsilon">Shape parameter, or null for the convention's default.</param>
-		public void Fit(CalibrationNode[] nodes, RBFKernel kernel, double smoothness, bool useLegacyConvention, double? epsilon)
+		public void Fit(CalibrationFixation[] fixations, RBFKernel kernel, double smoothness, bool useLegacyConvention, double? epsilon)
 		{
-			int nodeCount = nodes.Length;
-			double[,] pupilPositions = new double[nodeCount, 2];
-			double[,] screenPositions = new double[nodeCount, 2];
-			for (int node = 0; node < nodeCount; node++)
+			int fixationCount = fixations.Length;
+			double[,] pupilPositions = new double[fixationCount, 2];
+			double[,] screenPositions = new double[fixationCount, 2];
+			for (int fixation = 0; fixation < fixationCount; fixation++)
 			{
-				pupilPositions[node, 0] = nodes[node].PupilX;
-				pupilPositions[node, 1] = nodes[node].PupilY;
-				screenPositions[node, 0] = nodes[node].ScreenX;
-				screenPositions[node, 1] = nodes[node].ScreenY;
+				pupilPositions[fixation, 0] = fixations[fixation].PupilX;
+				pupilPositions[fixation, 1] = fixations[fixation].PupilY;
+				screenPositions[fixation, 0] = fixations[fixation].ScreenX;
+				screenPositions[fixation, 1] = fixations[fixation].ScreenY;
 			}
 			RBFMappingModel model = RBFMapping.Fit(pupilPositions, screenPositions, kernel, smoothness, useLegacyConvention, epsilon);
 			fittedModel = model;
@@ -220,18 +257,18 @@ namespace Eyetracking
 			parameters.Smoothness = smoothness;
 			parameters.Epsilon = model.Epsilon;
 			parameters.RMSError = model.RMSError;
-			parameters.Nodes = new List<CalibrationNode>();
+			parameters.Fixations = new List<CalibrationFixation>();
 			int validIndex = 0;
-			foreach (CalibrationNode node in nodes)
+			foreach (CalibrationFixation fixation in fixations)
 			{
-				CalibrationNode recorded = node.Clone();
+				CalibrationFixation recorded = fixation.Clone();
 				if (recorded.IsValid)
 				{
 					recorded.ResidualX = model.Residuals[validIndex, 0];
 					recorded.ResidualY = model.Residuals[validIndex, 1];
 					validIndex++;
 				}
-				parameters.Nodes.Add(recorded);
+				parameters.Fixations.Add(recorded);
 			}
 			parameters.CoefficientsX = new List<double>();
 			parameters.CoefficientsY = new List<double>();
@@ -294,14 +331,14 @@ namespace Eyetracking
 		}
 
 		/// <summary>
-		/// Reads parameters from an XML file and refits the mapping from the stored nodes and hyperparameters,
+		/// Reads parameters from an XML file and refits the mapping from the stored fixations and hyperparameters,
 		/// which reproduces the stored fit.
 		/// </summary>
 		/// <param name="path">Source file path.</param>
 		public void LoadParameters(string path)
 		{
 			Parameters = GazeCalibrationParameters.Load(path);
-			Fit(Parameters.Nodes.ToArray(), Parameters.Kernel, Parameters.Smoothness, Parameters.UseLegacyConvention, Parameters.Epsilon);
+			Fit(Parameters.Fixations.ToArray(), Parameters.Kernel, Parameters.Smoothness, Parameters.UseLegacyConvention, Parameters.Epsilon);
 		}
 
 		// == Helpers ==

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -92,18 +94,115 @@ namespace SharpEyes.ViewModels
 			{
 				this.RaiseAndSetIfChanged(ref field, value);
 				UpdateStateMarkers();
+				RefreshCalibrationFixations();
 			}
 		} = null;
+
+		// Cancels the fixation aggregation in flight when the settings change again or a fit replaces the fixations
+		private CancellationTokenSource? fixationRefreshCancellation = null;
+
+		// True when a calibration or preprocessing setting changed and the fixations have not been re-aggregated since
+		private bool areCalibrationSettingsDirty = false;
+
+		/// <summary>
+		/// Sets a sidebar property and, when its value changed, marks the calibration settings as changed so the
+		/// fixations are re-aggregated once the edit is accepted.
+		/// </summary>
+		/// <typeparam name="T">Type of the property.</typeparam>
+		/// <param name="backingField">Backing field of the property.</param>
+		/// <param name="value">New value.</param>
+		/// <param name="propertyName">Name of the property, supplied by the compiler.</param>
+		private void SetCalibrationSetting<T>(ref T backingField, T value, [CallerMemberName] string propertyName = "")
+		{
+			bool changed = !EqualityComparer<T>.Default.Equals(backingField, value);
+			this.RaiseAndSetIfChanged(ref backingField, value, propertyName);
+			if (changed)
+				areCalibrationSettingsDirty = true;
+		}
+
+		/// <summary>
+		/// Re-aggregates the calibration fixations if a setting changed since the last aggregation. The view calls this
+		/// when an edited control is accepted, such as by losing focus.
+		/// </summary>
+		public void CommitCalibrationSettings()
+		{
+			if (!areCalibrationSettingsDirty) return;
+			areCalibrationSettingsDirty = false;
+			RefreshCalibrationFixations();
+		}
+
+		/// <summary>
+		/// Re-aggregates the calibration fixations from the loaded pupils with the current sidebar settings and redraws
+		/// them without leave-one-out errors, interrupting any aggregation still running.
+		/// </summary>
+		private async void RefreshCalibrationFixations()
+		{
+			fixationRefreshCancellation?.Cancel();
+			if (calibrator.IsFitted && !isMappingStale)
+				MarkMappingStale();
+			if ((object)PupilInfo == null) return;
+			CancellationTokenSource cancellation = new CancellationTokenSource();
+			fixationRefreshCancellation = cancellation;
+			CancellationToken token = cancellation.Token;
+			try
+			{
+				NDArray pupils = PupilInfo.Pupils;
+				double[,] screenPoints = GetScreenPoints();
+				int onsetFrame = GetOnsetFrame();
+				double fps = EyetrackingFPS;
+				double delay = CalibrationDelay;
+				double duration = CalibrationDuration;
+				double pointDelay = PointDelay;
+				double endSkip = EndSkip;
+				double blinkThreshold = BlinkConfidenceThreshold;
+				GazeFilterSettings filterSettings = BuildFilterSettings();
+				double? variancePercentile = UseVarianceThreshold ? VarianceThresholdPercentile : (double?)null;
+				CalibrationFixation[] fixations = await Task.Run(() => GazeCalibrator.BuildCalibrationFixations(pupils, screenPoints, onsetFrame, delay,
+					duration, pointDelay, endSkip, fps, blinkThreshold, filterSettings, variancePercentile, token), token);
+				if (token.IsCancellationRequested) return;
+				CalibrationFixations = new ObservableCollection<CalibrationFixation>(fixations);
+				ForceRedraw();
+			}
+			catch (OperationCanceledException)
+			{
+			}
+			catch (Exception exception)
+			{
+				StatusText = String.Format("Could not aggregate calibration points: {0}", exception.Message);
+			}
+		}
 
 		// == State markers: red absent, green present; pupils to map is blue when only the calibration trace is available to map ==
 
 		private static readonly IBrush AbsentMarkerBrush = new SolidColorBrush(Colors.Red);
 		private static readonly IBrush PresentMarkerBrush = new SolidColorBrush(Colors.LimeGreen);
 		private static readonly IBrush SameTraceMarkerBrush = new SolidColorBrush(Colors.DodgerBlue);
+		private static readonly IBrush StaleMarkerBrush = new SolidColorBrush(Colors.Orange);
+
+		// True once the calibration settings have changed since the mapping was fitted or loaded
+		private bool isMappingStale = false;
+
+		/// <summary>
+		/// Flags the mapping as no longer matching the sidebar settings and shows that in the marker and the error line.
+		/// </summary>
+		private void MarkMappingStale()
+		{
+			isMappingStale = true;
+			CalibrationRMSError = "Mapping is stale: settings changed since it was computed";
+			IsRMSErrorHigh = false;
+			UpdateStateMarkers();
+		}
 
 		public IBrush CalibrationPupilsMarkerBrush => (object)PupilInfo != null ? PresentMarkerBrush : AbsentMarkerBrush;
 
-		public IBrush MappingMarkerBrush => calibrator.IsFitted ? PresentMarkerBrush : AbsentMarkerBrush;
+		public IBrush MappingMarkerBrush
+		{
+			get
+			{
+				if (!calibrator.IsFitted) return AbsentMarkerBrush;
+				return isMappingStale ? StaleMarkerBrush : PresentMarkerBrush;
+			}
+		}
 
 		public IBrush PupilsToMapMarkerBrush
 		{
@@ -154,57 +253,96 @@ namespace SharpEyes.ViewModels
 		public double BlinkConfidenceThreshold
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 0.6;
 
 		// == Calibration timing ==
 
+		// Switching between frame and timestamp entry only changes which field is shown, so the hidden field is
+		// populated from the shown one and the fixations are not re-aggregated.
 		public bool UseTimestampForStart
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set
+			{
+				this.RaiseAndSetIfChanged(ref field, value);
+				if (value)
+					PopulateStartTimeStampFromFrame();
+				else
+					PopulateStartFrameFromTimeStamp();
+			}
 		} = false;
 
+		private int _calibrationStartFrame = 0;
 		public int CalibrationStartFrame
 		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = 0;
+			get => _calibrationStartFrame;
+			set => SetCalibrationSetting(ref _calibrationStartFrame, value);
+		}
 
+		private string _calibrationStartTimeStamp = "0:00:00.000";
 		public string CalibrationStartTimeStamp
 		{
-			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = "0:00:00.000";
+			get => _calibrationStartTimeStamp;
+			set => SetCalibrationSetting(ref _calibrationStartTimeStamp, value);
+		}
+
+		/// <summary>
+		/// Sets the start timestamp field to the timestamp of the start frame without marking the settings changed.
+		/// </summary>
+		private void PopulateStartTimeStampFromFrame()
+		{
+			if ((object)PupilInfo == null || (object)PupilInfo.Timestamps == null) return;
+			int frame = Math.Clamp(_calibrationStartFrame, 0, PupilInfo.Timestamps.shape[0] - 1);
+			Tuple<int, int, int, int> timestamp = PupilInfo.GetTimestampForFrame(frame);
+			this.RaiseAndSetIfChanged(ref _calibrationStartTimeStamp,
+				String.Format("{0}:{1:D2}:{2:D2}.{3:D3}", timestamp.Item1, timestamp.Item2, timestamp.Item3, timestamp.Item4), "CalibrationStartTimeStamp");
+		}
+
+		/// <summary>
+		/// Sets the start frame field to the frame closest to the start timestamp without marking the settings changed.
+		/// An unparsable timestamp leaves the frame unchanged.
+		/// </summary>
+		private void PopulateStartFrameFromTimeStamp()
+		{
+			if ((object)PupilInfo == null || (object)PupilInfo.Timestamps == null) return;
+			try
+			{
+				this.RaiseAndSetIfChanged(ref _calibrationStartFrame, PupilInfo.TimeStampToFrameNumber(_calibrationStartTimeStamp), "CalibrationStartFrame");
+			}
+			catch (ArgumentException)
+			{
+			}
+		}
 
 		public double CalibrationDuration
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 2.0;
 
 		public double CalibrationDelay
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 2.0;
 
 		public double PointDelay
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 0.167;
 
 		public double EndSkip
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 0;
 
 		public int EyetrackingFPS
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 60;
 
 		public double DPIUnscaleFactor
@@ -218,55 +356,55 @@ namespace SharpEyes.ViewModels
 		public bool IsFilterEnabled
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = true;
 
 		public int FilterWindowSize
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 15;
 
 		public bool FilterPupilSize
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = true;
 
 		public bool EnableOutlierRemoval
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = false;
 
 		public double OutlierThresholdX
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 95;
 
 		public double OutlierThresholdY
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 95;
 
 		public double OutlierThresholdRadius
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 95;
 
 		public bool UseVarianceThreshold
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = false;
 
 		public double VarianceThresholdPercentile
 		{
 			get;
-			set => this.RaiseAndSetIfChanged(ref field, value);
+			set => SetCalibrationSetting(ref field, value);
 		} = 90;
 
 		// == Interpolator ==
@@ -395,11 +533,11 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref field, value);
 		} = String.Empty;
 
-		public ObservableCollection<CalibrationNode> CalibrationNodes
+		public ObservableCollection<CalibrationFixation> CalibrationFixations
 		{
 			get;
 			set => this.RaiseAndSetIfChanged(ref field, value);
-		} = new ObservableCollection<CalibrationNode>();
+		} = new ObservableCollection<CalibrationFixation>();
 
 		public ObservableCollection<Point> CalibrationPoints
 		{
@@ -415,7 +553,7 @@ namespace SharpEyes.ViewModels
 			set => this.RaiseAndSetIfChanged(ref field, value);
 		} = new ObservableCollection<Control>();
 
-		// Canvas size in drawing units; the drawing is zoomed to the bounding box of the nodes once there are any
+		// Canvas size in drawing units; the drawing is zoomed to the bounding box of the fixations once there are any
 		private const double CanvasLongSide = 900;
 		private const double CanvasMargin = 50;
 
@@ -578,7 +716,7 @@ namespace SharpEyes.ViewModels
 		// == Fitting ==
 
 		/// <summary>
-		/// Aggregates the calibration nodes from the loaded pupils with the sidebar settings, selects the kernel and
+		/// Aggregates the calibration fixations from the loaded pupils with the sidebar settings, selects the kernel and
 		/// smoothness by leave-one-out error over the grid, and fits the mapping.
 		/// </summary>
 		public async void ComputeMapping()
@@ -610,28 +748,26 @@ namespace SharpEyes.ViewModels
 				bool useLegacy = UseLegacyConvention;
 				double? epsilon = GetEpsilon();
 
-				CalibrationNode[] nodes = Array.Empty<CalibrationNode>();
+				CalibrationFixation[] fixations = Array.Empty<CalibrationFixation>();
 				await Task.Run(() =>
 				{
-					NDArray processed = GazeCalibrator.PreprocessPupils(pupils, blinkThreshold, filterSettings);
-					nodes = GazeCalibrator.AggregateCalibrationNodes(processed, screenPoints, onsetFrame, delay, duration, pointDelay, endSkip, fps);
-					if (variancePercentile.HasValue)
-						GazeCalibrator.ApplyVarianceThreshold(nodes, variancePercentile.Value);
-					double[,,] stack = new double[1, nodes.Length, 2];
-					for (int node = 0; node < nodes.Length; node++)
+					fixations = GazeCalibrator.BuildCalibrationFixations(pupils, screenPoints, onsetFrame, delay, duration, pointDelay, endSkip, fps,
+						blinkThreshold, filterSettings, variancePercentile);
+					double[,,] stack = new double[1, fixations.Length, 2];
+					for (int fixation = 0; fixation < fixations.Length; fixation++)
 					{
-						stack[0, node, 0] = nodes[node].PupilX;
-						stack[0, node, 1] = nodes[node].PupilY;
+						stack[0, fixation, 0] = fixations[fixation].PupilX;
+						stack[0, fixation, 1] = fixations[fixation].PupilY;
 					}
 					double[,,] errors = RBFMapping.EvaluateHyperparameterGrid(stack, screenPoints, kernels, smoothnesses, useLegacy, epsilon);
 					FindMinimum(errors, out int combinationIndex, out int kernelIndex, out int smoothnessIndex);
-					calibrator.Fit(nodes, kernels[kernelIndex], smoothnesses[smoothnessIndex], useLegacy, epsilon);
+					calibrator.Fit(fixations, kernels[kernelIndex], smoothnesses[smoothnessIndex], useLegacy, epsilon);
 				});
 				mappedGaze = null;
 				RecordSettings();
 				ShowFitResults();
 				UpdateStateMarkers();
-				StatusText = String.Format("Mapping computed with {0} of {1} points", nodes.Count(node => node.IsValid), nodes.Length);
+				StatusText = String.Format("Mapping computed with {0} of {1} points", fixations.Count(fixation => fixation.IsValid), fixations.Length);
 			}
 			catch (Exception exception)
 			{
@@ -847,7 +983,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		/// <summary>
-		/// Loads a saved calibration, restores its settings into the sidebar, and refits the mapping from its nodes.
+		/// Loads a saved calibration, restores its settings into the sidebar, and refits the mapping from its fixations.
 		/// </summary>
 		public async void LoadCalibration()
 		{
@@ -896,30 +1032,31 @@ namespace SharpEyes.ViewModels
 			CalibrationPoints.Clear();
 			foreach (CalibrationIndex index in generated.calibrationSequence)
 				CalibrationPoints.Add(generated.calibrationPoints[index.Index]);
+			RefreshCalibrationFixations();
 		}
 
 		/// <summary>
-		/// Redraws the aggregated pupil position of each valid node with its index and leave-one-out error, zoomed so
-		/// the nodes' bounding box fills the canvas. Without nodes the canvas shows the video frame outline instead.
+		/// Redraws the aggregated pupil position of each valid fixation with its index and leave-one-out error, zoomed so
+		/// the fixations' bounding box fills the canvas. Without fixations the canvas shows the video frame outline instead.
 		/// </summary>
 		public void ForceRedraw()
 		{
 			ShapesToDraw.Clear();
-			List<CalibrationNode> validNodes = CalibrationNodes.Where(node => node.IsValid).ToList();
+			List<CalibrationFixation> validFixations = CalibrationFixations.Where(fixation => fixation.IsValid).ToList();
 			double scale = 1;
 			double offsetX = 0;
 			double offsetY = 0;
-			if (validNodes.Count == 0)
+			if (validFixations.Count == 0)
 			{
 				CanvasWidth = VideoWidth;
 				CanvasHeight = VideoHeight;
 			}
 			else
 			{
-				double minX = validNodes.Min(node => node.PupilX);
-				double maxX = validNodes.Max(node => node.PupilX);
-				double minY = validNodes.Min(node => node.PupilY);
-				double maxY = validNodes.Max(node => node.PupilY);
+				double minX = validFixations.Min(fixation => fixation.PupilX);
+				double maxX = validFixations.Max(fixation => fixation.PupilX);
+				double minY = validFixations.Min(fixation => fixation.PupilY);
+				double maxY = validFixations.Max(fixation => fixation.PupilY);
 				double rangeX = Math.Max(maxX - minX, 1);
 				double rangeY = Math.Max(maxY - minY, 1);
 				scale = CanvasLongSide / Math.Max(rangeX, rangeY);
@@ -935,10 +1072,10 @@ namespace SharpEyes.ViewModels
 				StrokeThickness = 4,
 				Stroke = new SolidColorBrush(Colors.DodgerBlue)
 			});
-			foreach (CalibrationNode node in validNodes)
+			foreach (CalibrationFixation fixation in validFixations)
 			{
-				double x = node.PupilX * scale + offsetX;
-				double y = node.PupilY * scale + offsetY;
+				double x = fixation.PupilX * scale + offsetX;
+				double y = fixation.PupilY * scale + offsetY;
 				ShapesToDraw.Add(new Ellipse()
 				{
 					Width = 12,
@@ -948,7 +1085,9 @@ namespace SharpEyes.ViewModels
 				});
 				ShapesToDraw.Add(new TextBlock()
 				{
-					Text = String.Format("{0}: {1:F1}", node.Index + 1, node.Error),
+					Text = Double.IsNaN(fixation.Error)
+						? String.Format("{0}", fixation.Index + 1)
+						: String.Format("{0}: {1:F1}", fixation.Index + 1, fixation.Error),
 					FontSize = 16,
 					Foreground = new SolidColorBrush(Colors.OrangeRed),
 					RenderTransform = new TranslateTransform(x + 8, y - 10),
@@ -1011,6 +1150,10 @@ namespace SharpEyes.ViewModels
 		/// <returns>Zero-based frame index of the calibration onset.</returns>
 		private int GetOnsetFrame()
 		{
+			if (UseTimestampForStart)
+				PopulateStartFrameFromTimeStamp();
+			else
+				PopulateStartTimeStampFromFrame();
 			return UseTimestampForStart ? PupilInfo.TimeStampToFrameNumber(CalibrationStartTimeStamp) : CalibrationStartFrame;
 		}
 
@@ -1104,7 +1247,7 @@ namespace SharpEyes.ViewModels
 		}
 
 		/// <summary>
-		/// Writes the sidebar settings that produced the nodes into the calibrator's parameters so they are saved with the fit.
+		/// Writes the sidebar settings that produced the fixations into the calibrator's parameters so they are saved with the fit.
 		/// </summary>
 		private void RecordSettings()
 		{
@@ -1162,27 +1305,31 @@ namespace SharpEyes.ViewModels
 			OutlierThresholdRadius = parameters.OutlierThresholdRadius;
 			UseVarianceThreshold = parameters.UseVarianceThreshold;
 			VarianceThresholdPercentile = parameters.VarianceThresholdPercentile;
+			areCalibrationSettingsDirty = false;
 			UseLegacyConvention = parameters.UseLegacyConvention;
 			UseDefaultEpsilon = false;
 			Epsilon = parameters.Epsilon;
 			CalibrationPoints.Clear();
-			foreach (CalibrationNode node in parameters.Nodes)
-				CalibrationPoints.Add(new Point(node.ScreenX, node.ScreenY));
+			foreach (CalibrationFixation fixation in parameters.Fixations)
+				CalibrationPoints.Add(new Point(fixation.ScreenX, fixation.ScreenY));
 		}
 
 		/// <summary>
-		/// Shows the fitted hyperparameters, error, and nodes in the sidebar and on the canvas.
+		/// Shows the fitted hyperparameters, error, and fixations in the sidebar and on the canvas.
 		/// </summary>
 		private void ShowFitResults()
 		{
 			GazeCalibrationParameters? parameters = calibrator.Parameters;
 			if (parameters == null) return;
+			isMappingStale = false;
+			areCalibrationSettingsDirty = false;
 			CalibrationRMSError = String.Format("Leave-one-out RMS error: {0:F2} px", parameters.RMSError);
 			IsRMSErrorHigh = parameters.RMSError > HighRMSErrorPixels;
 			FittedKernel = parameters.Kernel.ToString();
 			FittedSmoothness = String.Format("{0:G4}", parameters.Smoothness);
 			FittedEpsilon = String.Format("{0:G4}", parameters.Epsilon);
-			CalibrationNodes = new ObservableCollection<CalibrationNode>(parameters.Nodes);
+			fixationRefreshCancellation?.Cancel();
+			CalibrationFixations = new ObservableCollection<CalibrationFixation>(parameters.Fixations);
 			ForceRedraw();
 		}
 	}

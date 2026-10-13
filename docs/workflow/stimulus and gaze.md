@@ -16,7 +16,7 @@ Note: if you read a numpy or CSV file, you'll need to manually set the Eyetracki
 ## Workflow
 
 1. Open the stimulus video with File → Load Video.
-2. Load gaze position data with File → Load gaze. Gaze data is stored as numpy arrays saved from the [Calibration](calibration.md) step.
+2. Load gaze position data with File → Load gaze, or send it over from the [Calibration](calibration.md) tab. Gaze data is stored as numpy arrays saved from the Calibration step.
 3. Set the eyetracking frame rate in the right control panel (default is 60 fps).
 4. Synchronize gaze data with the video by identifying when eyetracking began. Use **Auto find data start** or select the start frame manually.
 5. Verify that timing aligns correctly, particularly during calibration sequences.
